@@ -1,7 +1,7 @@
 """Robot ve robot sandigi: davranis (BP) + istemci (RP) varlik dosyalari, animasyonlar."""
 from sesler_def import ANIM_EFFECTS
 
-TYPES = ['madenci', 'kurekci', 'ciftci', 'oduncu', 'kilicli']
+TYPES = ['madenci', 'kurekci', 'ciftci', 'oduncu', 'kilicli', 'insaatci']   # yeni türler sona
 MOVES = ['none', 'walk', 'run', 'climb', 'swim']
 ACTS = ['none', 'mine', 'dig', 'chop', 'hoe', 'place', 'carry', 'sit', 'wave', 'celebrate',
         'attack', 'sleep', 'think', 'look', 'boot']
@@ -9,7 +9,8 @@ ACTS = ['none', 'mine', 'dig', 'chop', 'hoe', 'place', 'carry', 'sit', 'wave', '
 ACTS2 = ['none',
          'p_hook', 'p_sword', 'p_dash', 'p_dome', 'p_thunder',   # V3: Kılıçlı güç hareketleri
          'water_throw', 'water_catch', 'water_pour',           # V3: çiftçinin Aqualit kova numarası
-         'kit']                                                # V3: tamir kitiyle onarma
+         'kit',                                                # V3: tamir kitiyle onarma
+         'fly', 'hat_off', 'hat_hold', 'hat_on']               # v0.3.0 Mimar: uçuş, baretten dron çıkarma
 assert len(ACTS) <= 16 and len(ACTS2) <= 16
 DMG_TIERS = [3, 5, 7, 8, 10, 12, 15, 18, 20, 25, 30, 40, 50, 75, 100]
 SPD_TIERS = [0.2, 0.25, 0.3, 0.33, 0.36, 0.4, 0.45, 0.5, 0.55, 0.6]
@@ -90,6 +91,9 @@ def robot_bp():
         'aqualit:tamed': {
             'minecraft:is_tamed': {},
         },
+        'aqualit:flyer': {
+            'minecraft:physics': {'has_gravity': False, 'has_collision': False},
+        },
     }
     for d in DMG_TIERS:
         groups[f'aqualit:dmg_{d}'] = {'minecraft:attack': {'damage': d}}
@@ -121,6 +125,8 @@ def robot_bp():
             {'add': {'component_groups': ['aqualit:k_guard']}}]},
         'aqualit:mode_stay': {'remove': {'component_groups': ['aqualit:k_follow', 'aqualit:k_guard']}},
         'aqualit:tick_on': {'add': {'component_groups': ['aqualit:ticking']}},
+        'aqualit:fly_on': {'add': {'component_groups': ['aqualit:flyer']}},
+        'aqualit:fly_off': {'remove': {'component_groups': ['aqualit:flyer']}},
         'aqualit:tick_off': {'remove': {'component_groups': ['aqualit:ticking']}},
     }
     for d in DMG_TIERS:
@@ -447,6 +453,51 @@ def robot_animations():
         'body': {'position': [0, 'math.sin(q.anim_time * 900) * 0.2', 0]},
         **ant([0, 0, 'math.sin(q.anim_time * 1200) * 8']),
     }}
+    # ---- Mimar (v0.3.0): uçuş ve baretten mini dron çıkarma
+    A['fly'] = {'loop': True, 'animation_length': 1.2, 'bones': {
+        'root': {'position': [0, 'math.sin(q.anim_time * 300) * 0.8', 0]},
+        'body': {'rotation': ['12 + math.sin(q.anim_time * 300) * 2', 0, 'math.cos(q.anim_time * 300) * 2']},
+        'right_arm': {'rotation': ['-25 + math.sin(q.anim_time * 300) * 6', 0, 32]},
+        'left_arm': {'rotation': ['-25 + math.sin(q.anim_time * 300) * 6', 0, -32]},
+        'right_leg': {'rotation': ['18 + math.sin(q.anim_time * 300) * 6', 0, 6]},
+        'left_leg': {'rotation': ['22 - math.sin(q.anim_time * 300) * 6', 0, -6]},
+        'toolbelt': {'rotation': [0, 0, 'math.sin(q.anim_time * 300) * 2']},
+        **ant(['-30 + math.sin(q.anim_time * 600) * 8', 0, 0]),
+    }}
+    HAT_HELD = [180, 0, 0]                 # baret ters (ağzı yukarı), göğüs önünde
+    HAT_HELD_P = [0, 11.5, -9]
+    ARM_HOLD = ([-62, 0, 14], [-62, 0, -14])
+    A['hat_off'] = {'loop': HOLD, 'animation_length': 1.5, 'bones': {
+        'right_arm': {'rotation': kf((0.0, [0, 0, 0]), (0.35, [-168, 0, 12]), (0.75, [-172, 0, 10]),
+                                     (1.2, ARM_HOLD[0]), (1.5, ARM_HOLD[0]))},
+        'left_arm': {'rotation': kf((0.0, [0, 0, 0]), (0.35, [-168, 0, -12]), (0.75, [-172, 0, -10]),
+                                    (1.2, ARM_HOLD[1]), (1.5, ARM_HOLD[1]))},
+        'hardhat': {'position': kf((0.0, [0, 0, 0]), (0.35, [0, 0, 0]), (0.75, [0, 5, 0]), (1.2, HAT_HELD_P),
+                                   (1.5, HAT_HELD_P)),
+                    'rotation': kf((0.0, [0, 0, 0]), (0.75, [0, 0, 0]), (1.2, HAT_HELD), (1.5, HAT_HELD))},
+        'head': {'rotation': kf((0.0, [0, 0, 0]), (0.75, [-12, 0, 0]), (1.2, [14, 0, 0]), (1.5, [14, 0, 0]))},
+        # baretin tepesindeki anten, baret kalkınca başın üstüne iner
+        'antenna_ball24': {'position': kf((0.0, [0, 0, 0]), (0.5, [0, 0, 0]), (0.8, [0, -5, 0])),
+                           'rotation': kf((0.0, [0, 0, 0]), (0.8, [0, 0, 25]), (1.0, [0, 0, -15]), (1.3, [0, 0, 0]))},
+    }}
+    A['hat_hold'] = {'loop': True, 'animation_length': 1.0, 'bones': {
+        'right_arm': {'rotation': [ARM_HOLD[0][0], 0, ARM_HOLD[0][2]]},
+        'left_arm': {'rotation': [ARM_HOLD[1][0], 0, ARM_HOLD[1][2]]},
+        'hardhat': {'position': [0, f"{HAT_HELD_P[1]} + math.sin(q.anim_time * 360) * 0.3", HAT_HELD_P[2]],
+                    'rotation': HAT_HELD},
+        'head': {'rotation': [14, 'math.sin(q.anim_time * 360) * 10', 0]},
+        'antenna_ball24': {'position': [0, -5, 0], 'rotation': [0, 0, 'math.sin(q.anim_time * 720) * 8']},
+    }}
+    A['hat_on'] = {'loop': HOLD, 'animation_length': 1.3, 'bones': {
+        'right_arm': {'rotation': kf((0.0, ARM_HOLD[0]), (0.5, [-172, 0, 10]), (0.9, [-168, 0, 12]),
+                                     (1.3, [0, 0, 0]))},
+        'left_arm': {'rotation': kf((0.0, ARM_HOLD[1]), (0.5, [-172, 0, -10]), (0.9, [-168, 0, -12]),
+                                    (1.3, [0, 0, 0]))},
+        'hardhat': {'position': kf((0.0, HAT_HELD_P), (0.5, [0, 5, 0]), (0.9, [0, 0, 0])),
+                    'rotation': kf((0.0, HAT_HELD), (0.5, [0, 0, 0]))},
+        'head': {'rotation': kf((0.0, [14, 0, 0]), (0.5, [-12, 0, 0]), (0.9, [4, 0, 0]), (1.1, [0, 0, 0]))},
+        'antenna_ball24': {'position': kf((0.0, [0, -5, 0]), (0.6, [0, -5, 0]), (0.9, [0, 0, 0]))},
+    }}
     # ---- ses efektleri (metalik robot sesleri)
     SFX = {
         'walk': {'0.0': 'step', '0.3': 'step'}, 'walk_legs': {'0.0': 'step', '0.3': 'step'},
@@ -457,6 +508,7 @@ def robot_animations():
         'p_hook': {'0.25': 'hook'}, 'p_sword': {'0.0': 'charge'}, 'p_dome': {'0.0': 'dome'},
         'p_thunder': {'0.0': 'charge'}, 'p_dash': {'0.0': 'servo'},
         'water_throw': {'0.0': 'servo'}, 'water_catch': {'0.55': 'servo'}, 'kit': {'0.0': 'servo'},
+        'hat_off': {'0.0': 'servo', '1.2': 'beep'}, 'hat_on': {'0.0': 'servo', '0.9': 'servo'},
     }
     for k, fx in SFX.items():
         A[k]['sound_effects'] = {t: {'effect': e} for t, e in fx.items()}

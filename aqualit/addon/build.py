@@ -20,6 +20,8 @@ import efekt as FX           # noqa: E402
 import efekt_doku as ED      # noqa: E402
 import kesif_oyun as KO      # noqa: E402
 import sandik_gen as SG      # noqa: E402
+import yapi_kutuphane as YK  # noqa: E402
+import dron as DR            # noqa: E402
 
 OUT = os.path.join(HERE, 'out')
 GEN = os.path.join(HERE, 'build_gen')
@@ -478,6 +480,17 @@ def lang():
     # paket adlari (manifestte duz metin kullaniliyor)
 
 
+def mimar():
+    """Mimar: yapı kütüphanesi (yapı dosyaları, menü resimleri, yapi_data.js) ve mini dron varlığı."""
+    YK.build(BP, RP, os.path.join(HERE, 'src', 'scripts', 'yapi_data.js'))
+    wj(f'{BP}/entities/dron.json', DR.bp())
+    DR.build(f'{RP}/textures/entity/aqualit_dron', f'{RP}/models/entity/aqualit_dron.geo.json')
+    wj(f'{RP}/entity/aqualit_dron.entity.json', DR.rp())
+    wj(f'{RP}/animations/aqualit_dron.animation.json', DR.animations())
+    wj(f'{RP}/animation_controllers/aqualit_dron.animation_controllers.json', DR.controller())
+    wj(f'{RP}/render_controllers/aqualit_dron.render_controllers.json', DR.render_ctrl())
+
+
 def scripts():
     src = os.path.join(HERE, 'src', 'scripts')
     dst = f'{BP}/scripts'
@@ -510,7 +523,7 @@ def main():
         if os.path.exists(d):
             shutil.rmtree(d)
     os.makedirs(BP); os.makedirs(RP); os.makedirs(GEN)
-    manifests(); items(); blocks(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); sounds(); particles(); armor_rp(); lang(); zirh_data(); scripts()
+    manifests(); items(); blocks(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
     addon = package()
     print('paket:', addon)
 

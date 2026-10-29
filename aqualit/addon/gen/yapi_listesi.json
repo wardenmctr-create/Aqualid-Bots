@@ -1,0 +1,1730 @@
+[
+ {
+  "id": "baslangic_evi",
+  "ad": "Hayatta Kalma Başlangıç Evi",
+  "kat": "ev",
+  "baslik": "Survival Starter House + Interior + Schematic",
+  "yazar": "Cubi Craft",
+  "kaynak": "https://www.planetminecraft.com/project/cubi-craft-tutorial-easy-rustic-survival-house-with-full-interior/",
+  "dosya": "e7f448d95831"
+ },
+ {
+  "id": "geleneksel_ev",
+  "ad": "Geleneksel Ev",
+  "kat": "ev",
+  "baslik": "Traditionnal House",
+  "yazar": "MyGodness",
+  "kaynak": "https://www.planetminecraft.com/project/traditionnal-house-3800740/",
+  "dosya": "0414d1c5b660"
+ },
+ {
+  "id": "aile_evi",
+  "ad": "Aile Evi",
+  "kat": "ev",
+  "baslik": "My Real House",
+  "yazar": "wiredrawn",
+  "kaynak": "https://www.planetminecraft.com/project/my-real-house/",
+  "dosya": "3eca5b7042f0"
+ },
+ {
+  "id": "kucuk_ortacag_evi",
+  "ad": "Küçük Ortaçağ Evi",
+  "kat": "ev",
+  "baslik": "Medieval Home [ Interior & Schematic Included ]",
+  "yazar": "I Place Blocks",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-home-3781413/",
+  "dosya": "2da2d073fda0"
+ },
+ {
+  "id": "ufak_ev",
+  "ad": "Ufak Ev",
+  "kat": "ev",
+  "baslik": "House",
+  "yazar": "Woody7",
+  "kaynak": "https://www.planetminecraft.com/project/house-818504/",
+  "dosya": "170874ff1891"
+ },
+ {
+  "id": "siyah_ev",
+  "ad": "Siyah Ev",
+  "kat": "ev",
+  "baslik": "Black House",
+  "yazar": "Appleman96",
+  "kaynak": "https://www.planetminecraft.com/project/black-house-147943/",
+  "dosya": "68d4d6c5e9cb"
+ },
+ {
+  "id": "roma_apartmani",
+  "ad": "Roma Apartmanı",
+  "kat": "ev",
+  "baslik": "Roman Insula",
+  "yazar": "snipey",
+  "kaynak": "https://www.planetminecraft.com/project/roman-insula/",
+  "dosya": "b8ba8e92f404"
+ },
+ {
+  "id": "soylu_evi",
+  "ad": "Soylu Evi",
+  "kat": "ev",
+  "baslik": "Noble House 3",
+  "yazar": "DartBane2010",
+  "kaynak": "https://www.planetminecraft.com/project/noble-house-3/",
+  "dosya": "62f1be5394a6"
+ },
+ {
+  "id": "japon_geleneksel_ev",
+  "ad": "Geleneksel Japon Evi",
+  "kat": "ev",
+  "baslik": "Japanese Traditional House V2",
+  "yazar": "OakKodama",
+  "kaynak": "https://www.planetminecraft.com/project/japanese-traditional-house-v2/",
+  "dosya": "1d6b385fcfdc"
+ },
+ {
+  "id": "sevimli_ev",
+  "ad": "Sevimli Ev",
+  "kat": "ev",
+  "baslik": "Cel51's House 2",
+  "yazar": "Cel51",
+  "kaynak": "https://www.planetminecraft.com/project/cel51s-house-2/",
+  "dosya": "c29a712a4848"
+ },
+ {
+  "id": "eko_ev",
+  "ad": "Eko Ev",
+  "kat": "ev",
+  "baslik": "EcoHouse",
+  "yazar": "EvanReidXD",
+  "kaynak": "https://www.planetminecraft.com/project/ecohouse/",
+  "dosya": "7206c11a9001"
+ },
+ {
+  "id": "sehir_evi",
+  "ad": "Şehir Evi",
+  "kat": "ev",
+  "baslik": "town house",
+  "yazar": "basaap",
+  "kaynak": "https://www.planetminecraft.com/project/town-house-3330150/",
+  "dosya": "9a23f788ef7d"
+ },
+ {
+  "id": "banliyo_evi",
+  "ad": "Banliyö Evi",
+  "kat": "ev",
+  "baslik": "Suburban House 3",
+  "yazar": "BuildingMC",
+  "kaynak": "https://www.planetminecraft.com/project/suburban-house-3-4157665/",
+  "dosya": "bd0da4e64a51"
+ },
+ {
+  "id": "kucuk_viking_evi",
+  "ad": "Küçük Viking Evi",
+  "kat": "ev",
+  "baslik": "Small Viking House",
+  "yazar": "AsgerFra2G1A",
+  "kaynak": "https://www.planetminecraft.com/project/small-viking-house-3251984/",
+  "dosya": "a4372f822db6"
+ },
+ {
+  "id": "banliyo_evi_ay",
+  "ad": "Banliyö Evi «Ay»",
+  "kat": "ev",
+  "baslik": "Suburban house \"Lune\"",
+  "yazar": "Grannitangle",
+  "kaynak": "https://www.planetminecraft.com/project/suburban-house-lune/",
+  "dosya": "b40e6269457e"
+ },
+ {
+  "id": "japon_evi",
+  "ad": "Japon Evi",
+  "kat": "ev",
+  "baslik": "Japanese House + Download 1.16.2",
+  "yazar": "Cubi Craft",
+  "kaynak": "https://www.planetminecraft.com/project/japanese-house-4758525/",
+  "dosya": "16a940a18105"
+ },
+ {
+  "id": "yedi_tepe_evi",
+  "ad": "Yedi Tepe Evi",
+  "kat": "ev",
+  "baslik": "Seven Peaks Place",
+  "yazar": "Leefield",
+  "kaynak": "https://www.planetminecraft.com/project/seven-peaks-place/",
+  "dosya": "efe813ba1cb6"
+ },
+ {
+  "id": "viktorya_evi",
+  "ad": "Viktorya Evi",
+  "kat": "ev",
+  "baslik": "Victorian House",
+  "yazar": "GreyHavens",
+  "kaynak": "https://www.planetminecraft.com/project/victorian-house/",
+  "dosya": "b5e9ba7eeff2"
+ },
+ {
+  "id": "tatli_yuva",
+  "ad": "Tatlı Yuva",
+  "kat": "ev",
+  "baslik": "home sweet home",
+  "yazar": "johnsen43",
+  "kaynak": "https://www.planetminecraft.com/project/home-sweet-home-191888/",
+  "dosya": "dfbd3ed20c7a"
+ },
+ {
+  "id": "buyuk_geleneksel_ev",
+  "ad": "Büyük Geleneksel Ev",
+  "kat": "ev",
+  "baslik": "Traditional house",
+  "yazar": "jar9",
+  "kaynak": "https://www.planetminecraft.com/project/traditional-house-2819167/",
+  "dosya": "7751908d395e"
+ },
+ {
+  "id": "yedi_kis_kosku",
+  "ad": "Yedi Kış Köşkü",
+  "kat": "ev",
+  "baslik": "Seven Winters Lodge",
+  "yazar": "Leefield",
+  "kaynak": "https://www.planetminecraft.com/project/seven-winters-lodge/",
+  "dosya": "c5c7e078fc67"
+ },
+ {
+  "id": "kucuk_viktorya_evi",
+  "ad": "Küçük Viktorya Evi",
+  "kat": "ev",
+  "baslik": "Small Victorian House | Download + Schematic",
+  "yazar": "BaileyTheAwesome",
+  "kaynak": "https://www.planetminecraft.com/project/small-victorian-house-download-schematic/",
+  "dosya": "f09e1504ffc3"
+ },
+ {
+  "id": "banliyo_evi_cicek",
+  "ad": "Banliyö Evi «Çiçek»",
+  "kat": "ev",
+  "baslik": "Suburban house \"Bleuet\"",
+  "yazar": "Grannitangle",
+  "kaynak": "https://www.planetminecraft.com/project/suburban-house-bleuet/",
+  "dosya": "60e64d797234"
+ },
+ {
+  "id": "kasaba_adliyesi",
+  "ad": "Kasaba Adliyesi",
+  "kat": "koy",
+  "baslik": "Small Town Courthouse",
+  "yazar": "Emily_2010",
+  "kaynak": "https://www.planetminecraft.com/project/small-town-courthouse/",
+  "dosya": "1285e4f5ac06"
+ },
+ {
+  "id": "kir_evi",
+  "ad": "Kır Evi",
+  "kat": "ev",
+  "baslik": "Country House",
+  "yazar": "x1Gambler1x",
+  "kaynak": "https://www.planetminecraft.com/project/country-house/",
+  "dosya": "83580776fc34"
+ },
+ {
+  "id": "buyuk_ortacag_evi",
+  "ad": "Büyük Ortaçağ Evi",
+  "kat": "ev",
+  "baslik": "Large Medival House",
+  "yazar": "Jih",
+  "kaynak": "https://www.planetminecraft.com/project/large-medival-house/",
+  "dosya": "608294cda7b0"
+ },
+ {
+  "id": "ortacag_deposu",
+  "ad": "Ortaçağ Deposu",
+  "kat": "koy",
+  "baslik": "Medieval Warehouse",
+  "yazar": "Kraiu",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-warehouse-2478580/",
+  "dosya": "ea618dc476f0"
+ },
+ {
+  "id": "ferreira_evi",
+  "ad": "Ferreira Evi",
+  "kat": "ev",
+  "baslik": "House Fereiras",
+  "yazar": "Zeltrom",
+  "kaynak": "https://www.planetminecraft.com/project/casa-dos-fereiras/",
+  "dosya": "82546922d218"
+ },
+ {
+  "id": "minik_ortacag_evi",
+  "ad": "Minik Ortaçağ Evi",
+  "kat": "ev",
+  "baslik": "Small Medieval House",
+  "yazar": "Adeptx3",
+  "kaynak": "https://www.planetminecraft.com/project/small-medieval-house-2548673/",
+  "dosya": "5b42316ad58a"
+ },
+ {
+  "id": "viking_evi",
+  "ad": "Viking Evi",
+  "kat": "ev",
+  "baslik": "Viking House",
+  "yazar": "F1SCHM4N",
+  "kaynak": "https://www.planetminecraft.com/project/viking-house-2011854/",
+  "dosya": "b6b90a2668e7"
+ },
+ {
+  "id": "degirmenli_kulube",
+  "ad": "Su Değirmenli Kulübe",
+  "kat": "ev",
+  "baslik": "Watermill Cottage",
+  "yazar": "Azellessa",
+  "kaynak": "https://www.planetminecraft.com/project/watermill-cottage/",
+  "dosya": "e872b75a70dc"
+ },
+ {
+  "id": "sehir_konagi",
+  "ad": "Geniş Şehir Konağı",
+  "kat": "ev",
+  "baslik": "Spacious Townhouse",
+  "yazar": "kostahansen",
+  "kaynak": "https://www.planetminecraft.com/project/spacious-townhouse/",
+  "dosya": "a8e5697a6457"
+ },
+ {
+  "id": "ortacag_evi",
+  "ad": "Ortaçağ Evi",
+  "kat": "ev",
+  "baslik": "Minecraft Medieval House [DOWNLOAD]",
+  "yazar": "TheBello123",
+  "kaynak": "https://www.planetminecraft.com/project/minecraft-medieval-house-2876176/",
+  "dosya": "25ce624b8380"
+ },
+ {
+  "id": "viktorya_evi_2",
+  "ad": "Viktorya Evi II",
+  "kat": "ev",
+  "baslik": "A vicotrian house - Nub and Nubmann collab",
+  "yazar": "olenormann",
+  "kaynak": "https://www.planetminecraft.com/project/a-vicotrian-house---nub-and-nubmann-collab-on-wok/",
+  "dosya": "5872a40128f3"
+ },
+ {
+  "id": "zirh_dukkani",
+  "ad": "Büyülü Zırh Dükkânı",
+  "kat": "koy",
+  "baslik": "Enchanted Armour Store",
+  "yazar": "Leefield",
+  "kaynak": "https://www.planetminecraft.com/project/enchanted-armour-store/",
+  "dosya": "2290f3b06849"
+ },
+ {
+  "id": "modern_ev",
+  "ad": "Modern Ev",
+  "kat": "villa",
+  "baslik": "Modern House #010",
+  "yazar": "DaxesMC",
+  "kaynak": "https://www.planetminecraft.com/project/modern-house-010/",
+  "dosya": "81594ca9cf66"
+ },
+ {
+  "id": "retro_modern_ev",
+  "ad": "Retro Modern Ev",
+  "kat": "villa",
+  "baslik": "Modern Retro House 9x8",
+  "yazar": "ArticKraft",
+  "kaynak": "https://www.planetminecraft.com/project/modern-retro-house-9x8/",
+  "dosya": "272b3e2d7a6f"
+ },
+ {
+  "id": "radon_evi",
+  "ad": "Radon Evi",
+  "kat": "villa",
+  "baslik": "Radon (feat. 3D) | House",
+  "yazar": "MrFruitTree",
+  "kaynak": "https://www.planetminecraft.com/project/radon/",
+  "dosya": "47f9d650c57a"
+ },
+ {
+  "id": "luks_magaza",
+  "ad": "Lüks Mağaza",
+  "kat": "koy",
+  "baslik": "Luxury Department Store With Interior",
+  "yazar": "AustinNDS",
+  "kaynak": "https://www.planetminecraft.com/project/luxury-department-store-with-interior/",
+  "dosya": "2527970a8df4"
+ },
+ {
+  "id": "buyuk_japon_evi",
+  "ad": "Büyük Japon Evi",
+  "kat": "villa",
+  "baslik": "Japanese House",
+  "yazar": "Ferendum",
+  "kaynak": "https://www.planetminecraft.com/project/japanese-house-4355826/",
+  "dosya": "ae9cef1cf704"
+ },
+ {
+  "id": "modern_apartman",
+  "ad": "Modern Apartman",
+  "kat": "villa",
+  "baslik": "Modern apartment building",
+  "yazar": "Le_Corbloc",
+  "kaynak": "https://www.planetminecraft.com/project/modern-apartment-building-3269139/",
+  "dosya": "c88cb7d008f2"
+ },
+ {
+  "id": "susi_restorani",
+  "ad": "Suşi Restoranı",
+  "kat": "koy",
+  "baslik": "Sharkfin Sushi Restaurant",
+  "yazar": "Dreygyr",
+  "kaynak": "https://www.planetminecraft.com/project/ruby-apartments/",
+  "dosya": "195c09bb7e83"
+ },
+ {
+  "id": "kuzey_meyhanesi",
+  "ad": "Kuzey Meyhanesi",
+  "kat": "koy",
+  "baslik": "Skyrim Pub",
+  "yazar": "Niix24",
+  "kaynak": "https://www.planetminecraft.com/project/skyrim-pub/",
+  "dosya": "bb437a7aff48"
+ },
+ {
+  "id": "beyaz_villa",
+  "ad": "Beyaz Villa",
+  "kat": "villa",
+  "baslik": "White Villa",
+  "yazar": "Danutron",
+  "kaynak": "https://www.planetminecraft.com/project/white-villa/",
+  "dosya": "eef21a8a96aa"
+ },
+ {
+  "id": "kuvars_villa",
+  "ad": "Kuvars Villa",
+  "kat": "villa",
+  "baslik": "Modern Quartz Villa",
+  "yazar": "Minecreep44",
+  "kaynak": "https://www.planetminecraft.com/project/quartz-villa-4215656/",
+  "dosya": "05c13227b1c1"
+ },
+ {
+  "id": "modern_sira_ev",
+  "ad": "Modern Sıra Ev",
+  "kat": "villa",
+  "baslik": "Modern Townhouse 2",
+  "yazar": "jar9",
+  "kaynak": "https://www.planetminecraft.com/project/modern-townhouse-2-3241630/",
+  "dosya": "e306c0147973"
+ },
+ {
+  "id": "geleneksel_konak",
+  "ad": "Geleneksel Konak",
+  "kat": "villa",
+  "baslik": "Traditional Mansion [1]",
+  "yazar": "AppleThief",
+  "kaynak": "https://www.planetminecraft.com/project/traditional-suburban-mansion-1/",
+  "dosya": "321b59f7fa5c"
+ },
+ {
+  "id": "virginia_oteli",
+  "ad": "Virginia Oteli",
+  "kat": "koy",
+  "baslik": "Virginia Hotel",
+  "yazar": "GREGON",
+  "kaynak": "https://www.planetminecraft.com/project/virginia-hotel/",
+  "dosya": "7e1a1df9ce10"
+ },
+ {
+  "id": "vaha_kutuphanesi",
+  "ad": "Vaha Kütüphanesi",
+  "kat": "koy",
+  "baslik": "Oasis Library",
+  "yazar": "Dreygyr",
+  "kaynak": "https://www.planetminecraft.com/project/phoenix-library/",
+  "dosya": "d83aa96e3695"
+ },
+ {
+  "id": "koy_dukkanlari",
+  "ad": "Köy Dükkânları",
+  "kat": "koy",
+  "baslik": "Medieval Pack: Small Village Shops By Jack_Benner",
+  "yazar": "Jack_Benner",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-pack-small-village-shops-100-by-demonsyborg/",
+  "dosya": "cc08b0ce9998"
+ },
+ {
+  "id": "modern_sahil_evi",
+  "ad": "Modern Sahil Evi",
+  "kat": "villa",
+  "baslik": "Modern - The Beach House",
+  "yazar": "GnubHunter",
+  "kaynak": "https://www.planetminecraft.com/project/modern-house---the-beach-house/",
+  "dosya": "93bdba790826"
+ },
+ {
+  "id": "milenyum_villasi",
+  "ad": "Milenyum Villası",
+  "kat": "villa",
+  "baslik": "Современная Вилла в КП Миллениум Парк || Modern Villa (Millenium Park)",
+  "yazar": "LaRDeN",
+  "kaynak": "https://www.planetminecraft.com/project/modern-villa-millenium-park/",
+  "dosya": "d5745d28df61"
+ },
+ {
+  "id": "ada_evi",
+  "ad": "Ada Üstünde Modern Ev",
+  "kat": "villa",
+  "baslik": "Modern House on an Island",
+  "yazar": "pigonge",
+  "kaynak": "https://www.planetminecraft.com/project/modern-house-on-an-island/",
+  "dosya": "ada1b108e98b"
+ },
+ {
+  "id": "benzinlik",
+  "ad": "Benzin İstasyonu",
+  "kat": "koy",
+  "baslik": "Gas Station",
+  "yazar": "Stark57",
+  "kaynak": "https://www.planetminecraft.com/project/gas-station-2907863/",
+  "dosya": "f2fc047c6cab"
+ },
+ {
+  "id": "buyuk_modern_ev",
+  "ad": "Büyük Modern Ev",
+  "kat": "villa",
+  "baslik": "Modern house 4 [update 5]",
+  "yazar": "TemporarilyStick",
+  "kaynak": "https://www.planetminecraft.com/project/modern-house-4-221142/",
+  "dosya": "38cb5883a1d1"
+ },
+ {
+  "id": "ilk_modern_ev",
+  "ad": "İlk Modern Ev",
+  "kat": "villa",
+  "baslik": "First Modern House",
+  "yazar": "Strange_Chemicals",
+  "kaynak": "https://www.planetminecraft.com/project/first-modern-house-953864/",
+  "dosya": "3aeb7ab1388c"
+ },
+ {
+  "id": "mini_modern_ev",
+  "ad": "Mini Modern Ev",
+  "kat": "villa",
+  "baslik": "ultra modern small house",
+  "yazar": "Stark57",
+  "kaynak": "https://www.planetminecraft.com/project/ultra-modern-small-house/",
+  "dosya": "ee69951411eb"
+ },
+ {
+  "id": "luks_villa",
+  "ad": "Lüks Villa",
+  "kat": "villa",
+  "baslik": "Luxurious Villa",
+  "yazar": "crazywhiteman18",
+  "kaynak": "https://www.planetminecraft.com/project/luxurious-villa/",
+  "dosya": "6e0e29e699f3"
+ },
+ {
+  "id": "belediye_konagi",
+  "ad": "Belediye Konağı",
+  "kat": "koy",
+  "baslik": "Town Hall/ Mansion",
+  "yazar": "ZZJoshZZ",
+  "kaynak": "https://www.planetminecraft.com/project/town-hall-mansion/",
+  "dosya": "814706456488"
+ },
+ {
+  "id": "tas_belediye",
+  "ad": "Taş Belediye Binası",
+  "kat": "koy",
+  "baslik": "stone Town Hall : Funy",
+  "yazar": "Funy",
+  "kaynak": "https://www.planetminecraft.com/project/stone-town-hall-funy/",
+  "dosya": "6b81e982c7c5"
+ },
+ {
+  "id": "buyuk_ahir",
+  "ad": "Büyük Ahır",
+  "kat": "koy",
+  "baslik": "Endonian Barn",
+  "yazar": "ToadieOdie",
+  "kaynak": "https://www.planetminecraft.com/project/endonian-barn/",
+  "dosya": "ae6de1d78394"
+ },
+ {
+  "id": "alisveris_merkezi",
+  "ad": "Alışveriş Merkezi",
+  "kat": "koy",
+  "baslik": "Mall / Shopping Center",
+  "yazar": "ESTATESINC",
+  "kaynak": "https://www.planetminecraft.com/project/mall-shopping-center/",
+  "dosya": "d4a3a703a936"
+ },
+ {
+  "id": "oto_tamirhane",
+  "ad": "Oto Tamirhanesi",
+  "kat": "koy",
+  "baslik": "Suburban Auto Repair Garage",
+  "yazar": "Regency98",
+  "kaynak": "https://www.planetminecraft.com/project/suburban-auto-repair-garage/",
+  "dosya": "a0bcde9f8e2c"
+ },
+ {
+  "id": "market",
+  "ad": "Market",
+  "kat": "koy",
+  "baslik": "Shop (Essentials Signs) [Inside Only Version]",
+  "yazar": "iiTheWither",
+  "kaynak": "https://www.planetminecraft.com/project/shop-essentials-signs-inside-only-version/",
+  "dosya": "77b69be3e394"
+ },
+ {
+  "id": "at_ahiri",
+  "ad": "Küçük At Ahırı",
+  "kat": "koy",
+  "baslik": "Small stables",
+  "yazar": "kostahansen",
+  "kaynak": "https://www.planetminecraft.com/project/small-stables/",
+  "dosya": "7ecae33b67dd"
+ },
+ {
+  "id": "viking_su_degirmeni",
+  "ad": "Viking Su Değirmeni",
+  "kat": "koy",
+  "baslik": "Viking Water Mill Tutorial & Schematic",
+  "yazar": "BigBadBam",
+  "kaynak": "https://www.planetminecraft.com/project/viking-water-mill-tutorial-amp-schematic/",
+  "dosya": "60a654b78cb2"
+ },
+ {
+  "id": "geyik_hani",
+  "ad": "Geyik Hanı",
+  "kat": "koy",
+  "baslik": "The Musket & Moose Tavern/Inn",
+  "yazar": "Rova",
+  "kaynak": "https://www.planetminecraft.com/project/the-musket-moose-taverninn/",
+  "dosya": "f037f062e4e9"
+ },
+ {
+  "id": "ingiliz_dukkani",
+  "ad": "İngiliz Dükkânı",
+  "kat": "koy",
+  "baslik": "Traditional British Shop",
+  "yazar": "_Makko_",
+  "kaynak": "https://www.planetminecraft.com/project/traditional-british-shop/",
+  "dosya": "98673562de7c"
+ },
+ {
+  "id": "depo_ambari",
+  "ad": "Depo Ambarı",
+  "kat": "koy",
+  "baslik": "Storage Barn",
+  "yazar": "Jih",
+  "kaynak": "https://www.planetminecraft.com/project/storage-barn/",
+  "dosya": "62d3ab4af2f0"
+ },
+ {
+  "id": "ortacag_ahir_evi",
+  "ad": "Ortaçağ Ahır Evi",
+  "kat": "koy",
+  "baslik": "Medieval Barn/House",
+  "yazar": "Strange_Chemicals",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-barnhouse/",
+  "dosya": "5904e2d3d74f"
+ },
+ {
+  "id": "kuzey_evi",
+  "ad": "Kuzey Evi",
+  "kat": "ev",
+  "baslik": "Nordic House - Skyrim Inspiration #WeAreConquest (Timelapse + Download)",
+  "yazar": "Boitameu",
+  "kaynak": "https://www.planetminecraft.com/project/nordic-house---skyrim-inspiration-weareconquest-timelapse-download/",
+  "dosya": "24247ed2d487"
+ },
+ {
+  "id": "pazar_yeri",
+  "ad": "Pazar Yeri",
+  "kat": "koy",
+  "baslik": "Medieval Pack: Market Place By Jack_Benner",
+  "yazar": "Jack_Benner",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-pack-market-place-100-by-demonsyborg/",
+  "dosya": "416953e16bae"
+ },
+ {
+  "id": "ortacag_dukkani",
+  "ad": "Ortaçağ Dükkânı",
+  "kat": "koy",
+  "baslik": "Medieval Shop [Schematic]",
+  "yazar": "DevilEskimoGT",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-shop-schematic/",
+  "dosya": "a4a928e71e0a"
+ },
+ {
+  "id": "buyuk_yel_degirmeni",
+  "ad": "Büyük Yel Değirmeni",
+  "kat": "koy",
+  "baslik": "Actual Spinning Windmill [1.8]",
+  "yazar": "Snaves",
+  "kaynak": "https://www.planetminecraft.com/project/actual-working-windmill-17/",
+  "dosya": "631cb6ea9079"
+ },
+ {
+  "id": "koy_adliyesi",
+  "ad": "Koy Adliyesi",
+  "kat": "koy",
+  "baslik": "Turtle Bay Courthouse",
+  "yazar": "DiggerMcGee",
+  "kaynak": "https://www.planetminecraft.com/project/turtle-bay-courthouse/",
+  "dosya": "0d6014d30b18"
+ },
+ {
+  "id": "ortacag_demircisi",
+  "ad": "Ortaçağ Demircisi",
+  "kat": "koy",
+  "baslik": "Medieval Blacksmith | + Schematic Download",
+  "yazar": "MCArchitectNL",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-blacksmith--schematic-download/",
+  "dosya": "5964e66ad36c"
+ },
+ {
+  "id": "pasta_dukkani",
+  "ad": "Pasta Dükkânı",
+  "kat": "koy",
+  "baslik": "CAKE SHOP!!!",
+  "yazar": "aaronics10",
+  "kaynak": "https://www.planetminecraft.com/project/cake-shop/",
+  "dosya": "f2f1937eda98"
+ },
+ {
+  "id": "tarlali_yel_degirmeni",
+  "ad": "Tarlalı Yel Değirmeni",
+  "kat": "koy",
+  "baslik": "Medieval Windmill /w wheat field & barn",
+  "yazar": "FollyFather",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-windmill-w-wheat-field-barn/",
+  "dosya": "64086557c464"
+ },
+ {
+  "id": "kucuk_demirci",
+  "ad": "Küçük Demirci",
+  "kat": "koy",
+  "baslik": "Small Medieval Blacksmith",
+  "yazar": "lothian1200",
+  "kaynak": "https://www.planetminecraft.com/project/small-medieval-blacksmith-3461800/",
+  "dosya": "b9e44c818bc0"
+ },
+ {
+  "id": "veteriner",
+  "ad": "Veteriner ve Evcil Hayvan Dükkânı",
+  "kat": "koy",
+  "baslik": "MINECRAFT - VET CLINIC / PET SHOP",
+  "yazar": "JustWolfix",
+  "kaynak": "https://www.planetminecraft.com/project/minecraft-vet-clinic-pet-shop/",
+  "dosya": "63e0c2d2aba6"
+ },
+ {
+  "id": "dag_demircisi",
+  "ad": "Dağ Demircisi",
+  "kat": "koy",
+  "baslik": "Hlafton - BlackSmith [SCHEMATIC]",
+  "yazar": "fWhip",
+  "kaynak": "https://www.planetminecraft.com/project/hlafton---blacksmith-schematic/",
+  "dosya": "f379b63720b8"
+ },
+ {
+  "id": "ucan_han",
+  "ad": "Uçan Han",
+  "kat": "fantastik",
+  "baslik": "Floating Inn",
+  "yazar": "Tilmann",
+  "kaynak": "https://www.planetminecraft.com/project/floating-inn/",
+  "dosya": "3d4479f339f0"
+ },
+ {
+  "id": "ortacag_belediye_sarayi",
+  "ad": "Ortaçağ Belediye Sarayı",
+  "kat": "kale",
+  "baslik": "Medieval Town Hall Schematic",
+  "yazar": "Xorph",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-town-hall-3566847/",
+  "dosya": "7aef20d16392"
+ },
+ {
+  "id": "mini_kale_kapisi",
+  "ad": "Çalışan Kale Kapısı",
+  "kat": "kale",
+  "baslik": "Working Castle Gate",
+  "yazar": "BunBunRoo",
+  "kaynak": "https://www.planetminecraft.com/project/working-castle-gate/",
+  "dosya": "6974eabf622b"
+ },
+ {
+  "id": "yedi_cam_kalesi",
+  "ad": "Yedi Çam Kalesi",
+  "kat": "kale",
+  "baslik": "SevenPine Castle",
+  "yazar": "Leefield",
+  "kaynak": "https://www.planetminecraft.com/project/sevenpine-castle/",
+  "dosya": "1c75e3dc3c22"
+ },
+ {
+  "id": "buyucu_kulesi",
+  "ad": "Büyücü Kulesi",
+  "kat": "kule",
+  "baslik": "Wizard tower",
+  "yazar": "Niix24",
+  "kaynak": "https://www.planetminecraft.com/project/wizard-tower-492167/",
+  "dosya": "4081e5979319"
+ },
+ {
+  "id": "sur_duvari",
+  "ad": "Sur Duvarı",
+  "kat": "kale",
+  "baslik": "Fortified Wall Design",
+  "yazar": "Zeranny",
+  "kaynak": "https://www.planetminecraft.com/project/fortified-wall-design/",
+  "dosya": "aef43b066ca9"
+ },
+ {
+  "id": "tas_kemer",
+  "ad": "Taş Kemer",
+  "kat": "susleme",
+  "baslik": "An Arch",
+  "yazar": "blc1973",
+  "kaynak": "https://www.planetminecraft.com/project/an-arch/",
+  "dosya": "f659e3e649a1"
+ },
+ {
+  "id": "tas_ejderha",
+  "ad": "Taş Ejderha",
+  "kat": "fantastik",
+  "baslik": "Huge. Stone. Castle: Dragon Included!",
+  "yazar": "Catastrophe51",
+  "kaynak": "https://www.planetminecraft.com/project/huge-stone-castle-dragon-included/",
+  "dosya": "66571b8e4b34"
+ },
+ {
+  "id": "nether_kalesi",
+  "ad": "Nether Kalesi",
+  "kat": "kale",
+  "baslik": "Nether castle",
+  "yazar": "IamSpoon",
+  "kaynak": "https://www.planetminecraft.com/project/nether-castle-2980774/",
+  "dosya": "755fc7f3a15e"
+ },
+ {
+  "id": "kale_kapisi",
+  "ad": "Kale Kapısı",
+  "kat": "kale",
+  "baslik": "David's Castle Gate",
+  "yazar": "DNEPWNs",
+  "kaynak": "https://www.planetminecraft.com/project/davids-castle-gate/",
+  "dosya": "4524d9e0b36e"
+ },
+ {
+  "id": "japon_kalesi",
+  "ad": "Japon Kalesi",
+  "kat": "kale",
+  "baslik": "Japanese Castle",
+  "yazar": "OakKodama",
+  "kaynak": "https://www.planetminecraft.com/project/japanese-castle-3246636/",
+  "dosya": "642a429082d1"
+ },
+ {
+  "id": "ortacag_kislasi",
+  "ad": "Ortaçağ Kışlası",
+  "kat": "kale",
+  "baslik": "Medieval Fort | Barracks | Castle",
+  "yazar": "KH4OS",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-fort-barracks-castle/",
+  "dosya": "f5b89ce84558"
+ },
+ {
+  "id": "leyer_kalesi",
+  "ad": "Leyer Kalesi",
+  "kat": "kale",
+  "baslik": "Castle Leyer",
+  "yazar": "RuvinRice",
+  "kaynak": "https://www.planetminecraft.com/project/castle-leyer/",
+  "dosya": "dc436ce13cab"
+ },
+ {
+  "id": "oklu_kale_girisi",
+  "ad": "Oklu Kale Girişi",
+  "kat": "kale",
+  "baslik": "Basic Castle/Town Entrance *WITH ARROW DISPENSERS*",
+  "yazar": "x1Gambler1x",
+  "kaynak": "https://www.planetminecraft.com/project/town-entrance-original/",
+  "dosya": "91ed71083249"
+ },
+ {
+  "id": "tas_kale",
+  "ad": "Taş Kale",
+  "kat": "kale",
+  "baslik": "Castle",
+  "yazar": "vinyl-ripp",
+  "kaynak": "https://www.planetminecraft.com/project/chateau-dash---xaudaa/",
+  "dosya": "b010a964e619"
+ },
+ {
+  "id": "ortacag_karakolu",
+  "ad": "Ortaçağ Karakolu",
+  "kat": "kale",
+  "baslik": "Medieval Guard Outpost",
+  "yazar": "Aego",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-guard-outpost/",
+  "dosya": "7543e120b733"
+ },
+ {
+  "id": "rustik_ortacag_evi",
+  "ad": "Rustik Ortaçağ Evi",
+  "kat": "ev",
+  "baslik": "Rustic Medieval House",
+  "yazar": "Anlex Maps",
+  "kaynak": "https://www.planetminecraft.com/project/rustic-medieval-house-2149034/",
+  "dosya": "24db8dc50e15"
+ },
+ {
+  "id": "yikik_kale",
+  "ad": "Yıkık Kale",
+  "kat": "kale",
+  "baslik": "Ruined Fort",
+  "yazar": "Zazjjaadi",
+  "kaynak": "https://www.planetminecraft.com/project/small-fort-3962350/",
+  "dosya": "3cb033513066"
+ },
+ {
+  "id": "kasaba_salonu",
+  "ad": "Kasaba Salonu",
+  "kat": "koy",
+  "baslik": "Medieval Tales: #2 Town Hall",
+  "yazar": "Templario1408",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-tales-2-townhall-3611039/",
+  "dosya": "2002a186363f"
+ },
+ {
+  "id": "saat_kulesi",
+  "ad": "Saat Kulesi",
+  "kat": "kule",
+  "baslik": "Medieval Clocktower",
+  "yazar": "Gladian",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-clocktower-4194704/",
+  "dosya": "d12f23c253ba"
+ },
+ {
+  "id": "ortacag_kulesi",
+  "ad": "Ortaçağ Kulesi",
+  "kat": "kule",
+  "baslik": "Medieval Tower {Schematic}",
+  "yazar": "Thraw",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-tower-schematic-2171548/",
+  "dosya": "49f9c074d320"
+ },
+ {
+  "id": "cizgili_deniz_feneri",
+  "ad": "Çizgili Deniz Feneri",
+  "kat": "kule",
+  "baslik": "Cape Hatteras Lighthouse replica",
+  "yazar": "blueyami87",
+  "kaynak": "https://www.planetminecraft.com/project/cape-hatteras-lighthouse-replica/",
+  "dosya": "3f881c3b1a18"
+ },
+ {
+  "id": "ortacag_kulesi_2",
+  "ad": "Ortaçağ Kulesi II",
+  "kat": "kule",
+  "baslik": "Medieval Tower",
+  "yazar": "absthatsme",
+  "kaynak": "https://www.planetminecraft.com/project/medevial-tower---world-download-desc/",
+  "dosya": "7ed071a5b75d"
+ },
+ {
+  "id": "ortacag_binasi",
+  "ad": "Ortaçağ Binası",
+  "kat": "koy",
+  "baslik": "Medieval Building [Download]",
+  "yazar": "MysteriousSword",
+  "kaynak": "https://www.planetminecraft.com/project/new-medieval-house-3---mysterioussword/",
+  "dosya": "9e9c52746319"
+ },
+ {
+  "id": "vali_konagi",
+  "ad": "Vali Konağı",
+  "kat": "kale",
+  "baslik": "Medieval Tales: #3 Governor's Manor",
+  "yazar": "Templario1408",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-tales-3-governors-manor-final-chapter/",
+  "dosya": "8d6679d6c524"
+ },
+ {
+  "id": "gozcu_kulesi",
+  "ad": "Gözcü Kulesi",
+  "kat": "kule",
+  "baslik": "[Medieval] Medieval Watch tower",
+  "yazar": "worgeto",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-medieval-watch-tower/",
+  "dosya": "7468fb1dac75"
+ },
+ {
+  "id": "basit_modern_ev",
+  "ad": "Basit Modern Ev",
+  "kat": "villa",
+  "baslik": "Basic Modern Home",
+  "yazar": "x1Gambler1x",
+  "kaynak": "https://www.planetminecraft.com/project/x1g-modern-home-v1/",
+  "dosya": "03786f9823c9"
+ },
+ {
+  "id": "isik_kulesi",
+  "ad": "Işık Kulesi",
+  "kat": "kule",
+  "baslik": "Beacon",
+  "yazar": "Evgesha765",
+  "kaynak": "https://www.planetminecraft.com/project/beacon-3543774/",
+  "dosya": "51a5f7134c91"
+ },
+ {
+  "id": "kuleler_kopruler",
+  "ad": "Kuleler ve Köprüler",
+  "kat": "kule",
+  "baslik": "Towers & bridges : part 02 by Dimqua",
+  "yazar": "Dimqua",
+  "kaynak": "https://www.planetminecraft.com/project/tower-bridges-part-02/",
+  "dosya": "1386928ab683"
+ },
+ {
+  "id": "askeri_kule",
+  "ad": "Askerî Kule",
+  "kat": "kule",
+  "baslik": "Arma 3 Military tower rework + 2nd defense building",
+  "yazar": "ShadeZ Gaming",
+  "kaynak": "https://www.planetminecraft.com/project/arma-3-military-tower-rework/",
+  "dosya": "b1dc9d63a7d9"
+ },
+ {
+  "id": "muhafiz_kulesi",
+  "ad": "Muhafız Kulesi",
+  "kat": "kule",
+  "baslik": "Medieval Guard Tower",
+  "yazar": "AsgerFra2G1A",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-guard-tower-3640876/",
+  "dosya": "68dca4528d00"
+ },
+ {
+  "id": "buyucunun_kulesi",
+  "ad": "Büyücünün Kulesi",
+  "kat": "kule",
+  "baslik": "Medieval Mage's Tower",
+  "yazar": "Paracelsus",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-mages-tower/",
+  "dosya": "2aa51d15bfd9"
+ },
+ {
+  "id": "jarl_uzun_evi",
+  "ad": "Jarl'ın Uzun Evi",
+  "kat": "ev",
+  "baslik": "Skyrim: Jarl's longhouse",
+  "yazar": "Niix24",
+  "kaynak": "https://www.planetminecraft.com/project/skyrim-jarls-longhouse/",
+  "dosya": "23ae4c989230"
+ },
+ {
+  "id": "misir_koyu",
+  "ad": "Mısır Köyü",
+  "kat": "tapinak",
+  "baslik": "My egypt town and village",
+  "yazar": "gmaster0o0",
+  "kaynak": "https://www.planetminecraft.com/project/my-egypt-town-and-village/",
+  "dosya": "88466c7f2ce9"
+ },
+ {
+  "id": "ortacag_kilisesi",
+  "ad": "Ortaçağ Kilisesi",
+  "kat": "tapinak",
+  "baslik": "Medieval Series ~The Church of saint Millen",
+  "yazar": "Darkcrafter31",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-532960/",
+  "dosya": "3767e9668c26"
+ },
+ {
+  "id": "manastir",
+  "ad": "Ortaçağ Manastırı",
+  "kat": "tapinak",
+  "baslik": "Medieval Monastery",
+  "yazar": "Goudse Kaas",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-monastery-3249273/",
+  "dosya": "a6daa250456a"
+ },
+ {
+  "id": "hayat_pagodasi",
+  "ad": "Hayat Pagodası",
+  "kat": "tapinak",
+  "baslik": "Pagoda of Life",
+  "yazar": "Rova",
+  "kaynak": "https://www.planetminecraft.com/project/pagoda-of-life/",
+  "dosya": "4c025dffcb5e"
+ },
+ {
+  "id": "bahceli_villa",
+  "ad": "Bahçeli Villa",
+  "kat": "villa",
+  "baslik": "Minecraft-Villa",
+  "yazar": "worm231",
+  "kaynak": "https://www.planetminecraft.com/project/minecraft-villa-506574/",
+  "dosya": "2a8d6f650eda"
+ },
+ {
+  "id": "pagoda",
+  "ad": "Pagoda",
+  "kat": "tapinak",
+  "baslik": "Pagoda Time Lapse Download",
+  "yazar": "KarlexX21",
+  "kaynak": "https://www.planetminecraft.com/project/pagoda-time-lapse-download/",
+  "dosya": "1ba05f6e376e"
+ },
+ {
+  "id": "asya_evi",
+  "ad": "Asya Evi",
+  "kat": "tapinak",
+  "baslik": "Asian Style House",
+  "yazar": "mrpsyoh",
+  "kaynak": "https://www.planetminecraft.com/project/asian-style-house/",
+  "dosya": "9706f835a056"
+ },
+ {
+  "id": "orman_tapinagi",
+  "ad": "Orman Tapınağı",
+  "kat": "tapinak",
+  "baslik": "Jungle Temple",
+  "yazar": "BlockyNights",
+  "kaynak": "https://www.planetminecraft.com/project/jungle-temple-3623375/",
+  "dosya": "44fe7d5815ad"
+ },
+ {
+  "id": "kucuk_orman_tapinagi",
+  "ad": "Küçük Orman Tapınağı",
+  "kat": "tapinak",
+  "baslik": "Jungle Temple Schematic",
+  "yazar": "Jason01_03",
+  "kaynak": "https://www.planetminecraft.com/project/jungle-temple-schematic/",
+  "dosya": "743eea489799"
+ },
+ {
+  "id": "kucuk_katedral",
+  "ad": "Küçük Katedral",
+  "kat": "tapinak",
+  "baslik": "My Small Cathedral",
+  "yazar": "esidebill1",
+  "kaynak": "https://www.planetminecraft.com/project/my-small-cathedral/",
+  "dosya": "a9a5eb474ddd"
+ },
+ {
+  "id": "cin_tapinagi",
+  "ad": "Çin Tapınağı",
+  "kat": "tapinak",
+  "baslik": "Chinese Temple",
+  "yazar": "MrRivux",
+  "kaynak": "https://www.planetminecraft.com/project/chinese-tempple/",
+  "dosya": "bac8c81cf067"
+ },
+ {
+  "id": "altin_tapinak",
+  "ad": "Altın Tapınak",
+  "kat": "tapinak",
+  "baslik": "Golden Shrine",
+  "yazar": "lilshizzy",
+  "kaynak": "https://www.planetminecraft.com/project/golden-shrine/",
+  "dosya": "166a86728ec0"
+ },
+ {
+  "id": "sapel",
+  "ad": "Şapel",
+  "kat": "tapinak",
+  "baslik": "Chapel Schematic",
+  "yazar": "Xorph",
+  "kaynak": "https://www.planetminecraft.com/project/chapel-schematic/",
+  "dosya": "acf2f557f2b4"
+ },
+ {
+  "id": "masal_evi",
+  "ad": "Masal Evi",
+  "kat": "fantastik",
+  "baslik": "House | Fantasy House - Free Download [Schematic]",
+  "yazar": "Architect-Mondoria",
+  "kaynak": "https://www.planetminecraft.com/project/house-fantasy-house---free-download-schematic/",
+  "dosya": "dbdf0eb11f50"
+ },
+ {
+  "id": "buharli_salyangoz",
+  "ad": "Buharlı Salyangoz",
+  "kat": "fantastik",
+  "baslik": "STEAMPUNK SNAIL!!!!!!!",
+  "yazar": "Creeper_World",
+  "kaynak": "https://www.planetminecraft.com/project/steampunk-snail/",
+  "dosya": "f9f226c57b6c"
+ },
+ {
+  "id": "buhar_cagi_evi",
+  "ad": "Buhar Çağı Evi",
+  "kat": "fantastik",
+  "baslik": "Steampunk styled house + schematic",
+  "yazar": "Cubi Craft",
+  "kaynak": "https://www.planetminecraft.com/project/how-to-build-a-steampunk-styled-house-minecraft-tutorial/",
+  "dosya": "79711eb114ef"
+ },
+ {
+  "id": "ocak_agac_evi",
+  "ad": "Ocak Ağaç Evi",
+  "kat": "fantastik",
+  "baslik": "Hearthgrove Treehouse",
+  "yazar": "Azellessa",
+  "kaynak": "https://www.planetminecraft.com/project/heartgrove---treehouse/",
+  "dosya": "8717e8847e73"
+ },
+ {
+  "id": "kucuk_agac_ev",
+  "ad": "Küçük Ağaç Ev",
+  "kat": "fantastik",
+  "baslik": "minecraft story mode tree house",
+  "yazar": "Vanima",
+  "kaynak": "https://www.planetminecraft.com/project/minecraft-story-mode-tree-house/",
+  "dosya": "75f6cc36f37a"
+ },
+ {
+  "id": "ortacag_koprusu",
+  "ad": "Ortaçağ Köprüsü",
+  "kat": "susleme",
+  "baslik": "Medieval Bridge V2",
+  "yazar": "Proloser",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-bridge-v2/",
+  "dosya": "749919d6f330"
+ },
+ {
+  "id": "agac_ev",
+  "ad": "Ağaç Ev",
+  "kat": "fantastik",
+  "baslik": "Just a treehouse",
+  "yazar": "making magic",
+  "kaynak": "https://www.planetminecraft.com/project/just-a-treehouse/",
+  "dosya": "6a2ff8d3d452"
+ },
+ {
+  "id": "dev_agac_ev",
+  "ad": "Dev Ağaç Ev",
+  "kat": "fantastik",
+  "baslik": "TREE HOUSE",
+  "yazar": "Tronic",
+  "kaynak": "https://www.planetminecraft.com/project/tree-house-32948/",
+  "dosya": "6d4333836235"
+ },
+ {
+  "id": "masal_cicegi",
+  "ad": "Masal Çiçeği",
+  "kat": "susleme",
+  "baslik": "Beatiful Fantasy Flower #1",
+  "yazar": "KISEL007PvE",
+  "kaynak": "https://www.planetminecraft.com/project/beatiful-fantasy-flower-1/",
+  "dosya": "dce3bec82996"
+ },
+ {
+  "id": "plaj_evi",
+  "ad": "Plaj Evi",
+  "kat": "villa",
+  "baslik": "Beach House",
+  "yazar": "skyangel94",
+  "kaynak": "https://www.planetminecraft.com/project/beach-house-275715/",
+  "dosya": "31518acbbb5e"
+ },
+ {
+  "id": "dev_mantar",
+  "ad": "Dev Oyuk Mantar",
+  "kat": "fantastik",
+  "baslik": "ENORMOUS HOLLOW MUSHROOM",
+  "yazar": "watsonio",
+  "kaynak": "https://www.planetminecraft.com/project/enormous-hollow-mushroom/",
+  "dosya": "a64e347fa36a"
+ },
+ {
+  "id": "masal_cardagi",
+  "ad": "Masal Çardağı",
+  "kat": "susleme",
+  "baslik": "Medieval/Rustic/Fantasy Gazebo + Schematic",
+  "yazar": "Cubi Craft",
+  "kaynak": "https://www.planetminecraft.com/project/cubi-craft-tutorials---easy-rustic-fantasy-gazebo/",
+  "dosya": "2ac0cd4aed92"
+ },
+ {
+  "id": "cadi_adasi",
+  "ad": "Cadı Kulübesi Adası",
+  "kat": "fantastik",
+  "baslik": "A Small Witch Hut [DOWNLOAD]",
+  "yazar": "Mine Maus Craft",
+  "kaynak": "https://www.planetminecraft.com/project/a-small-witch-hut/",
+  "dosya": "58b4c2f1bc56"
+ },
+ {
+  "id": "elf_evi",
+  "ad": "Elf Evi",
+  "kat": "fantastik",
+  "baslik": "Elven house - Medieval house",
+  "yazar": "Selchar",
+  "kaynak": "https://www.planetminecraft.com/project/elven-house-medieval-house/",
+  "dosya": "eb11d6813eb8"
+ },
+ {
+  "id": "orta_ortacag_evi",
+  "ad": "Orta Boy Ortaçağ Evi",
+  "kat": "ev",
+  "baslik": "Medieval House II - Medium (Download)",
+  "yazar": "Nighthearted",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-house-ii-3778082/",
+  "dosya": "b86120f58f93"
+ },
+ {
+  "id": "agac_ev_2",
+  "ad": "Ağaç Ev II",
+  "kat": "fantastik",
+  "baslik": "Treehouse I",
+  "yazar": "TheChriZ1995",
+  "kaynak": "https://www.planetminecraft.com/project/treehouse-i/",
+  "dosya": "1f5452076083"
+ },
+ {
+  "id": "akdeniz_evi",
+  "ad": "Akdeniz Evi",
+  "kat": "villa",
+  "baslik": "Mediterrian House [with epic seed]  v.1.8.1",
+  "yazar": "gamercorner",
+  "kaynak": "https://www.planetminecraft.com/project/mediterrian-house-with-epic-seed/",
+  "dosya": "4bf1d2d39bba"
+ },
+ {
+  "id": "talih_gemisi",
+  "ad": "Talih Gemisi",
+  "kat": "gemi",
+  "baslik": "Miss fortune",
+  "yazar": "Niix24",
+  "kaynak": "https://www.planetminecraft.com/project/miss-fortune/",
+  "dosya": "800ecf9e4dc4"
+ },
+ {
+  "id": "uzun_direkli_yelkenli",
+  "ad": "Uzun Direkli Yelkenli",
+  "kat": "gemi",
+  "baslik": "Atyla tall ship",
+  "yazar": "sirBlake_",
+  "kaynak": "https://www.planetminecraft.com/project/atyla-tall-ship/",
+  "dosya": "1c250b83d18b"
+ },
+ {
+  "id": "balikci_teknesi",
+  "ad": "Balıkçı Teknesi",
+  "kat": "gemi",
+  "baslik": "Small fishing boat ~Surprise~ schematic",
+  "yazar": "Desdruktiva",
+  "kaynak": "https://www.planetminecraft.com/project/small-fishing-boat-surprise-schematic/",
+  "dosya": "1b4974735bef"
+ },
+ {
+  "id": "venedik_gemisi",
+  "ad": "Venedik Gemisi",
+  "kat": "gemi",
+  "baslik": "Bateau Vénitien ■ Venetian Boat ■ Schematic",
+  "yazar": "Rv_B01SS3T",
+  "kaynak": "https://www.planetminecraft.com/project/bateau-vnitien-venetian-boat-schematic/",
+  "dosya": "769fae14ed4a"
+ },
+ {
+  "id": "kirmizi_yat",
+  "ad": "Kırmızı-Beyaz Yat",
+  "kat": "gemi",
+  "baslik": "Red and White Yacht",
+  "yazar": "EagleStrike36",
+  "kaynak": "https://www.planetminecraft.com/project/red-and-white-yacht/",
+  "dosya": "f4d4480d0fd2"
+ },
+ {
+  "id": "gemi_enkazi",
+  "ad": "Gemi Enkazı",
+  "kat": "gemi",
+  "baslik": "Ship Wreck",
+  "yazar": "Budfin",
+  "kaynak": "https://www.planetminecraft.com/project/ship-wreck-3297108/",
+  "dosya": "7b82ef617bc5"
+ },
+ {
+  "id": "nehir_kulubesi",
+  "ad": "Nehir Kıyısı Kulübe",
+  "kat": "ev",
+  "baslik": "Riverside Cabin",
+  "yazar": "Chiaroscuro",
+  "kaynak": "https://www.planetminecraft.com/project/riverside-cabin-4436930/",
+  "dosya": "725b324e97b4"
+ },
+ {
+  "id": "viking_gemisi",
+  "ad": "Viking Gemisi",
+  "kat": "gemi",
+  "baslik": "·Viking Ship·",
+  "yazar": "-DraugrTheArtifex",
+  "kaynak": "https://www.planetminecraft.com/project/viking-ship-3746170/",
+  "dosya": "c167e05fbe8a"
+ },
+ {
+  "id": "kucuk_yat",
+  "ad": "Küçük Yat",
+  "kat": "gemi",
+  "baslik": "Small Yacht",
+  "yazar": "Rattyguy",
+  "kaynak": "https://www.planetminecraft.com/project/small-yacht-3961706/",
+  "dosya": "2cc09501f2a5"
+ },
+ {
+  "id": "tuccar_gemisi",
+  "ad": "Ortaçağ Tüccar Gemisi",
+  "kat": "gemi",
+  "baslik": "Medieval Small Cog",
+  "yazar": "thebigbaron",
+  "kaynak": "https://www.planetminecraft.com/project/small-cog/",
+  "dosya": "de646f0849a1"
+ },
+ {
+  "id": "korsan_gemisi",
+  "ad": "Korsan Gemisi",
+  "kat": "gemi",
+  "baslik": "The Queen Anne’s Revenge!",
+  "yazar": "Adamm17",
+  "kaynak": "https://www.planetminecraft.com/project/the-queen-annes-revenge-2896510/",
+  "dosya": "5629e3cb191c"
+ },
+ {
+  "id": "nether_kapisi",
+  "ad": "Nether Kapısı",
+  "kat": "susleme",
+  "baslik": "Nether's Gate [Schematic]",
+  "yazar": "Sekeleton",
+  "kaynak": "https://www.planetminecraft.com/project/nethers-gate-schematic/",
+  "dosya": "b0735551de09"
+ },
+ {
+  "id": "ahsap_tas_kopru",
+  "ad": "Ahşap ve Taş Köprü",
+  "kat": "susleme",
+  "baslik": "Wood and Stone bridge - 'The Pulse'",
+  "yazar": "zytukin",
+  "kaynak": "https://www.planetminecraft.com/project/wood-and-stone-bridge---the-pulse/",
+  "dosya": "427186e75881"
+ },
+ {
+  "id": "okyanus_aniti",
+  "ad": "Okyanus Anıtı",
+  "kat": "susleme",
+  "baslik": "Ocean Monument",
+  "yazar": "Cypher777",
+  "kaynak": "https://www.planetminecraft.com/project/ocean-monument/",
+  "dosya": "9da7e34b9eed"
+ },
+ {
+  "id": "rio_heykeli",
+  "ad": "Rio Heykeli",
+  "kat": "susleme",
+  "baslik": "Christ the Redeemer (statue)",
+  "yazar": "Nickferd",
+  "kaynak": "https://www.planetminecraft.com/project/christ-the-redeemer-statue/",
+  "dosya": "9606d1483899"
+ },
+ {
+  "id": "okul_otobusu",
+  "ad": "Okul Otobüsü",
+  "kat": "susleme",
+  "baslik": "School Bus",
+  "yazar": "Captain_JEK",
+  "kaynak": "https://www.planetminecraft.com/project/school-bus-4243971/",
+  "dosya": "474d6c571ac4"
+ },
+ {
+  "id": "cuce_heykeli",
+  "ad": "Cüce Heykeli",
+  "kat": "susleme",
+  "baslik": "Large Dwarven Statue #WeAreConquest #ArdaCraft 1.12",
+  "yazar": "chevythecat",
+  "kaynak": "https://www.planetminecraft.com/project/large-dwarven-statue-weareconquest-ardacraft/",
+  "dosya": "fade5a17935c"
+ },
+ {
+  "id": "otel",
+  "ad": "Otel",
+  "kat": "koy",
+  "baslik": "Hotel",
+  "yazar": "Nickferd",
+  "kaynak": "https://www.planetminecraft.com/project/shopping-mall-with-hotel/",
+  "dosya": "0c1f941c6295"
+ },
+ {
+  "id": "dogu_bahcesi",
+  "ad": "Doğu Bahçesi",
+  "kat": "susleme",
+  "baslik": "Oriental Architect Plot [Ravand.org C Plot] #WeAreConquest",
+  "yazar": "NerdsWrath",
+  "kaynak": "https://www.planetminecraft.com/project/my-oriental-architect-plot-on-ravandorg-server/",
+  "dosya": "6889da05650a"
+ },
+ {
+  "id": "savasci_heykeli",
+  "ad": "Savaşçı Heykeli",
+  "kat": "susleme",
+  "baslik": "Medieval_Stone_Statue_Warrior_2",
+  "yazar": "Tavorik",
+  "kaynak": "https://www.planetminecraft.com/project/medieval_stone_statue_warrior_2/",
+  "dosya": "a61b1fbabf6f"
+ },
+ {
+  "id": "ustanin_eli",
+  "ad": "Ustanın Eli",
+  "kat": "susleme",
+  "baslik": "Master's Hand",
+  "yazar": "masterlipi",
+  "kaynak": "https://www.planetminecraft.com/project/masters-hand/",
+  "dosya": "b8c045ec5868"
+ },
+ {
+  "id": "dev_cesme",
+  "ad": "Dev Çeşme",
+  "kat": "susleme",
+  "baslik": "Fountain",
+  "yazar": "g45uk2",
+  "kaynak": "https://www.planetminecraft.com/project/fountain-3255327/",
+  "dosya": "5aa6578ffec7"
+ },
+ {
+  "id": "roma_kubbesi",
+  "ad": "Roma Kubbesi",
+  "kat": "susleme",
+  "baslik": "Greco-Roman Arched Dome",
+  "yazar": "xreverse42",
+  "kaynak": "https://www.planetminecraft.com/project/greco-roman-arched-dome/",
+  "dosya": "91ecc3dfd1d3"
+ },
+ {
+  "id": "kuvars_cesme",
+  "ad": "Kuvars Çeşme",
+  "kat": "susleme",
+  "baslik": "Quartz Fountain [Download]",
+  "yazar": "chose03",
+  "kaynak": "https://www.planetminecraft.com/project/fountain-download/",
+  "dosya": "c578261efba6"
+ },
+ {
+  "id": "eski_apartman",
+  "ad": "Eski Şehir Apartmanı",
+  "kat": "ev",
+  "baslik": "Small Old Urban Apartement",
+  "yazar": "john_sauve",
+  "kaynak": "https://www.planetminecraft.com/project/small-urban-appartement/",
+  "dosya": "cb36f5e17d98"
+ },
+ {
+  "id": "japon_koprusu",
+  "ad": "Japon Köprüsü",
+  "kat": "susleme",
+  "baslik": "Japanese Bridge",
+  "yazar": "OakKodama",
+  "kaynak": "https://www.planetminecraft.com/project/japanese-bridge-3277730/",
+  "dosya": "9febebae0b9c"
+ },
+ {
+  "id": "camgobegi_ev",
+  "ad": "Camgöbeği Ev",
+  "kat": "ev",
+  "baslik": "Cyan House",
+  "yazar": "Appleman96",
+  "kaynak": "https://www.planetminecraft.com/project/cyan-house/",
+  "dosya": "cd3ae077fcec"
+ },
+ {
+  "id": "tepe_viktorya_evi",
+  "ad": "Tepe Viktorya Evi",
+  "kat": "ev",
+  "baslik": "Dire Hill - Victorian house 2",
+  "yazar": "Zuki_DK",
+  "kaynak": "https://www.planetminecraft.com/project/dire-hill---victorian-house-2/",
+  "dosya": "2caebba5e034"
+ },
+ {
+  "id": "nehir_kapisi_koprusu",
+  "ad": "Nehir Kapısı Köprüsü",
+  "kat": "susleme",
+  "baslik": "River Gate Bridge",
+  "yazar": "Sir_Ringolo",
+  "kaynak": "https://www.planetminecraft.com/project/river-gate-bridge/",
+  "dosya": "6c5db102d5d6"
+ },
+ {
+  "id": "kopru",
+  "ad": "Köprü",
+  "kat": "susleme",
+  "baslik": "A Bridge",
+  "yazar": "KillJoy_Matty",
+  "kaynak": "https://www.planetminecraft.com/project/a-bridge-3132688/",
+  "dosya": "5e19be84b91e"
+ },
+ {
+  "id": "banliyo_evi_kose",
+  "ad": "Banliyö Evi «Köşe»",
+  "kat": "ev",
+  "baslik": "Suburban House [CHUNK HOUSE]",
+  "yazar": "OSW2004",
+  "kaynak": "https://www.planetminecraft.com/project/suburban-house-chunk-house/",
+  "dosya": "f0c48ea43179"
+ },
+ {
+  "id": "banliyo_evi_gul",
+  "ad": "Banliyö Evi «Gül»",
+  "kat": "ev",
+  "baslik": "Suburban house \"Roselle\"",
+  "yazar": "Grannitangle",
+  "kaynak": "https://www.planetminecraft.com/project/suburban-house-roselle/",
+  "dosya": "f4d0215e345c"
+ },
+ {
+  "id": "buyuk_gol_evi",
+  "ad": "Büyük Göl Evi",
+  "kat": "ev",
+  "baslik": "Big Lake House",
+  "yazar": "harlund",
+  "kaynak": "https://www.planetminecraft.com/project/big-lake-house/",
+  "dosya": "6780fea20cdf"
+ },
+ {
+  "id": "buharli_vinc",
+  "ad": "Buharlı Vinç",
+  "kat": "fantastik",
+  "baslik": "Steampunk Crane",
+  "yazar": "Ripee123",
+  "kaynak": "https://www.planetminecraft.com/project/steampunk-crane/",
+  "dosya": "1406a1f88a72"
+ },
+ {
+  "id": "buyuk_agac_ev",
+  "ad": "Büyük Ağaç Ev",
+  "kat": "fantastik",
+  "baslik": "big tree house",
+  "yazar": "J3SP3RAGR3N",
+  "kaynak": "https://www.planetminecraft.com/project/big-tree-house-604099/",
+  "dosya": "091bcf982371"
+ },
+ {
+  "id": "mantar_evi",
+  "ad": "Dev Mantar Evi",
+  "kat": "fantastik",
+  "baslik": "Huge mushroom home",
+  "yazar": "BlockyNights",
+  "kaynak": "https://www.planetminecraft.com/project/huge-mushroom-home/",
+  "dosya": "2ba3675bf2df"
+ },
+ {
+  "id": "elf_evi_2",
+  "ad": "Elf Evi II",
+  "kat": "fantastik",
+  "baslik": "Elven house by Tonicel [Free To Use]",
+  "yazar": "Tonicel",
+  "kaynak": "https://www.planetminecraft.com/project/elven-house-by-tonicel-free-to-use/",
+  "dosya": "3194e4ac74d5"
+ },
+ {
+  "id": "ortacag_dukkani_2",
+  "ad": "Ortaçağ Dükkânı II",
+  "kat": "koy",
+  "baslik": "Medieval Shop [with Download]",
+  "yazar": "sdfdssaasdas",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-shop-with-download/",
+  "dosya": "6f3ce68add6e"
+ },
+ {
+  "id": "masal_yel_degirmeni",
+  "ad": "Masal Yel Değirmeni",
+  "kat": "koy",
+  "baslik": "Fantasy Windmill",
+  "yazar": "thebigbaron",
+  "kaynak": "https://www.planetminecraft.com/project/fantasy-windmill-3983220/",
+  "dosya": "2be4c9995ed3"
+ },
+ {
+  "id": "ortacag_at_ahiri",
+  "ad": "Ortaçağ At Ahırı",
+  "kat": "koy",
+  "baslik": "Medieval Horse Stable",
+  "yazar": "Rizzial",
+  "kaynak": "https://www.planetminecraft.com/project/medieval-horse-stable-3647957/",
+  "dosya": "04570d976c56"
+ },
+ {
+  "id": "kuyular",
+  "ad": "Kuyu Tasarımları",
+  "kat": "susleme",
+  "baslik": "Well Designs + Schematic",
+  "yazar": "Cubi Craft",
+  "kaynak": "https://www.planetminecraft.com/project/how-to-build-a-well-3-design-minecraft-tutorial-schematic/",
+  "dosya": "3f2643cd4403"
+ },
+ {
+  "id": "kirmizi_isik_evi",
+  "ad": "Kırmızı Işık Modern Ev",
+  "kat": "villa",
+  "baslik": "-Redlight- Modern House",
+  "yazar": "Stark57",
+  "kaynak": "https://www.planetminecraft.com/project/-redlight--modern-house/",
+  "dosya": "420bd5ad1539"
+ },
+ {
+  "id": "polis_merkezi",
+  "ad": "Polis Merkezi",
+  "kat": "koy",
+  "baslik": "Police Station | Modern Police Station",
+  "yazar": "fifatord",
+  "kaynak": "https://www.planetminecraft.com/project/police-station-modern-police-station/",
+  "dosya": "2befd6dbc8fb"
+ },
+ {
+  "id": "buyuk_konak",
+  "ad": "Büyük Konak",
+  "kat": "villa",
+  "baslik": "LARGE HOUSE/ MANSION",
+  "yazar": "ESTATESINC",
+  "kaynak": "https://www.planetminecraft.com/project/large-house-mansion/",
+  "dosya": "6c65fb067c06"
+ },
+ {
+  "id": "alp_kilisesi",
+  "ad": "Alp Kilisesi",
+  "kat": "tapinak",
+  "baslik": "Alpine Church | [Schematic]",
+  "yazar": "Solace Project",
+  "kaynak": "https://www.planetminecraft.com/project/alps-church-alpine-buildings-of-tyrol-schematic/",
+  "dosya": "5e09dd9849f5"
+ },
+ {
+  "id": "aztek_tapinagi",
+  "ad": "Aztek Tapınağı",
+  "kat": "tapinak",
+  "baslik": "Tonatiuh - Aztec Temple",
+  "yazar": "Liccurgo",
+  "kaynak": "https://www.planetminecraft.com/project/tonatiuh---aztec-temple/",
+  "dosya": "81af719960da"
+ },
+ {
+  "id": "nether_tapinagi",
+  "ad": "Nether Tapınağı",
+  "kat": "tapinak",
+  "baslik": "Nethertemple by InfernoCreators",
+  "yazar": "InfernoRed",
+  "kaynak": "https://www.planetminecraft.com/project/infernotemple-by-infernored/",
+  "dosya": "f931d58cedb4"
+ },
+ {
+  "id": "kuzey_tapinagi",
+  "ad": "Kuzey Tapınağı",
+  "kat": "tapinak",
+  "baslik": "Skyrim Temple of Kynareth",
+  "yazar": "Niix24",
+  "kaynak": "https://www.planetminecraft.com/project/skyrim-temple-of-kynareth/",
+  "dosya": "d84d06be3396"
+ }
+]

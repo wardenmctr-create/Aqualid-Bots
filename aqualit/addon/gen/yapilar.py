@@ -764,7 +764,7 @@ KATEGORI = {'kucuk': 'Küçük yapılar', 'ev': 'Evler', 'koy': 'Köy yapıları
 # blok -> malzeme (eşya); None = bedava (su), 'skip' = sayılmaz
 ITEM_OF = {
     'farmland': 'dirt', 'grass_path': 'dirt', 'wheat': 'wheat_seeds', 'carrots': 'carrot', 'potatoes': 'potato',
-    'beetroot': 'beetroot_seeds', 'reeds': 'sugar_cane', 'water': None, 'air': None, 'bed': 'red_bed',
+    'beetroot': 'beetroot_seeds', 'reeds': 'sugar_cane', 'water': None, 'air': None, 'bed': 'bed',
     'redstone_wire': 'redstone', 'grass_block': 'dirt',
 }
 

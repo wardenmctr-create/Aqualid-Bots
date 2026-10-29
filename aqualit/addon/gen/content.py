@@ -57,6 +57,7 @@ ROBOTS = [
     ('robot_kilicli_4', 'Kılıçlı Robot · Seviye 4 (Sarı)', 'robot_kilicli_4', 'kilicli', 4, True),
     ('robot_kilicli_5', 'Kılıçlı Robot · Seviye 5 (Mavi)', 'robot_kilicli_5', 'kilicli', 5, True),
     ('robot_kesif', 'Keşif Robotu (araçlara dönüşür)', 'robot_kesif', 'kesif', 1, False),
+    ('robot_insaatci', 'Mimar Robot (yapı kurar, uçar)', 'robot_insaatci', 'insaatci', 1, False),
 ]
 
 DEVICES = [
@@ -70,9 +71,10 @@ DEVICES = [
 ]
 
 # Kapalı robot (heykel) eşyaları: tür + model -> blok durumu 'aqualit:tur'
-STATUE_VARIANTS = ['madenci', 'kurekci', 'ciftci', 'oduncu'] + [f'kilicli_{m}' for m in range(1, 6)]
+# yeni türler sona eklenir (eski dünyalardaki blok durumları bozulmasın); en çok 16 değer
+STATUE_VARIANTS = ['madenci', 'kurekci', 'ciftci', 'oduncu'] + [f'kilicli_{m}' for m in range(1, 6)] + ['insaatci']
 STATUE_NAMES = {'madenci': 'Kapalı Madenci Robot', 'kurekci': 'Kapalı Kürekçi Robot', 'ciftci': 'Kapalı Çiftçi Robot',
-                'oduncu': 'Kapalı Oduncu Robot', **{f'kilicli_{m}': f'Kapalı Kılıçlı Robot · Seviye {m}' for m in range(1, 6)}}
+                'oduncu': 'Kapalı Oduncu Robot', 'insaatci': 'Kapalı Mimar Robot', **{f'kilicli_{m}': f'Kapalı Kılıçlı Robot · Seviye {m}' for m in range(1, 6)}}
 STATUE_ITEMS = [(f'kapali_{v}', STATUE_NAMES[v], f'kapali_{v}', v) for v in STATUE_VARIANTS]
 REPAIR_KIT = ('tamir_kiti', 'Aqualit Tamir Kiti', 'tamir_kiti')
 
@@ -131,7 +133,8 @@ shaped('aqualit_sword', ['X', 'X', '#'], {'X': I(K), '#': I('minecraft:stick')},
 shaped('aqualit_chest', ['XXX', 'X#X', 'XXX'], {'X': I(K), '#': I('minecraft:chest')}, 'aqualit:aqualit_chest')
 for rid, tool in [('robot_madenci', 'aqualit:aqualit_pickaxe'), ('robot_kurekci', 'aqualit:aqualit_shovel'),
                   ('robot_ciftci', 'aqualit:aqualit_hoe'), ('robot_oduncu', 'aqualit:aqualit_axe'),
-                  ('robot_kilicli_1', 'aqualit:aqualit_sword'), ('robot_kesif', 'minecraft:compass')]:
+                  ('robot_kilicli_1', 'aqualit:aqualit_sword'), ('robot_kesif', 'minecraft:compass'),
+                  ('robot_insaatci', 'minecraft:brick_block')]:
     shaped(rid, [' B ', 'XSX', ' A '], {'B': I('aqualit:aqualit_block'), 'X': I(K), 'S': I('aqualit:aqualit_chest'),
                                        'A': I(tool)}, 'aqualit:' + rid, unlock=[{'item': 'aqualit:aqualit_chest'}])
 for cid, wood in [('chest_miner', 'minecraft:wooden_pickaxe'), ('chest_digger', 'minecraft:wooden_shovel'),
@@ -168,6 +171,7 @@ LANG_EXTRA = {
     'entity.aqualit:robot_chest.name': 'Robot Sandığı',
     'entity.aqualit:fx.name': 'Güç Efekti',
     'entity.aqualit:kesif.name': 'Keşif Robotu',
+    'entity.aqualit:dron.name': 'Mini Dron Mimar',
     'action.interact.aqualit.remote': 'Görev ver',
     'action.interact.aqualit.radio': 'Telsiz',
     'action.interact.aqualit.tracker': 'İzle',

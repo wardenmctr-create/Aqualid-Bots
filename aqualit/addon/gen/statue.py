@@ -130,6 +130,8 @@ def bone_visibility():
         'hat': anyof('ciftci'), 'antenna_sprout23': anyof('ciftci'),
         'scarf': anyof('oduncu'), 'antenna_leaf19': anyof('oduncu'),
         'cape': anyof(*k_all), 'right_shoulder': anyof(*k_sh), 'left_shoulder': anyof(*k_sh),
+        'hardhat': anyof('insaatci'), 'toolbelt': anyof('insaatci'), 'blueprint': anyof('insaatci'),
+        'antenna_ball24': anyof('insaatci'),
     }
 
 
