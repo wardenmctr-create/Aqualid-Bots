@@ -130,7 +130,7 @@ Hazır: model (v.t==5), İnşaatçı Sandığı, 25 yapı verisi (gen/yapilar.py
 - [ ] Malzeme sandıklardan; eksik listesi telsize. Malzemesiz yap (yaratıcı).
 - [ ] Köylü/mob gereken çiftlikler kartta yazar.
 - [ ] İnşa Çubuğu `aqualit:insa_cubugu` (tarif önerisi 2 külçe + çubuk + kızıltaş).
-- [ ] Hedef 40 yapı + 40 çiftlik (liste bölüm 8).
+- [ ] Hedef **100 yapı + 50 Minecraft farmı** (liste bölüm 8).
 - [ ] Sim "mimar": Minik Kulübe 4 yönde, eksik malzeme, malzemesiz mod, hologram, Küçük Kale'de en uzun tik < 50 ms.
 
 ### v0.3.1 — Organizatör ve Aqualit Telefon
@@ -260,7 +260,10 @@ Takım taktikleri: Kuşatma · Öncü ve destek · Yem ve pusu · Kalkan halkas�
 Takım kombolar: Çapraz kanca · Şimşek ağı · Çifte gölge · Fırtına çemberi.
 Dövüş tarzları: Dengeli, Saldırgan, Gizli [VAR]. Takım halinde dövüş ve akıllı güç seçimi ciddiyetten bağımsız, hep açık.
 
-## 8. Mimar yapı listesi (hedef 40 yapı + 40 çiftlik)
+## 8. Mimar yapı listesi (hedef 100 yapı + 50 Minecraft farmı)
+
+> Kullanıcı düzeltmesi (29 Ekim): kütüphane 40 + 40 değil, **100 yapı + 50 farm**. Farm = gerçek Minecraft farmı
+> (mob farmı, creeper/barut, şeker kamışı, bambu ...). Hazır: 21 yapı + 4 farm. Gereken: **79 yapı + 46 farm** daha.
 
 Hazır 25 (`gen/yapilar.py`, oyuna bağlı değil):
 - Küçük: Minik Kulübe 7x7x7, Kamp Ateşi Alanı 7x3x7, Köy Kuyusu 6x6x6, Fener Direği 3x5x1, Çiçek Bahçesi 9x2x9, Çeşme 9x5x9
@@ -270,12 +273,12 @@ Hazır 25 (`gen/yapilar.py`, oyuna bağlı değil):
 - Çiftlik: Buğday Tarlası 11x3x11, Hayvan Ağılı 13x6x13, Şeker Kamışı Çiftliği 11x5x4
 - Dev: End of Light Mega Çiftlik (Bedrock'a uyarlanmış)
 
-Eklenecek 19 yapı (21 hazır + 19 = 40): kullanıcının istedikleri — Küçük kulübe (**Minik Kulübe karşılıyor mu, sor**),
+Eklenecek yapılar — listede 19 tane var (21 + 19 = 40), **60 yapı daha seçilmeli**: kullanıcının istedikleri — Küçük kulübe (**Minik Kulübe karşılıyor mu, sor**),
 Başlangıç evi, Büyük ev, Lüks ev, Mini villa, Orta villa, Büyük villa — + **öneriler**: Ağaç ev, Robot atölyesi
 (Aqualit temalı), Depo binası (Organizatör için sandık odası), Sera, Liman/iskele, Köprü, Pazar yeri, Nether portalı
 çerçevesi, Tapınak, Kule ev, Karakol, Su değirmeni.
 
-Eklenecek 36 çiftlik (4 hazır + 36 = 40; hepsi Bedrock kurallarına göre, oyunda denenmeli): Demir (köylü + yatak + zombi
+Eklenecek farmlar — listede 36 tane var (4 + 36 = 40), **10 farm daha seçilmeli** (hepsi Bedrock kurallarına göre, oyunda denenmeli): Demir (köylü + yatak + zombi
 korkutma) · Otomatik ekin (köylü çiftçi + huni) · Kavun-balkabağı (gözlemci + piston) · Otomatik şeker kamışı · Bambu ·
 Kaktüs · Yosun · Bal ve petek · Yün (koyun + makaslı dağıtıcı) · Tavuk/yumurta · İnek · Köylü üretme · Ticaret salonu ·
 Karanlık oda yaratık · Örümcek spawner · Zombi/iskelet spawner deneyim · Yağmacı baskını · Gardiyan · Balçık ·

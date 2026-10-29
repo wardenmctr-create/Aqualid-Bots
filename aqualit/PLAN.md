@@ -100,7 +100,7 @@ Oyunda doğrulanacaklar:
 ## Yol haritası
 
 1. **v0.2.9 · Aqualit sandığı** — testler geçti, oyunda denenecek. *Kapı: oyunda denendi, sorunlar düzeltildi.*
-2. **v0.3.0 · Mimar (İnşaatçı)** — sıradaki iş: uçan inşaatçı, 40 yapı + 40 çiftlik, hologramla yer seçme, malzemesiz yapım, İnşa Çubuğu.
+2. **v0.3.0 · Mimar (İnşaatçı)** — sıradaki iş: uçan inşaatçı, 100 yapı + 50 Minecraft farmı, hologramla yer seçme, malzemesiz yapım, İnşa Çubuğu.
 3. **v0.3.x · Organizatör ve Telefon** — bütün sandıklara erişen robot, görev zinciri, yazıyla görev verme.
 4. **v0.4 · Tam Keşif** — DEVASA harita, binlerce blok ötedeki yapılar, köylü getirme, köy ve Trial Chambers bilgisi.
 5. **v0.5 · Kılıçlı büyük güncelleme** — kalan 45 güç, kombolar, takım taktikleri, robot kostümü, %101 modu, yükseltme modülleri.
@@ -117,7 +117,7 @@ Modeli hazır (baret, alet kemeri, sırtta plan rulosu); sandığı v0.2.9'da ge
 
 - [ ] Robot eşyası ve tarifi. Öneri: diğer robotlar gibi, altta İnşa Çubuğu.
 - [ ] Uçarak inşa eder; kimseyi taşıyamaz.
-- [ ] Yapı kütüphanesi: 40 yapı + 40 çiftlik. Hazır 25: Minik Kulübe, Kamp Ateşi Alanı, Köy Kuyusu, Fener Direği, Çiçek
+- [ ] Yapı kütüphanesi: **100 yapı + 50 Minecraft farmı** (mob, creeper/barut, şeker kamışı, bambu ... farmları). Hazır 25 (21 yapı + 4 farm): Minik Kulübe, Kamp Ateşi Alanı, Köy Kuyusu, Fener Direği, Çiçek
   Bahçesi, Çeşme, Ahşap Ev, İki Katlı Ev, Taş Ev, Çöl Evi, İglo, Cadı Kulübesi, Demirci, Kütüphane, Ambar, Yel Değirmeni,
   Gözetleme Kulesi, Deniz Feneri, Yağmacı Kulesi, Küçük Kale, End Şehri Kulesi, Buğday Tarlası, Hayvan Ağılı, Şeker Kamışı
   Çiftliği, End of Light Mega Çiftlik.
