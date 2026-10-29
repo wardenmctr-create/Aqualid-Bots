@@ -1,0 +1,980 @@
+# İLK PLAN (V1, 22 Ekim 2026) — belgeden düz metin olarak alındı. Sonraki kararlar PLAN.md içinde; çelişki varsa PLAN.md geçerli.
+
+Aqualit Robotları · Mod Planı
+ · 
+Aqualit Robotları, telefonda oynanan Minecraft Bedrock 26.50 için bir add-on: yeni Aqualit cevheri ve bu cevherden yapılan, görev verilebilen 5 tür sevimli robot. Kod henüz yazılmadı; plan onaylanıp "yap" denince yazılacak.
+Genel
+Add-on telefonda dokunmatik kontrollerle oynanacak şekilde tasarlanıyor; her şey Aqualit adlı yeni madenin etrafında dönüyor.
+Konu
+ | Karar
+ | 
+Ad
+ | Aqualit Robotları (çalışma adı)
+ | 
+Oyun
+ | Minecraft Bedrock, son kararlı sürüm 26.50 (26.51 düzeltmesi dahil)
+ | 
+Cihaz
+ | Telefon, dokunmatik kontroller
+ | 
+Teknik hedef
+ | min_engine_version 1.26.50, Script API @minecraft/server 2.10.0
+ | 
+Ana renk
+ | Aqualit rengi A: koyu, yeşilimsi Türk turkuazı (#0D5E51, #168770, #2BB08F)
+ | 
+Arayüz renkleri
+ | Mod tuşları turkuaz, iptal tuşu kırmızı
+ | 
+İçerik
+ | 1 cevher (taş ve derin kayrak hali), 3 malzeme, 5 alet, 5 sandık, 5 robot (Kılıçlı 5 modelli), 5 cihaz
+ | 
+Teslim
+ | Tek bir .mcaddon dosyası
+ | 
+Cevher ve malzemeler
+Aqualit yer altında taş ve derin kayrak içinde doğar; kazınca Ham Aqualit düşer, eritilince külçe olur.
+Eşya
+ | Nasıl elde edilir
+ | Not
+ | 
+Aqualit Cevheri
+ | Yer altında taş içinde doğar
+ | Maden katmanı, oyunun kendi taş dokusunun üstüne konur; az ve büyük kümeler
+ | 
+Derin Kayrak Aqualit Cevheri
+ | Derin kayrak katmanında doğar
+ | Aynı katman, oyunun derin kayrak dokusunun üstünde
+ | 
+Ham Aqualit
+ | Cevher kazılınca düşer
+ |  | 
+Aqualit Külçesi
+ | Ham Aqualit fırında veya yüksek fırında eritilir
+ | Bütün tariflerin ana malzemesi
+ | 
+Aqualit Bloğu
+ | 9 külçe
+ | Geri 9 külçeye bozulur; 6 yüzü aynı doku, koyu çizgi yok
+ | 
+Aqualit kazma, kürek, çapa, balta, kılıç
+ | Normal alet şekilleri: külçe ve çubuk
+ | Robotun işini belirleyen ana eşyalar da bunlar
+ | 
+Cevherin derinliği, sıklığı ve aletlerin gücü açık kararlarda.
+Tarifler
+Aqualit Sandık tarifi senin; robot ve cihaz tarifleri benim önerim, onaylarsan kesinleşir.
+K = Aqualit külçesi, S = Aqualit Sandık, B = Aqualit Bloğu, A = Aqualit alet, Ç = çubuk, R = kızıltaş, . = boş. Şablon üst, orta ve alt satır olarak yazıldı.
+Sonuç
+ | Şablon
+ | Durum
+ | 
+Aqualit Sandık
+ | K K K / K sandık K / K K K
+ | Kesin
+ | 
+Aqualit Bloğu
+ | K K K / K K K / K K K
+ | Kesin
+ | 
+Aqualit aletleri
+ | Normal alet şekilleri, K ve Ç ile
+ | Varsayılan
+ | 
+Robot (türü aletten)
+ | . B . / K S K / . A .
+ | Önerim: blok kafa, sandık gövde, külçeler kollar, alet iş
+ | 
+Robot Telsizi
+ | . K . / K R K / K K K
+ | Önerim
+ | 
+Takip Ekranı
+ | K K K / K cam K / K pusula K
+ | Önerim
+ | 
+Görev Kumandası
+ | K + kızıltaş + taş düğme (şekilsiz)
+ | Önerim; robot yere konunca envanterinde yoksa zaten verilir
+ | 
+Komut Çubuğu
+ | . R . / . K . / . K .
+ | Önerim
+ | 
+Koruma Bölge Seçici
+ | . K altın / . Ç K / Ç . .
+ | Önerim
+ | 
+Robot sandıkları
+Her iş robotunun kendine ait, amblemli bir sandığı var; robotlar sadece erişimi olan sandıkları kullanır.
+Türler: Madenci (kazma amblemi), Kürekçi (kürek), Çiftçi (çapa), Oduncu (balta). Amblem kapağın üstünde ve ön yüzde. Tamamı Aqualit kaplama, tahta yok.
+
+Neden varlık: Özel bloklar envanter tutamıyor, bu yüzden sandık oyunda sandık görünümlü bir varlık olur. Görünüşü ve kullanımı normal sandık gibi; kırılınca içindekilerle düşer.
+
+Dokun: sandık açılır.
+
+Eğil + boş elle dokun: Erişim menüsü açılır; bu sandığı hangi robot türlerinin kullanacağını seçersin. Varsayılan: sadece kendi türü.
+
+Kapasite: Sandığın sol üst köşesinde kapasite yuvası var. Oraya sandık koyarsın (en fazla 64), kilitli slotlar açılır. Henüz açılmamış slotlar gri kilit eşyasıyla dolu görünür ve taşınamaz.
+
+Ortak kullanım: Robotlar kendi sandığından ve erişimi olan bütün sandıklardan eşya alır; sen de sandığa eşya koyarak robota verebilirsin.
+
+Robot sandığının nasıl elde edileceği ve kılıçlının sandığı açık kararlarda.
+Ortak robot sistemi
+Robotun işini elindeki ana eşya belirler; görevi görev kumandasıyla verirsin, robot da bütün mesajlarını telsize gönderir.
+Ana eşya
+Robotun başlangıçtaki tek eşyası; işini belirler (kazma → Madenci, kürek → Kürekçi, çapa → Çiftçi, balta → Oduncu, kılıç → Kılıçlı).
+
+Kırılmaz, düşmez, robottan alınamaz.
+
+Görev kumandası
+Robot yere konunca envanterinde kumanda yoksa sana verilir.
+
+Kumandayla robota dokununca görev listesi açılır.
+
+Görev ayarları (her türde aynı sıra)
+Ne yapacak, ne toplayacak; birden fazla seçilebilir. Listede her eşyanın adı ve resmi yan yana durur.
+
+Her birinden ne kadar; miktar ayrı bir adımda girilir.
+
+Ararken güzel bir şey bulursa alsın mı.
+
+İş bitince ne yapsın: hemen sandığa getir, sana getir, ya da sandığın çevresinde fırın varsa erişebildiği sandıklardaki uygun yakıtla eritip öyle sandığa koy.
+
+Eşya yapma
+Bir işe eşya gerekirse (portal için kazma, çakmak gibi) malzemesi varsa çalışma masası veya fırın aramadan direkt yapar.
+
+Malzeme yoksa ve yakında da yoksa en kısa yoldan malzemeyi kendisi toplar.
+
+Yapabildikleri önceden yazılı bir liste: taş ve demir kazma ile balta, çakmak, kova, meşale, tahta, çubuk, külçe eritme, yakıt. Liste genişletilebilir.
+
+Yaptığı eşyalar normal kırılır; sadece ana eşya kırılmaz.
+
+Zincir uzunsa (uzağa gidecek ya da çok eşya toplayacaksa) başlamadan önce "şunları sırayla yapacağım" diye bilgi verip onay bekler. Kısa zincirde sormadan yapar.
+
+Mesaj ve onay
+Robotlar ekranını kesmez: her mesaj telsizin gelen kutusuna düşer, ekranda küçük bir bildirim çıkar.
+
+Onay soruları telsizde Onayla, Reddet ve Değiştir tuşlarıyla gelir.
+
+Normal bilgi turkuaz, yardım çağrısı kırmızı.
+
+Onay gelmezse robot 5 dakika bekler, sonra sandığına döner ve bekler.
+
+İş akışı
+Kısa işlerde robot sormadan çalışır; yapamadığı bir şey olursa telsize kırmızı yardım çağrısı atar.
+Robot türleri
+Beş tür var; dördü kaynak toplar, Kılıçlı savaşır ve korur.
+Tür
+ | Ana eşya
+ | İşi
+ | Özel ayar ve modlar
+ | 
+Madenci
+ | Kazma
+ | Seçilen madenleri istenen miktarda kazar
+ | Fırın varsa madeni eritip koyar. Skyblock taş makinesi modu: en yakın lav-su taş makinesinin başında durur, taş oluştukça kırıp toplar; makine yoksa telsizden haber verir
+ | 
+Kürekçi
+ | Kürek
+ | Kum, toprak, çakıl gibi blokları toplar
+ | Topladığını işleyebilir: örneğin kum topla, cam yap, sandığa koy
+ | 
+Çiftçi
+ | Çapa
+ | Eker ve hasat eder; bambu, şeker kamışı gibi bitkileri de toplar
+ | Yakında tarla yoksa en yakın uygun araziye (mümkünse su kenarına) hedef miktara göre tarla kurar. Su yetmezse en yakın su kaynağından kovasız su taşır; hiç su yoksa haber verir. Tohumu kendi envanterinden ya da erişimi olan sandıklardan alır, sen de verebilirsin
+ | 
+Oduncu
+ | Balta
+ | Seçilen ağaç türünden istenen miktarda odun keser
+ | Ayrıntılar açık kararlarda
+ | 
+Kılıçlı
+ | Kılıç
+ | En çevik, refleksli ve zeki robot: savaşır, korur, moblardan eşya toplar
+ | Üç mod, 5 model ve özel eşyalar: sonraki bölüm
+ | 
+Kılıçlı robot
+Kılıçlının üç modu, 5 modeli ve 50 gücü var; modu ve modeli görev kumandasının ayarlarından seçersin.
+1. Eşya toplama
+Moblardan düşebilen eşyaların listesinden eşya ve miktar seçersin.
+
+Gerekirse Nether'e ve End'e gider. Eşya çok nadirse ya da başka boyuttaysa önce telsizden "emin misin?" diye sorar.
+
+Toplanması istenmeyen eşyaları da toplayıp kullanabilir (en iyi kılıç, zırh, yiyecek).
+
+Toplayınca sana getirir ya da sandığa koyar.
+
+Sıfırdan tam speedrun (blaze çubuğu, ender gözü, kale bulma) çok karmaşık olduğu için yok; robot istenen eşyayı arar.
+
+Portallar (ışınlanma yok)
+Nether portalına kendisi yürür, içinde 3 saniye durunca geçer. End portalından normal geçer.
+
+Portal yoksa yapmaya çalışır: elindeki ya da sandıktaki obsidyeni kullanır (en az 10), yoksa lav gölüne su dökerek obsidyen yapıp kazar; çakmağı da kendisi yapar.
+
+Hiçbiri olmazsa telsize kırmızı yardım çağrısı atar ve eksikleri listeler.
+
+2. Takip ve koruma
+Sahibini ya da seçilen canlıyı veya oyuncuyu takip edip korur.
+
+Birden fazla canlıyı koruyabilir; öncelik her zaman sahibidir.
+
+3. Bölge koruma
+İki seçenek: sandığın çevresinde bir yarıçap, ya da bölge seçiciyle işaretlenen iki köşe arası.
+
+Bölge seçici: dokunma 1. köşe, basılı tutma 2. köşe (çalışmazsa eğil + dokun 2. köşe).
+
+Her durum için "saldır" ya da "sahibine haber ver" seçilir: saldırgan mob, sonradan gelen barışçıl mob, oyuncu.
+
+Belirli oyuncular dost olarak işaretlenir. Sonradan gelenleri ayırmak için bölge kurulurken içindeki moblar kaydedilir.
+
+Komut çubuğu
+Çubukla kılıçlı robotlara dokunarak birden fazlasını bağlarsın.
+
+Havaya kullan: bağlı robotların hepsi durur ya da devam eder.
+
+Önerdiğim ek: eğilip kullan, hepsi yanına gelir.
+
+Modeller ve yükseltme
+Konuştuğumuz tasarım Model 1. Robot yükseltme aldıkça yeni modeller açılır; açılan modeller arasında ayarlardan geçiş yapabilirsin. Her model öncekinin bütün özelliklerini korur; Model 5'te 50 gücün hepsi açık olur.
+Model
+ | Can
+ | Hız
+ | Kılıç hasarı
+ | Görünüş farkı
+ | Açılan güçler
+ | 
+1
+ | 30 (15 kalp)
+ | Normal
+ | 7
+ | Kırmızı pelerin; gözler normal turkuaz, anten ucu ve göğüsteki kalp kırmızı
+ | Kılıç saldırısı, kaçınma, üç mod, portal kullanımı, takım halinde dövüş
+ | 
+2
+ | 60
+ | %10 hızlı
+ | 8
+ | Yeşil pelerin; gözler, anten ucu, kalp ve omuzluklar yeşil
+ | Duvar koşusu, elektrik kancası
+ | 
+3
+ | 100
+ | %20 hızlı
+ | 10
+ | Mor pelerin; gözler, anten ucu, kalp ve omuzluklar mor
+ | Uzun uçuş, yıldırım kılıcı
+ | 
+4
+ | 160
+ | %35 hızlı
+ | 12
+ | Sarı pelerin; gözler, anten ucu, kalp ve omuzluklar sarı
+ | Gölge adım, elektrik kubbe
+ | 
+5
+ | 300 (150 kalp)
+ | %50 hızlı
+ | 15
+ | Mavi pelerin; gözler, anten ucu, kalp ve omuzluklar mavi
+ | Kalan 44 güç: ayna klonları, zaman durdurma, nanobotlar, plazma lazeri ve diğerleri
+ | 
+Yanaklar her seviyede kırmızı kalır. Beş seviyenin çağırma eşyaları yalnızca yaratıcı modda var; hayatta kalmada Seviye 1 tarifle yapılır, üst seviyeler yükseltmeyle gelir.
+Yükseltmenin nasıl alınacağı ve 2-5. modellerin çizimleri açık kararlarda.
+Güçler
+Kılıçlının 50 gücü var: 2., 3. ve 4. modelde ikişer güç açılır, kalan 44'ü Model 5'te. Basit güç yok; hepsi filmlerdeki gibi gösterişli ve güçlü, her birinin kendi animasyonu var. Gövdedeki kalp ışığı enerji göstergesi: güç kullandıkça söner, zamanla dolar.
+#
+ | Güç
+ | Ne yapar
+ | Model
+ | Animasyonu
+ | 
+1
+ | Duvar koşusu
+ | Duvarlarda koşar, duvardan duvara sıçrayıp düşmanın üstüne iner
+ | 2
+ | Gövde duvara eğik koşu, sıçrarken ters takla
+ | 
+2
+ | Elektrik kancası
+ | Kancalı elektrik ipiyle bloklara tutunup sallanır, düşmanı kendine çeker
+ | 2
+ | Kol ileri uzanır, ip gerilir, sallanırken bacaklar savrulur
+ | 
+3
+ | Uzun uçuş
+ | Sırt iticileriyle enerji bitene kadar uçar, havadan saldırır
+ | 3
+ | Diz büküp kalkış, sırttan turkuaz alev, öne eğik uçuş
+ | 
+4
+ | Yıldırım kılıcı
+ | Kılıca şimşek yükler; her vuruş yakındaki düşmanlara zincirleme atlar
+ | 3
+ | Kılıç göğe kalkar, şimşek iner, kılıç ve gözler parlar
+ | 
+5
+ | Gölge adım
+ | 12 bloğa kadar anında yer değiştirir, düşmanın arkasında belirir
+ | 4
+ | Turkuaz kıvılcıma dağılıp yeni yerde toplanma
+ | 
+6
+ | Elektrik kubbe
+ | Kendini, sahibini ve takımını 10 saniye kubbeyle korur, çarpanı çarpar
+ | 4
+ | Kollar yukarı, gövdeden kubbe açılır, yüzeyde dalga
+ | 
+7
+ | Ayna klonları
+ | Havada 6 klona bölünür, düşmanın etrafını sarar; klonlar da gerçek hasar vurur
+ | 5
+ | Havada parlayıp bölünme, klonlar halka olup dönerek yaklaşır
+ | 
+8
+ | Klon fırtınası
+ | Bütün klonlar aynı anda farklı yönlerden düşmana atılır
+ | 5
+ | Klonlar ışık izi bırakarak aynı anda dalar
+ | 
+9
+ | Zaman yavaşlatma
+ | 6 saniye çevresindeki her şey yavaşlar, robot normal hızda kalır
+ | 5
+ | Etraf griye döner, robotun etrafında saat halkası
+ | 
+10
+ | Zaman durdurma
+ | 3 saniye her şey donar; bu sürede vurulan hasar sonunda tek seferde patlar
+ | 5
+ | Elini kaldırır, dünya donar, sonunda toplu patlama
+ | 
+11
+ | Geri sarma
+ | Ağır hasar alınca 5 saniye önceki yerine ve canına geri döner
+ | 5
+ | Görüntü geri sarılır gibi tersine hareket, saat izi
+ | 
+12
+ | Gök gürültüsü
+ | Kılıcını kaldırıp gökten dev yıldırım indirir, geniş alan hasarı
+ | 5
+ | Kılıç yukarı, gökten dev şimşek, yere çöküş
+ | 
+13
+ | Yıldırım fırtınası
+ | 10 saniye çevresine sadece düşmanlara yıldırım yağdırır
+ | 5
+ | Havada yükselir, kollar açık, etrafına şimşekler düşer
+ | 
+14
+ | Plazma lazeri
+ | Kol topundan 60 bloğa kadar delici, süpürülebilen lazer ışını
+ | 5
+ | Geri eğilme, kol topu yüklenir, ışınla süpürme, sonunda buhar
+ | 
+15
+ | Enerji küresi
+ | Büyük enerji küresi atar; çarpınca patlar ve düşmanları sersemletir
+ | 5
+ | İki avuç arasında küre büyür, ileri itme
+ | 
+16
+ | Kara delik
+ | Mini kara delik açar; düşmanları içine çeker, sıkıştırır, sonra patlatır
+ | 5
+ | Eli ileri uzanır, avucunda dönen siyah küre
+ | 
+17
+ | Yerçekimi kontrolü
+ | Düşmanları havaya kaldırır, savurur ve yere çarpar
+ | 5
+ | Kollar kalkar, düşmanlar havalanır, kol inince çarpma
+ | 
+18
+ | Manyetik fırtına
+ | Ok, mermi ve ateş toplarını havada durdurup saldırana geri yollar
+ | 5
+ | Avuçlar açık, mermiler havada donar, tek hamleyle geri savurma
+ | 
+19
+ | Faz geçişi
+ | 5 saniye blokların ve duvarların içinden geçer, hasar almaz
+ | 5
+ | Gövde yarı saydam turkuaz olur, titreşerek geçme
+ | 
+20
+ | Görünmezlik
+ | 10 saniye görünmez olur; arkadan vurduğu ilk darbe 3 kat hasar
+ | 5
+ | Gövde yukarıdan aşağı kaybolur, vururken anında belirir
+ | 
+21
+ | Drone sürüsü
+ | Sırtından 6 mini drone çıkar; 20 saniye düşmanlara lazer atarlar
+ | 5
+ | Sırt panelleri açılır, droneler fırlar, etrafında döner
+ | 
+22
+ | Roket yumruk
+ | Kolunu roket gibi fırlatır, düşmanı uzağa savurur, kol geri döner
+ | 5
+ | Kol omuzdan ayrılıp alevle gider, dönüşte yerine oturur
+ | 
+23
+ | Kalkan fırlatma
+ | Enerji kalkanını fırlatır; kalkan düşmanlar arasında sekip geri döner
+ | 5
+ | Kalkan açılır, geriden fırlatma, havada yakalama
+ | 
+24
+ | Kılıç kasırgası
+ | Dönerek hortum oluşturur, düşmanları içine çekip savurur
+ | 5
+ | Hızla dönme, etrafında turkuaz hortum
+ | 
+25
+ | Bumerang kılıç
+ | Kılıcını fırlatır; kılıç düşmandan düşmana zıplayıp eline döner
+ | 5
+ | Fırlatma, dönen kılıç, havada yakalama
+ | 
+26
+ | Meteor dalışı
+ | Çok yüksekten enerjiyle düşmanın üstüne çakılır, büyük şok patlaması (blok kırmaz)
+ | 5
+ | Havada top gibi dönme, alevli düşüş, diz çökerek iniş, krater dalgası
+ | 
+27
+ | Deprem darbesi
+ | Yere vurup halka halka şok dalgası yayar, düşmanları havaya fırlatır
+ | 5
+ | Zıplayıp iki yumrukla yere vurma, yer dalgası
+ | 
+28
+ | Hayalet adımlar
+ | Göz açıp kapayana kadar 6 düşmanın arasından vurarak geçer
+ | 5
+ | Işık izi bırakan zikzak, sonunda hazır duruş
+ | 
+29
+ | Seken basış zinciri
+ | Düşmanların kafasına dönerek basıp 5 düşmana kadar seker, her basışta şok
+ | 5
+ | İki ayakla basma, yay gibi sekme, havada dönüş
+ | 
+30
+ | Yapışık saldırı
+ | Düşmana atılıp sırtına yapışır, onu havaya kaldırıp yere çakar
+ | 5
+ | Uçan sıçrayış, sarılma, birlikte yükselip çakma
+ | 
+31
+ | Elektrik ağı
+ | Düşmanları elektrik ağıyla yakalar, 5 saniye hareket edemezler
+ | 5
+ | Avuçtan ağ fırlatma, ağ açılıp sarar
+ | 
+32
+ | Enerji kanatları
+ | Turkuaz enerji kanatlarıyla süzülür, havadan enerji tüyleri yağdırır
+ | 5
+ | Sırttan kanat açılması, kanat çırpışı, tüy yağmuru
+ | 
+33
+ | Işık kılıcı formu
+ | Kılıç enerji kılıcına dönüşür; menzil ve hasar 2 kat, kalkan deler
+ | 5
+ | Kılıç parlayıp uzar, vuruşlarda ışık izi
+ | 
+34
+ | Yansıtıcı zırh
+ | 6 saniye gelen bütün hasarı saldırana geri yansıtır
+ | 5
+ | Gövde ayna gibi parlar, darbe gelince ışık patlaması
+ | 
+35
+ | Nano onarım
+ | Kendini ve sahibini hızla iyileştirir, takımın zırhını onarır
+ | 5
+ | Gövdeden nano parçacık bulutu, kalp ışığı hızla atar
+ | 
+36
+ | Kalkan uyduları
+ | Sahibinin etrafında dönen 3 enerji kalkanı, gelen saldırıları yok eder
+ | 5
+ | Göğüsten üç küre fırlar, sahibin etrafına dizilir
+ | 
+37
+ | Portal kapısı
+ | 30 bloğa kadar iki portal açar; kendisi, takımı ve sahibi geçer, düşmanlar başka yere düşer
+ | 5
+ | Kılıçla havada daire çizme, kıvılcımlı halka açılır
+ | 
+38
+ | Savaş analizi
+ | Düşmanın zayıf noktasını tarar, sonraki 10 vuruşu kritik
+ | 5
+ | Gözlerde tarama çizgisi, düşmanın üstünde hedef işareti
+ | 
+39
+ | Taktik görüş
+ | Duvar arkasındaki düşmanları görür, takıma ve sahibine işaretler
+ | 5
+ | Anten dalga yayar, gözlerde tarama ışığı
+ | 
+40
+ | Son form
+ | 20 saniye bütün güçlerin bekleme süresi sıfırlanır, şimşek aurası; sonra kısa yorgunluk
+ | 5
+ | Gözler kırmızı, anten şimşek çakar, aura yükselir, sonunda yorgun nefes
+ | 
+41
+ | Nanobot sürüsü
+ | Gövdesinden yüzlerce nanobot salar (her biri 2 küçük piksel bloktan); alan hasarıyla kolay ölürler, tek tek vurmak işe yaramaz
+ | 5
+ | Göğüs paneli açılır, nanobotlar duman gibi akıp sürü olur
+ | 
+42
+ | Nanobot görüşü
+ | Nanobotlar düşman oyuncunun ekranında gezer ve görüşünü kısıtlar; moblarda körlük ve yön şaşkınlığı
+ | 5
+ | Sürü hedefin kafasına akın eder, ekranında kaynaşır
+ | 
+43
+ | Nanobot ısırığı
+ | Nanobotlar düşmanın üstüne yapışıp sürekli hasar verir
+ | 5
+ | Nanobotlar hedefin üstünde kıvılcımlı bir kabuk olur
+ | 
+44
+ | Nanobot bulutu
+ | Nanobot bulutu düşmanı taşır, havaya kaldırır, fırlatır ya da yere çakar
+ | 5
+ | Bulut hedefin altında toplanır, kaldırır, savurur
+ | 
+45
+ | Nanobot zırhı
+ | Nanobotlar sahibinin ya da robotun üstünde zırh olur, gelen hasarın bir kısmını emer
+ | 5
+ | Nanobotlar vücudun üstüne yayılıp parlayan bir kat oluşturur
+ | 
+46
+ | Akıllı karşılık
+ | Saldırıyı değerlendirip en iyi cevabı seçer: havaya fırlatılırsa dönerek düşmanın üstüne çakılır, yere düşerse takla atıp karşı saldırır
+ | 5
+ | Duruma göre: havada dönüş ve dalış, yerde takla ve kalkış
+ | 
+47
+ | Savaş öğrenmesi
+ | Aynı düşman türüyle dövüştükçe saldırılarını öğrenir; daha az hasar alır, daha iyi zamanlamayla kaçar
+ | 5
+ | Gözlerde veri akışı, kafada kısa tarama ışığı
+ | 
+48
+ | EMP darbesi
+ | Elektromanyetik dalgayla yakındaki düşmanları sersemletir, havadaki mermileri düşürür
+ | 5
+ | Diz çöküp yumruğu yere vurma, mavi halka dalga
+ | 
+49
+ | Yıldız kılıçları
+ | Havada 8 enerji kılıcı oluşturur, kılıçlar düşmanlara yağmur gibi iner
+ | 5
+ | Kılıcı kaldırır, arkasında kılıçlar belirir, işaret edince yağar
+ | 
+50
+ | Dev form
+ | 15 saniye 3 kat büyür; adımları şok dalgası yapar, vuruşları geniş alana çarpar
+ | 5
+ | Gövde parçaları açılıp büyür, yere basınca toz ve dalga
+ | 
+Güç seçimi
+Robot durumu sürekli tartar ve modelinde açık olan, ciddiyet sınırını aşmayan güçlerden en verimlisini seçer.
+Baktığı şeyler: düşman sayısı ve türü, mesafe, yükseklik farkı, yakındaki duvar, su ve uçurum, kendi canı ve enerjisi.
+
+Uygun an gelince güçleri kombo halinde zincirler.
+
+Takım halinde dövüş, akıllı güç seçimi ve takım çalışması ciddiyet ayarından bağımsızdır, hep açıktır.
+
+Kombolar
+Robot uygun anda güçleri kendiliğinden zincirler; bir kombonun bütün parçaları açıksa kombo da açılır. Her kombo geçişinin kendi animasyonu var.
+Sallanan şimşek (Model 3): kancayla sallanıp düşmanın üstüne yıldırım kılıcıyla iner.
+
+Gölge şimşek (Model 4): gölge adımla arkaya geçer, yıldırım kılıcıyla vurur.
+
+Yıldırım düşüşü (Model 5): koş, duvar koşusu, uçuş, meteor dalışı; inişte şok patlaması.
+
+Klon kuşatması (Model 5): zaman yavaşlar, ayna klonları etrafı sarar, klon fırtınasıyla hepsi birden dalar.
+
+Kara delik tuzağı (Model 5): elektrik ağıyla yakalar, kara delikle sıkıştırır, gök gürültüsüyle bitirir.
+
+Hayalet avcı (Model 5): görünmez olur, gölge adımla yaklaşır, hayalet adımlarla düşmanların arasından geçer.
+
+Son kale (Model 5): elektrik kubbe ve kalkan uydularını açar, içeriden plazma lazeri atar.
+
+Dövüş tarzı (görev kumandasından seçilir)
+Dengeli: saldırı ve savunmayı karıştırır.
+
+Saldırgan: önce saldırır, güçleri sık kullanır.
+
+Gizli: ninja gibi dövüşür; gölge adım, görünmezlik ve hayalet adımları tercih eder.
+
+Takım halinde dövüş
+Aynı sahibin yakındaki kılıçlı robotları kendiliğinden takım olur; birlikte hareket eder, senkron saldırır ve taktik uygular.
+Takımı en yüksek modelli robot yönetir; istersen lideri komut çubuğuyla seçersin.
+
+Görev kumandasındaki takım ayarı: dizilim (sıra, üçgen, halka) ve taktik (otomatik ya da sabit).
+
+Taktikler:
+Kuşatma: düşmanın etrafını sarıp aynı anda vururlar.
+
+Öncü ve destek: yüksek model önde dövüşür, diğerleri yanlardan; Model 5'ler uzaktan plazma lazeri ve enerji küresiyle destekler.
+
+Yem ve pusu: biri ayna klonları ya da görünmezlikle düşmanı şaşırtır, diğerleri arkadan vurur.
+
+Kalkan halkası: biri elektrik kubbe açar, sahibi ortada kalır, diğerleri kubbenin kenarından saldırır.
+
+Sıralı vuruş: sırayla vurarak düşmanı sersem tutarlar.
+
+Hava ve yer: uçabilenler havadan meteor dalışıyla iner, diğerleri yerden bastırır.
+
+
+Takım komboları:
+Çapraz kanca: iki robot düşmanı iki yandan kancayla tutar, üçüncüsü meteor dalışıyla iner.
+
+Şimşek ağı: üç robot üçgen kurar, aralarına şimşek bağlanır; içindeki düşmanlar çarpılır.
+
+Çifte gölge: iki robot aynı anda gölge adımla düşmanın iki yanına geçip birlikte vurur.
+
+Fırtına çemberi: bütün takım halka olup aynı anda kılıç kasırgası yapar.
+
+
+Her taktik ve takım kombosunun kendi animasyonu var: senkron selam, dizilim değiştirme, birlikte saldırı.
+
+Creative mod
+Creative envanterinde Kılıçlı'nın 5 modeli ayrı ayrı yer alır; istediğin modeli doğrudan çağırabilirsin. Diğer dört robot türü de orada.
+
+Robota dönüşme
+Uzaktan kontrolün yanında ayrı bir seçenek: kılıçlı robotlarından birine doğrudan dönüşebilirsin.
+
+Kılıçlı Robot Kostümü'nü giymek için envanterin boş olmalı.
+
+Görünüşün, canın, hızın ve açık güçleri robotunki olur; kendi kontrol panelini kullanırsın.
+
+Giyince 50 gücün hepsi eşya olarak envanterine gelir. Dokununca güç kullanılır, basılı tutunca güçlendirilerek kullanılır.
+
+En sevdiğin 9 gücü hızlı erişime koyarsın. Bedrock'ta oyuncu envanteri 36 slot olduğu için kalan güçler 2 sayfada durur; son slottaki "Sayfa" simgesini başka bir slota taşıyınca öbür sayfa açılır.
+
+Dönüş bitince eski haline dönersin.
+
+Kılıçlı ayar dişlisi (Creative)
+Dişliyle bir kılıçlıya dokununca can, hasar, hız, enerji ve modelini artırıp azaltırsın.
+
+Eğilip basılı tutarsan bütün kılıçlılarının listesi açılır; oradan da ayar yaparsın.
+
+Durum ciddiyeti (1–100): her gücün bir ciddiyet değeri var. Robot yalnızca seçilen seviyeye kadar olan güçleri kullanır; başlangıç değeri 100.
+
+Durum ciddiyeti %101 düğmesi: zaman 10 saniye durur ve yakındaki oyuncular savaş alanını sinematik kamerayla izler. Robot 5 saniyede karşısındaki her şeyi yok eder; normal yolla ölmeyen başka eklenti yaratıklarını da oyundan siler. Ardından dünyaya verilen hasarı geri sarar ve mod süresince (10 saniye) hasar almaz. Oyunculara dokunmaz.
+
+Telsiz ve takip ekranı
+Telsiz robotları yönetir ve mesajları toplar; takip ekranı robotları haritada gösterir ve canlı izleme ile kontrolü sağlar. İkisinin de ayrı tarifi var.
+Robot Telsizi
+Bütün robotların listesi; robotlara isim verebilirsin.
+
+Gelen kutusu: robot mesajları, onay soruları, yardım çağrıları.
+
+Listeden bir robota dokununca seçenekler çıkar:
+Fazla uzaklaşma: acil durum olmadıkça sandığından belirlediğin mesafeden öteye gitmez.
+
+Hemen geri dön: ne yapıyorsa bırakıp döner.
+
+Acil işin yoksa geri dön: yakında güzel cevher ya da değerli bir şey varsa birkaç tane alır, yanına koyduğu çalışma masası, fırın gibi eşyaları toplayıp döner.
+
+
+Takip Ekranı
+Dijital harita: senden en uzaktaki robota kadar olan alanı kendiliğinden kapsar.
+
+Yakınlaştır, uzaklaştır ve kaydır tuşları; robotlar işaretli, canlı yenilenir.
+
+Ekranda yaklaşık 25×25 hücre görünür; uzaklaştıkça her hücre daha çok bloğu özetler.
+
+Canlı izleme
+Kamera robotun gözüne geçer; robot işine devam eder, kontrol robotta kalır.
+
+Gerçek vücudun olduğun yerde durur, hareketi kilitlenir ve kısa bir koruma efekti alır. Biri vurursa izleme biter.
+
+Canlı kontrol
+İzlerken "Kontrolü al" tuşuna basınca geçilir.
+
+Senin dokunmatik panelin gizlenir; yerine oyunun tuşlu kontrol panelinin (ortada artı, ekrana dokunma yok) turkuaz kopyası gelir.
+
+Joystick robotu yürütür, zıpla ve eğil tuşları robota geçer (ikisi de doğrulandı). Kır ve koy tuşları robotun önündeki bloğu işler.
+
+Kontrolden çıkınca robot kaldığı işe döner.
+
+İptal tuşu (kırmızı) bir adım geri alır: kontrol, izleme, sonra kendi ekranın.
+
+Görünüş ve animasyonlar
+Robotlar ekran yüzlü, sevimli küçük yardımcılar; bakır golemden esinlenmiş ama aynısı değil. Her hareketin kendi akıcı animasyonu var: 33 temel hareket, Kılıçlı'nın 50 gücü, komboları ve takım saldırıları.
+Ortak görünüş
+Büyük kafa, küçük tombul gövde, kısa kollar ve bacaklar.
+
+Yüz ekranında sadece iki büyük, yuvarlak, parlak göz; ağız ve burun yok.
+
+Kafada turkuaz ışıklı anten, gövdede kalp şeklinde ışık.
+
+Aqualit turkuazı, koyu çizgisiz yumuşak gölgeler.
+
+Tür
+ | Türe özel detay
+ | 
+Madenci
+ | Sarı kask ve kafa lambası
+ | 
+Kürekçi
+ | Kum rengi botlar, sırtta kum torbası
+ | 
+Çiftçi
+ | Kırmızı kurdeleli hasır şapka, antenin ucunda filiz
+ | 
+Oduncu
+ | Boynunda yeşil atkı (ucu arkada), antenin ucunda yaprak
+ | 
+Kılıçlı
+ | Kırmızı pelerin, yanaklarda kırmızı işaret, kararlı bakan gözler
+ | 
+Animasyonlar
+Geçişler yumuşak harmanlanır; robot o an ne yapıyorsa ilgili animasyon kendiliğinden oynar.
+#
+ | Animasyon
+ | Ne zaman oynar
+ | 
+1
+ | Açılış
+ | Robot ilk konunca gözleri yanar, anteni parlar
+ | 
+2
+ | Boşta bekleme
+ | Hafif nefes alma, anten ışığı yanıp söner
+ | 
+3
+ | Etrafa bakınma
+ | Beklerken kafa sağa sola döner
+ | 
+4
+ | Yürüme
+ | Normal hareket
+ | 
+5
+ | Koşma
+ | Acele işte, sahibini takipte, "hemen geri dön"de
+ | 
+6
+ | Zıplama
+ | Bir blok yukarı çıkarken
+ | 
+7
+ | Düşme ve iniş
+ | Yüksekten inerken, yere değince hafif çöküp doğrulma
+ | 
+8
+ | Tırmanma
+ | Merdiven, sarmaşık, iskele
+ | 
+9
+ | Yüzme
+ | Suda
+ | 
+10
+ | Eğilme
+ | Kenarlarda ve dar yerlerde
+ | 
+11
+ | Oturma
+ | Uzun beklemede
+ | 
+12
+ | Uyku ve şarj
+ | Gece ya da iş yokken; gözler kısılır
+ | 
+13
+ | Kazma
+ | Kazmayla blok kırarken
+ | 
+14
+ | Kürekle kazma
+ | Kum, toprak, çakıl alırken
+ | 
+15
+ | Çapalama
+ | Toprağı tarla yaparken
+ | 
+16
+ | Ağaç kesme
+ | Balta savururken
+ | 
+17
+ | Ekme
+ | Tohum ya da fidan dikerken
+ | 
+18
+ | Hasat
+ | Ürün toplarken
+ | 
+19
+ | Su taşıma
+ | Çiftçi tarlaya su götürürken
+ | 
+20
+ | Blok koyma
+ | Blok yerleştirirken
+ | 
+21
+ | Yerden eşya alma
+ | Düşen eşyayı toplarken
+ | 
+22
+ | Sandığa koyma ve alma
+ | Sandıkla alışverişte
+ | 
+23
+ | Fırına koyma
+ | Eritme yaparken
+ | 
+24
+ | Eşya yapma
+ | Elleri hızlıca çalışır
+ | 
+25
+ | Kılıç savurma
+ | Saldırı
+ | 
+26
+ | Kombo saldırı
+ | Kılıçlının art arda vuruşları
+ | 
+27
+ | Kaçınma
+ | Kılıçlının yana sıçraması
+ | 
+28
+ | Hasar alma
+ | Sarsılma
+ | 
+29
+ | Kapanma
+ | Canı bitince söner ve çöker
+ | 
+30
+ | Sevinme
+ | Görev bitince
+ | 
+31
+ | El sallama
+ | Sahibini görünce
+ | 
+32
+ | Şaşırma
+ | Bir şey bulamayınca, yardım çağırırken
+ | 
+33
+ | Portal bekleme
+ | Nether portalında 3 saniye titrer
+ | 
+Kılıçlı'nın güç, kombo ve takım saldırısı animasyonları Kılıçlı robot bölümündeki tablolarda.
+Tasarımlar
+Eşya dokuları, bloklar, sandıklar ve beş robotun Model 1 tasarımı hazır; robotların (Kılıçlı'nın 5 modeli dahil) ve sandıkların envanter simgeleri, Kılıçlının 2-5. modelleri ve arayüz tuşları sırada.
+
+
+
+
+
+Cevher önizlemelerindeki taş yaklaşık; oyunda oyunun kendi taşı görünecek.
+Teknik sınırlar ve test edilecekler
+Planın birkaç parçası oyunun izin verdiği sınırlara bağlı; bunları telefonunda test edip gerekirse yedek çözüme geçeceğim.
+Konu
+ | Durum
+ | Yedek çözüm
+ | 
+Sandık bir varlık
+ | Özel bloklar envanter tutamıyor
+ | Gerekmiyor, kesin çözüm bu
+ | 
+Cevherin dünyada doğması
+ | Özel cevher üretimi bazı sürümlerde deneysel ayar istiyor; 26.50'de doğrulanacak
+ | Script ile yeni yüklenen alanlara yerleştirme
+ | 
+Cevherin altındaki gerçek taş
+ | İki katmanlı blok modeli; oyunda test edilecek
+ | Benim çizdiğim taş
+ | 
+Kapasite üst sınırı
+ | Varlık envanterinin en fazla kaç slot alacağı test edilecek
+ | Sınırı ona göre ayarlarım
+ | 
+Joystick, zıpla, eğil
+ | Doğrulandı: script bu girdileri okuyabiliyor
+ | Gerekmiyor
+ | 
+Kır ve koy tuşları
+ | Kol sallama olayıyla; robot uzaktayken de çalışıyor mu test edilecek
+ | Panele turkuaz kır ve koy tuşları
+ | 
+Paneli değiştirmek, üst panele tuş
+ | Özel arayüz dosyalarıyla; bazı cihazlarda çalışmayabilir
+ | Telsiz menüsü
+ | 
+Takip ekranı haritası
+ | Gerçek harita gibi çizim yapılamıyor; yaklaşık 25×25 hücreli blok haritası
+ | Gerekmiyor
+ | 
+Portallardan geçiş
+ | Script ile, 3 saniye bekleyince
+ | Gerekmiyor
+ | 
+Görselli eşya listesi
+ | Bazı eşyaların resim yolu düzeltme isteyebilir
+ | Sadece isim
+ | 
+33 animasyon ve lazer
+ | Oyunun animasyon ve mermi sistemiyle yapılabiliyor; akıcılık telefonda test edilecek
+ | Daha sade geçişler
+ | 
+Kılıçlı güçleri ve takım senkronu
+ | Script ile hareket, efekt ve hasar olarak yapılabiliyor; duvar koşusu, yapışma, gölge adım ve takım senkronunun akıcılığı telefonda test edilecek
+ | Hareketi sadeleştiririm, örneğin daha kısa duvar koşusu
+ | 
+Nanobot görüşü ve robota dönüşme
+ | Ekrandaki nanobotlar özel arayüz katmanıyla; dönüşmede oyuncunun görünüşü robot modeliyle değişir. Telefonda test edilecek
+ | Görüş için daha sade bir sis efekti
+ | 
+Açık kararlar
+Kodlamaya buradaki önerilerimle başladım; değiştirmek istediğini söylemen yeterli.
+Robot türü sandığı nasıl elde edilir? Önerim: robotu yere koyunca tarifte kullanılan Aqualit Sandık, o türün amblemli sandığı olarak yanına kurulur.
+
+Kılıçlının kendi sandığı olacak mı? Bölge korumadaki "sandığın çevresinde yarıçap" seçeneği buna bağlı. Önerim: kılıçlıya da kalkan amblemli bir sandık.
+
+Kapasite: eklenen her sandık kaç slot açsın? Önerim: 27.
+
+Robot tarifi (. B . / K S K / . A .) ve diğer önerdiğim tarifler uygun mu?
+
+Kılıçlı yükseltmesi nasıl alınır? Önerim: her model için bir Yükseltme Modülü. Model 2: 2 Aqualit Bloğu + elmas; Model 3: 3 Aqualit Bloğu + 2 elmas + kızıltaş bloğu; Model 4: 4 Aqualit Bloğu + 4 blaze çubuğu + ender incisi; Model 5: 6 Aqualit Bloğu + Nether yıldızı + netherit külçesi.
+
+Kılıçlı güçleri: 2., 3. ve 4. modelde ikişer, kalan 44'ü Model 5'te. Görev kumandasına dövüş tarzı ayarı (Dengeli, Saldırgan, Gizli) da eklensin mi?
+
+Kılıçlının 2-5. modellerinin çizimleri: görünüş farkları tablodaki gibi olsun mu?
+
+Cevherin derinliği ve sıklığı. Önerim: y -48 ile 16 arası, elmastan biraz daha sık.
+
+Aletlerin gücü. Önerim: elmasa yakın dayanıklılık, demirden hızlı kazma.
+
+Robotun canı bitince ne olsun? Önerim: kapanır ve "kapalı robot" olarak yere düşer; külçeyle onarıp tekrar açarsın, ismi ve görevleri kalır.
+
+Oduncu kestiği yere fidan diksin mi? Önerim: evet.
+
+Komut çubuğuna "eğil + kullan, hepsi yanıma gelsin" eklensin mi?
+
+Add-on'un adı "Aqualit Robotları" kalsın mı?
+

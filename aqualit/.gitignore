@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+addon/out/
+addon/build_gen/
+addon/test/mock/scripts/
+tmp/
+onizleme/*.gif
+onizleme/*.mp4
