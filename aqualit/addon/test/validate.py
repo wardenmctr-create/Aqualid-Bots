@@ -258,5 +258,26 @@ for _f in glob.glob(os.path.join(RP, 'animations', '*.json')):
         if _a.get('loop') not in (None, True, False, 'hold_on_last_frame'):
             print('HATA', _n, 'geçersiz loop', _a.get('loop')); errors += 1
 print('istemci varlığı biçimi denetlendi')
+# --- Mimar yapı dosyaları: her blok ve durum oyunun 26.x listesinde olmalı
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'gen'))
+import yapi_paket as _YP  # noqa: E402
+_mb = json.load(open(os.path.join(REF, 'vanilladata_modules', 'mojang-blocks.json')))
+_props = {p['name']: [v['value'] for v in p.get('values', [])] for p in _mb['block_properties']}
+_blk = {b['name']: {p['name'] for p in b.get('properties', [])} for b in _mb['data_items']}
+_sfiles = sorted(glob.glob(os.path.join(BP, 'structures', 'aqualit', '*.mcstructure')))
+_bad = 0
+for _f in _sfiles:
+    _W, _H, _D, _cells = _YP.oku(_f)
+    for _name, _st in {(n, json.dumps(s, sort_keys=True)): None for n, s in _cells.values()}:
+        _st = json.loads(_st)
+        _full = 'minecraft:' + _name
+        if _full not in _blk:
+            print('HATA', os.path.basename(_f), 'bilinmeyen blok', _name); errors += 1; _bad += 1; continue
+        for _k, _v in _st.items():
+            if _k not in _blk[_full]:
+                print('HATA', os.path.basename(_f), _name, 'durum yok:', _k); errors += 1; _bad += 1
+            elif _props.get(_k) and _v not in _props[_k]:
+                print('HATA', os.path.basename(_f), f'{_name}.{_k}={_v} geçersiz'); errors += 1; _bad += 1
+print(f'yapı dosyaları denetlendi: {len(_sfiles)} yapı, {_bad} sorun')
 print('TOPLAM HATA:', errors)
 sys.exit(1 if errors else 0)

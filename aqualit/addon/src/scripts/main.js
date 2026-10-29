@@ -1,5 +1,5 @@
 // Aqualit Robotları — giriş
-// Sürüm 0.2.9 (yeni Aqualit sandığı: gerçek sandık, çift sandık, sayfalar)
+// Sürüm 0.3.0 (Mimar: uçan inşaatçı, 217 yapılık kütüphane, mini dron mimarlar)
 import { world, system } from "@minecraft/server";
 import "./brain.js";
 import "./items.js";
@@ -16,7 +16,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
   if (!ev.initialSpawn) return;
   const p = ev.player;
   system.runTimeout(() => {
-    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.2.9 yüklendi. Robot yapmak için önce Aqualit cevheri bul!"));
+    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.3.0 yüklendi. Yeni: Mimar robot ve 217 yapılık kütüphane!"));
     if (!cleaned) {
       cleaned = true;
       fxCleanup(); // önceki oturumdan kalmış güç efekti varlıkları

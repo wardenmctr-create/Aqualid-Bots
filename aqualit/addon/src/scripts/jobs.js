@@ -7,6 +7,7 @@ import { Kaynak } from "./kaynak.js";
 import { canReach } from "./path.js";
 import { WALK, RUN } from "./bot.js";
 import { readAnswer } from "./messages.js";
+import { mimarJob } from "./mimar.js";
 
 const M = (s) => "minecraft:" + s;
 
@@ -1355,6 +1356,7 @@ export function jobFor(bot) {
     case "kurekci": return diggerJob(bot);
     case "ciftci": return farmerJob(bot);
     case "oduncu": return lumberJob(bot);
+    case "insaatci": return mimarJob(bot);
     default: return idleJob(bot);
   }
 }

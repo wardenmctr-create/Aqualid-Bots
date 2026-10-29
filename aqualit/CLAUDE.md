@@ -1,7 +1,7 @@
 # Aqualit Robotları — Claude Code çalışma rehberi
 
-Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.2.9**
-(yeni Aqualit sandığı). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
+Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.3.0**
+(Mimar: uçan inşaatçı, 217 yapı, mini dronlar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
 Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 
 ## Kullanıcı (kalıcı istekler — her oturumda uy)
@@ -27,10 +27,10 @@ python3 test/validate.py             # "TOPLAM HATA: 0" olmalı
 python3 test/apicheck.py             # "0 sorun" olmalı (gerçek @minecraft/server 2.10.0 tanımlarına göre)
 cd test/mock && rm -rf scripts && cp -r ../../src/scripts scripts && node sim.mjs          # bütün senaryolar
 node sim.mjs sandik                  # tek senaryo (madenci, kurekci, oduncu, ciftci, skyblock, kilicli, ui, heykel,
-                                     # eritme, zirh, guc, cokme, takim, uzak, canta, bos, konum, efekt, kesif, sandik)
+                                     # eritme, zirh, guc, cokme, takim, uzak, canta, bos, konum, efekt, kesif, sandik, mimar)
 ```
 
-Gerekenler: Python 3.10+ (Pillow, numpy, scipy), Node.js 18+, ffmpeg (önizleme ve ses). Bütün senaryolar ~10 dk sürer.
+Gerekenler: Python 3.10+ (Pillow, numpy, scipy, nbtlib), Node.js 18+, ffmpeg (önizleme ve ses). Bütün senaryolar ~10 dk sürer.
 **Sürüm vermeden önce dördü de temiz olmalı.** Başvuru verileri `ref/` klasöründe (Mojang bedrock-samples:
 script API tanımları, JSON şemaları, oyunun blok/eşya listeleri, oyunun varlık dosyaları); `AQUALIT_REF`
 ortam değişkeniyle başka yer gösterilebilir.
@@ -45,7 +45,11 @@ ortam değişkeniyle başka yer gösterilebilir.
 | `addon/gen/zirh.py`, `aqualit_set.py` | Kabuk/taş/Aqualit zırhları, kabuk büyü kitapları |
 | `addon/gen/sandik_gen.py` | v0.2.9 sandığı: tuzaklı sandık dokusu, amblem plakası, depo varlıkları, sayfa okları |
 | `addon/gen/efekt.py`, `kesif_oyun.py`, `statue.py`, `sesler_def.py`, `ikon_haritasi.py`, `kafa_ikon.py` | Efektler, Keşif araçları, kapalı robot, sesler, menü simgeleri, konum çubuğu kafaları |
-| `addon/gen/yapilar.py`, `insa.py` | Mimar'ın 25 yapısı ve İnşa Çubuğu (**yazıldı, pakete/oyuna bağlı değil**) |
+| `addon/gen/yapilar.py` | Elle yapılmış 25 yapı (palet çizimi) |
+| `addon/gen/yapi_kutuphane.py`, `yapi_paket.py` | Kütüphaneyi pakete yazar: `structures/aqualit/*.mcstructure`, menü resimleri, `yapi_data.js` |
+| `addon/gen/yapi_cevir.py`, `yapi_listesi.json`, `addon/yapilar/` | Java şeması → Bedrock çevirici, dış yapıların listesi ve çevrilmiş dosyaları (`yapi_ice_aktar.py` üretir) |
+| `addon/gen/dron.py` | Mini dron mimar varlığı, modeli, animasyonları |
+| `addon/gen/insa.py` | İnşa Çubuğu simgesi (**bağlı değil**) |
 | `addon/src/scripts/` | Oyun içi JavaScript (aşağıda) |
 | `addon/test/mock/` | Sahte `@minecraft/server` ve `@minecraft/server-ui` (`node_modules/`), `sim.mjs` senaryoları |
 | `addon/test/validate.py`, `apicheck.py` | Paket ve API denetimi |
@@ -60,6 +64,8 @@ ortam değişkeniyle başka yer gösterilebilir.
   uzak arama, boş zaman işleri. `kaynak.js` görülen kaynak yerleri.
 - `kilicli.js` seviye/istatistik/modlar, `powers.js` 5 güç, `fx.js` efektler, `takim.js` takım davranışı.
 - `sandik.js` **Aqualit sandığı (v0.2.9)**, `ui/chest.js` sandık paneli.
+- `mimar.js` **Mimar (v0.3.0)**: kütüphane menüsü, çerçeveyle yer seçme, uçuş, dronlar, kat kat inşa, malzeme kemeri
+  (`aq:mdepo`), blok yönü döndürme. `yapi_data.js` build.py üretir (yalnız bilgiler; bloklar yapı dosyalarında).
 - `zirh.js` kabuk/taş/Aqualit zırh mekaniği ve kabuk kitabı ganimeti. `statue.js` kapalı robot ve tamir kiti.
 - `kesif.js` Mini Keşif, `konum.js` konum çubuğu, `place.js` robot ve sandık koyma, `items.js` eşya bileşenleri,
   `messages.js` telsiz mesajları, `insa.js` İnşa Çubuğu (bağlı değil).
@@ -109,6 +115,17 @@ ortam değişkeniyle başka yer gösterilebilir.
 - Robot kodu sandığı `Sandik` tutamacıyla kullanır (eski varlık sandığı gibi davranır; `getComponent("minecraft:inventory")`
   bütün sayfaları tek depo gibi gösterir: `UnitContainer`).
 - Oyunda doğrulanacaklar PLAN.md'de ("v0.2.9 Aqualit sandığı").
+
+## v0.3.0 Mimar — bilinmesi gerekenler
+
+- Yapılar `world.structureManager.get("aqualit:<kimlik>")` ile okunur; `getBlockPermutation` boşlukta `undefined` verir.
+  Yapının önü (kapı) +Z kabul edilir; döndürme `rotXZ` + `rotateStates` (saat yönü, yukarıdan).
+- Mimar sahibin genel ve İnşaatçı sandıklarından malzemeyi kemerine alır (sınırsız, varlık özelliği `aq:mdepo`); artanı
+  eve dönünce sandığa koyar. Görev: `{type:'insaatci', yapi, at, rot, dim, free}`; ilerleme `prog.i/done` (devam edilebilir).
+- Dronlar `aqualit:dron`; çalışan dron kimlikleri bellekte (`live`). Dünya yeniden yüklenince sahipsiz dron silinir.
+- Yeni dış yapı eklemek: `gen/yapi_listesi.json`'a satır → `python3 yapi_ice_aktar.py <şema_klasörü>` → build.
+  Şema arşivi: rom1504/minecraft-schematics-dataset (GitLab'de tfrecord parçaları).
+- `sim.mjs` yapı dosyalarını `out/Aqualit_BP/structures` içinden okur: **önce build.py çalışmalı.**
 
 ## Sürüm verme
 

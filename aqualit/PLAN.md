@@ -100,7 +100,7 @@ Oyunda doğrulanacaklar:
 ## Yol haritası
 
 1. **v0.2.9 · Aqualit sandığı** — testler geçti, oyunda denenecek. *Kapı: oyunda denendi, sorunlar düzeltildi.*
-2. **v0.3.0 · Mimar (İnşaatçı)** — sıradaki iş: uçan inşaatçı, 100 yapı + 50 Minecraft farmı, hologramla yer seçme, malzemesiz yapım, İnşa Çubuğu.
+2. **v0.3.0 · Mimar** — yapıldı, oyunda denenecek (docs/RAPOR_v0.3.0.md): uçan Mimar, 217 yapı, mini dronlar, çerçeveyle yer seçme, malzemesiz yapım. Kalan: hologram, 46 farm, İnşa Çubuğu.
 3. **v0.3.x · Organizatör ve Telefon** — bütün sandıklara erişen robot, görev zinciri, yazıyla görev verme.
 4. **v0.4 · Tam Keşif** — DEVASA harita, binlerce blok ötedeki yapılar, köylü getirme, köy ve Trial Chambers bilgisi.
 5. **v0.5 · Kılıçlı büyük güncelleme** — kalan 45 güç, kombolar, takım taktikleri, robot kostümü, %101 modu, yükseltme modülleri.
@@ -113,23 +113,25 @@ Her sürümde: iş robotu iyileştirmeleri, 4 denetim temiz, oyunda deneme liste
 
 ### Mimar (İnşaatçı) — v0.3.0
 
-Modeli hazır (baret, alet kemeri, sırtta plan rulosu); sandığı v0.2.9'da geldi; 25 yapı `gen/yapilar.py` içinde, oyuna bağlı değil.
+v0.3.0'da oyuna bağlandı (`src/scripts/mimar.js`, `gen/yapi_kutuphane.py`, `gen/dron.py`). Oyunda denenmedi.
 
-- [ ] Robot eşyası ve tarifi. Öneri: diğer robotlar gibi, altta İnşa Çubuğu.
-- [ ] Uçarak inşa eder; kimseyi taşıyamaz.
-- [ ] Yapı kütüphanesi: **100 yapı + 50 Minecraft farmı** (mob, creeper/barut, şeker kamışı, bambu ... farmları). Hazır 25 (21 yapı + 4 farm): Minik Kulübe, Kamp Ateşi Alanı, Köy Kuyusu, Fener Direği, Çiçek
+- [x] Robot eşyası ve tarifi (şimdilik altta tuğla bloğu; İnşa Çubuğu bağlanınca değişebilir — kullanıcıya sor).
+- [x] Uçarak inşa eder; kimseyi taşıyamaz.
+- [x] **Mini dron mimarlar:** baretten 1–10 dron çıkar, inşaya yardım eder, bitince barete döner.
+- [x] Yapı kütüphanesi: **217 yapı** (213 yapı + 4 farm). Hedef 100 yapı + 50 Minecraft farmı (çok bulunursa 200 + 100). Elle yapılmış 25 (21 yapı + 4 farm): Minik Kulübe, Kamp Ateşi Alanı, Köy Kuyusu, Fener Direği, Çiçek
   Bahçesi, Çeşme, Ahşap Ev, İki Katlı Ev, Taş Ev, Çöl Evi, İglo, Cadı Kulübesi, Demirci, Kütüphane, Ambar, Yel Değirmeni,
   Gözetleme Kulesi, Deniz Feneri, Yağmacı Kulesi, Küçük Kale, End Şehri Kulesi, Buğday Tarlası, Hayvan Ağılı, Şeker Kamışı
   Çiftliği, End of Light Mega Çiftlik.
-- [ ] İstenen ama olmayan yapılar: Küçük kulübe, Başlangıç evi, Büyük ev, Lüks ev, Mini villa, Orta villa, Büyük villa.
-- [ ] 37 çiftlik daha, Bedrock kurallarına uygun: demir, altın (Nether), deneyim, yaratık, otomatik ekin, kavun-balkabak,
+- [x] Dış yapılar: 192 tane, Planet Minecraft ücretsiz şemalarından (`gen/yapi_listesi.json`, `docs/YAPI_KAYNAKLARI.md`,
+  `yapi_ice_aktar.py`). İstenenler arasında başlangıç evi, villalar ve büyük evler var.
+- [ ] 46 farm daha (Java'dan alınırsa Bedrock'ta çalıştığı denetlenir, çalışmıyorsa Bedrock sürümü aranır): demir, altın (Nether), deneyim, yaratık, otomatik ekin, kavun-balkabak,
   bambu, yosun, bal, yün, tavuk, inek, köylü üretme, ticaret salonu, yağmacı baskını, gardiyan, balçık, creeper, cadı,
   blaze, wither iskeleti, enderman gibi.
 - [ ] Menüde her yapının resmi ve 360° dönen 3B önizlemesi (menü dönen 3B gösteremez: menüde resim, dünyada döndürülebilir hologram).
-- [ ] Hologramla yer seçme: dokunduğunda nereye bakıyorsan yapı o yöne döner.
-- [ ] Malzemeyi sandıklardan toplar, eksikleri telsize yazar, Organizatör'den ister.
+- [x] Yer seçme (şimdilik çerçeve): kapı tarafı sana bakar, 90° çevir, kırmızı İptal. - [ ] Tam boy hologram.
+- [x] Malzemeyi sandıklardan toplar, eksikleri telsize yazar. - [ ] Organizatör'den ister (v0.3.1).
 - [ ] Köylü gereken çiftliklerde: Mimar → Organizatör → Keşif en yakın köyden köylüleri ve eşyaları getirir.
-- [ ] Ayar Dişlisi: adı "Ayar Dişlisi" (yaratıcı); Mimar için "malzeme toplamadan yap (Creative gibi)".
+- [x] Malzemesiz yap: yapı kartında yaratıcı oyunculara "Malzemesiz yap" düğmesi. - [ ] Ayar Dişlisi'nin adı.
 - [ ] İnşa Çubuğu (`insa.js` yazıldı, bağlanmadı): blok durumu, kopyala-yapıştır, suyla doldur, geri al.
 
 ### Organizatör ve Aqualit Telefon — v0.3.x

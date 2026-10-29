@@ -9,10 +9,12 @@ import { fmtPos, safe, V } from "../util.js";
 import { setProp, getProp } from "../store.js";
 import { rodRobot } from "./kilicli_ui.js";
 import { bagMenu, EDIT_RANGE } from "./canta.js";
+import { mimarMenu, yapi } from "../mimar.js";
 
 const TOOL_ICON = {
   madenci: "textures/items/aqualit_pickaxe", kurekci: "textures/items/aqualit_shovel",
   ciftci: "textures/items/aqualit_hoe", oduncu: "textures/items/aqualit_axe", kilicli: "textures/items/aqualit_sword",
+  insaatci: "textures/items/robot_insaatci",
 };
 
 function catalog(type) {
@@ -27,6 +29,11 @@ export function describeTask(bot) {
   const T = bot.task;
   if (!T) return "Görev yok";
   if (T.mode === "skyblock") return `Taş makinesinden ${T.items?.[0]?.amount ?? 0} taş`;
+  if (T.type === "insaatci") {
+    const y = yapi(T.yapi);
+    const pct = y ? Math.min(100, Math.floor(((bot.prog?.done ?? 0) * 100) / Math.max(1, y.blok))) : 0;
+    return `${y?.ad ?? T.yapi} inşası${T.done ? "" : ` %${pct}`}${T.free ? " (malzemesiz)" : ""}`;
+  }
   const { by } = catalog(bot.type);
   const parts = (T.items ?? []).map((i) => {
     const got = bot.prog?.got?.[i.key] ?? 0;
@@ -104,12 +111,17 @@ export async function renameRobot(player, bot) {
 
 /** Türüne göre görev sihirbazı. */
 export async function giveTask(player, bot) {
+  if (bot.type === "insaatci") return mimarMenu(player, bot, (b, plan) => beginTask(player, b, plan));
   let task = null;
   if (bot.type === "madenci") task = await minerTask(player, bot);
   else if (bot.type === "kurekci") task = await diggerTask(player, bot);
   else if (bot.type === "ciftci") task = await farmerTask(player, bot);
   else if (bot.type === "oduncu") task = await lumberTask(player, bot);
   if (!task) return;
+  beginTask(player, bot, task);
+}
+
+function beginTask(player, bot, task) {
   bot.task = task;
   bot.saveTask();
   if (task.maxDist) {

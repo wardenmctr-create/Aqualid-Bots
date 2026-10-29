@@ -134,6 +134,7 @@ function chestTotals(ch) {
   }
   return m;
 }
+const V3dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const amt = (ch, id) => chestTotals(ch)[id] ?? 0;
 const safe = (f, d) => { try { return f(); } catch { return d; } };
 let fails = 0;
@@ -1632,6 +1633,122 @@ if (run("sandik")) {
   FLIP = false;
   world.setDynamicProperty("aq:sandik_ters", false);
   guest.remove();
+}
+
+
+// ---------------------------------------------------------------- 22) Mimar: kütüphane, uçuş, dronlar, döndürme, malzeme
+if (run("mimar")) {
+  console.log("== Mimar");
+  const MI = await import("./scripts/mimar.js");
+  const YD = await import("./scripts/yapi_data.js");
+  check(YD.YAPILAR.length >= 200, `kütüphanede ${YD.YAPILAR.length} yapı (en az 200)`);
+  check(YD.YAPILAR.every((y) => world.structureManager.get(`aqualit:${y.id}`)), "her yapının dosyası pakette");
+  const G = GROUND;
+  const base = { x: 300, y: G, z: 300 };
+  player.teleport({ x: base.x + 0.5, y: G + 1, z: base.z - 3.5 });
+  give("aqualit:robot_insaatci");
+  useOn("aqualit:robot_insaatci", base, "Up", { comp: "aqualit:robot_item", p: { type: "insaatci", model: 1 } });
+  ticks(5);
+  const mb = myBots().find((b) => b.type === "insaatci");
+  check(!!mb && MC.world.getEntity(mb.id)?.getProperty("aqualit:type") === "insaatci", "Mimar robotu doğdu");
+  check(!!mb?.homeChest(), "İnşaatçı sandığı yanında");
+
+  // döndürme yardımcıları
+  check(JSON.stringify(MI.rotXZ(0, 0, 4, 3, 1)) === "[2,0]" && JSON.stringify(MI.rotSize(4, 3, 1)) === "[3,4]", "yerleşim 90° dönüyor");
+  const rs = MI.rotateStates({ weirdo_direction: 3, "minecraft:cardinal_direction": "north", pillar_axis: "x",
+    "minecraft:connection_north": true, facing_direction: 2, direction: 0 }, 1);
+  check(rs.weirdo_direction === 0 && rs["minecraft:cardinal_direction"] === "east" && rs.pillar_axis === "z"
+    && rs["minecraft:connection_east"] === true && rs.facing_direction === 5 && rs.direction === 1, "blok yönleri 90° dönüyor");
+  check(MI.dronCount(100) === 1 && MI.dronCount(20000) === 10, "dron sayısı yapı boyuna göre 1–10");
+
+  // yapıyı dünyada denetle
+  function verify(id, at, rot) {
+    const st = world.structureManager.get(`aqualit:${id}`);
+    let ok = 0, bad = 0, first = "";
+    for (let y = 0; y < st.size.y; y++) for (let z = 0; z < st.size.z; z++) for (let x = 0; x < st.size.x; x++) {
+      const perm = st.getBlockPermutation({ x, y, z });
+      if (!perm || perm.type.id === "minecraft:air") continue;
+      const [rx, rz] = MI.rotXZ(x, z, st.size.x, st.size.z, rot);
+      const c = ow._cell({ x: at.x + rx, y: at.y + y, z: at.z + rz });
+      const want = MI.rotateStates(perm.getAllStates(), rot);
+      const same = c.type === perm.type.id && Object.entries(want).every(([k, v]) => c.states[k] === v);
+      if (same) ok++;
+      else { bad++; first ||= `${perm.type.id}@${x},${y},${z} → ${c.type}`; }
+    }
+    return { ok, bad, first };
+  }
+
+  // 1) malzemesiz (yaratıcı) Minik Kulübe, kapı güneye
+  const at1 = { x: 320, y: G + 1, z: 300 };
+  mb.task = { type: "insaatci", yapi: "minik_kulube", at: at1, rot: 0, dim: "minecraft:overworld", free: true };
+  mb.saveTask();
+  brain.startTask(mb);
+  const seen = new Set();
+  let maxDr = 0;
+  const used1 = ticks(20 * 60 * 5, () => {
+    const e = MC.world.getEntity(mb.id);
+    seen.add(e?.getProperty("aqualit:act2"));
+    maxDr = Math.max(maxDr, ow.getEntities({ type: "aqualit:dron" }).length);
+    return mb.task?.done;
+  });
+  const v1 = verify("minik_kulube", at1, 0);
+  console.log("  süre(sn):", Math.round(used1 / 20), "doğru:", v1.ok, "yanlış:", v1.bad, v1.first);
+  check(mb.task?.done === true, "Minik Kulübe bitti");
+  check(v1.bad === 0 && v1.ok > 50, "bütün bloklar yerinde ve doğru yönde");
+  check(seen.has("fly") && seen.has("hat_off") && seen.has("hat_hold") && seen.has("hat_on"), "uçtu, bareti çıkardı/tuttu/taktı");
+  check(maxDr >= 1, `baretten dron çıktı (${maxDr})`);
+  check(ow.getEntities({ type: "aqualit:dron" }).length === 0, "iş bitince dronlar barete döndü");
+  const e1 = MC.world.getEntity(mb.id);
+  check(V3dist(e1.location, mb.home) < 1.5, "eve uçup indi");
+  check(!(e1._events.slice(-5).includes("aqualit:fly_on") && !e1._events.includes("aqualit:fly_off")), "uçuş kapandı");
+
+  // 2) 90° döndürülmüş, malzemeli (hayatta kalma): Köy Kuyusu; malzeme sandıkta
+  const ch = mb.homeChest();
+  const yk = MI.yapi("koy_kuyusu");
+  const cc = ch.getComponent("minecraft:inventory").container;
+  for (const [id, n] of Object.entries(yk.malzeme)) {
+    let left = n;
+    while (left > 0) { const k = Math.min(64, left); cc.addItem(new ItemStack(id.includes(":") ? id : "minecraft:" + id, k)); left -= k; }
+  }
+  const before = Object.values(chestTotals(ch)).reduce((a, b) => a + b, 0);
+  const at2 = { x: 340, y: G + 1, z: 300 };
+  mb.task = { type: "insaatci", yapi: "koy_kuyusu", at: at2, rot: 1, dim: "minecraft:overworld", free: false };
+  mb.saveTask();
+  brain.startTask(mb);
+  ticks(20 * 60 * 5, () => mb.task?.done);
+  const v2 = verify("koy_kuyusu", at2, 1);
+  const after = Object.values(chestTotals(ch)).reduce((a, b) => a + b, 0);
+  console.log("  kuyu doğru:", v2.ok, "yanlış:", v2.bad, v2.first, "sandık:", before, "→", after);
+  check(mb.task?.done && v2.bad === 0, "döndürülmüş Köy Kuyusu doğru kuruldu");
+  check(after < before, "malzeme sandıktan harcandı");
+
+  // 3) malzeme yokken: eksik listesi telsize
+  const at3 = { x: 360, y: G + 1, z: 300 };
+  for (let i = 0; i < cc.size; i++) cc.setItem(i, undefined);
+  mb.task = { type: "insaatci", yapi: "kamp_alani", at: at3, rot: 0, dim: "minecraft:overworld", free: false };
+  mb.saveTask();
+  brain.startTask(mb);
+  ticks(20 * 60 * 5, () => mb.task?.done);
+  const msgs = store.getJSON(world, `aq:msgs:${player.id}`, []);
+  check(msgs.some((m) => /eksik/.test(m.text)), "eksik malzeme telsizle bildirildi");
+
+  // 4) büyük yapı: en uzun tik
+  const at4 = { x: 300, y: G + 1, z: 380 };
+  mb.task = { type: "insaatci", yapi: "japon_kalesi", at: at4, rot: 2, dim: "minecraft:overworld", free: true };
+  mb.saveTask();
+  brain.startTask(mb);
+  if (process.env.HIZ) {
+    for (let k = 0; k < 10; k++) {
+      ticks(2000);
+      const ds = (mb.drones ?? []).map((d) => (d.job ? (d.job.clear ? "c" : "j") : "-") + d.cool).join(" ");
+      console.log("  hız", k, "done", mb.prog?.done, "i", mb.prog?.i, "act", MC.world.getEntity(mb.id).getProperty("aqualit:act2"), "dronlar", ds);
+    }
+  }
+  const tt = timedTicks(20 * 60 * 30, () => mb.task?.done);
+  const v4 = verify("japon_kalesi", at4, 2);
+  console.log(`  Japon Kalesi: ${Math.round(tt.n / 20)} sn, en uzun tik ${tt.worst.toFixed(1)} ms, ort ${tt.avg.toFixed(2)} ms, doğru ${v4.ok}, yanlış ${v4.bad} ${v4.first}`);
+  check(mb.task?.done && v4.bad === 0, "Japon Kalesi (17 bin blok) tamamlandı");
+  check(tt.worst < 50, "en uzun tik 50 ms altında");
 }
 
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");

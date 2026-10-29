@@ -185,7 +185,7 @@ class S:
     def finish(self):
         """Cam/çit/demir parmaklık bağlantıları ve duvar direkleri."""
         for (x, y, z), (name, st) in list(self.g.items()):
-            if any(k in name for k in CONNECT):
+            if any(k in name for k in CONNECT) and 'fence_gate' not in name:
                 for d, (dx, _, dz) in DV.items():
                     n = self.get(x + dx, y, z + dz)
                     ok = n is not None and (full(n) or any(k in n for k in CONNECT) or 'fence_gate' in n)
@@ -202,6 +202,13 @@ class S:
                            (cons['east'] and cons['west'] and not cons['north'] and not cons['south'])
                 above = self.get(x, y + 1, z)
                 st['wall_post_bit'] = (not straight) or (above is not None and above != 'air')
+        # bloğun sahip olmadığı durumları at (ör. kesme kumtaşına eksen verilmesin)
+        blocks, _ = vanilla()
+        for (x, y, z), (name, st) in list(self.g.items()):
+            have = blocks.get('minecraft:' + name)
+            if have is not None:
+                for k in [k for k in st if k not in have]:
+                    del st[k]
         return self
 
 
@@ -264,7 +271,7 @@ def cicek_bahcesi():
     s.box(0, 0, 0, 8, 0, 8, 'grass_block')
     s.box(4, 0, 0, 4, 0, 8, 'grass_path'); s.box(0, 0, 4, 8, 0, 4, 'grass_path')
     s.walls(0, 1, 0, 8, 1, 8, 'oak_fence')
-    s.put(4, 1, 8, 'oak_fence_gate', **{'minecraft:cardinal_direction': 'south'})
+    s.put(4, 1, 8, 'fence_gate', **{'minecraft:cardinal_direction': 'south'})
     s.put(4, 1, 0, 'air')
     flowers = ['poppy', 'dandelion', 'cornflower', 'allium', 'azure_bluet', 'oxeye_daisy', 'pink_tulip', 'red_tulip']
     i = 0
@@ -612,7 +619,7 @@ def bugday_tarlasi():
     s.box(1, 1, 1, 9, 1, 9, 'wheat', growth=0)
     s.put(5, 1, 5, 'oak_slab', **{'minecraft:vertical_half': 'bottom'}) if False else s.put(5, 1, 5, 'air')
     s.walls(0, 1, 0, 10, 1, 10, 'oak_fence')
-    s.put(5, 1, 10, 'oak_fence_gate', **{'minecraft:cardinal_direction': 'south'})
+    s.put(5, 1, 10, 'fence_gate', **{'minecraft:cardinal_direction': 'south'})
     for (x, z) in ((0, 0), (10, 0), (0, 10), (10, 10)):
         s.put(x, 2, z, 'torch', torch_facing_direction='top')
     return s.finish()
