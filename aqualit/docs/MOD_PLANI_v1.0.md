@@ -2,9 +2,8 @@
 
 Tarih: 29 Ekim 2026. Kaynak: kullanıcının sohbete yapıştırdığı plan.
 
-> **Not:** Plan sohbete gelirken v0.5.x bölümünün "Bölge koruma ayrıntıları" maddesinde ("Takip m...") kesildi.
-> Kalan bölümler (v0.5.x sonu, v0.6.0, v1.0, bölüm 7–11: yapı listesi, modül önerileri vb.) kullanıcıdan gelince
-> buraya eklenecek. Güncel yapılacaklar listesi için `PLAN.md` de geçerli.
+> **Not:** Plan iki mesajda geldi; ikinci mesaj bölüm 8'in sonunda bitti. Bölüm 9 (33 animasyon),
+> bölüm 10 ve bölüm 11 (Yükseltme Modülleri önerisi) henüz gelmedi; gelince buraya eklenecek. Güncel yapılacaklar listesi için `PLAN.md` de geçerli.
 
 ## 0. Claude Code için kurallar
 
@@ -131,7 +130,7 @@ Hazır: model (v.t==5), İnşaatçı Sandığı, 25 yapı verisi (gen/yapilar.py
 - [ ] Malzeme sandıklardan; eksik listesi telsize. Malzemesiz yap (yaratıcı).
 - [ ] Köylü/mob gereken çiftlikler kartta yazar.
 - [ ] İnşa Çubuğu `aqualit:insa_cubugu` (tarif önerisi 2 külçe + çubuk + kızıltaş).
-- [ ] Hedef 40 yapı + 40 çiftlik (liste bölüm 8 — plan metninde gelmedi).
+- [ ] Hedef 40 yapı + 40 çiftlik (liste bölüm 8).
 - [ ] Sim "mimar": Minik Kulübe 4 yönde, eksik malzeme, malzemesiz mod, hologram, Küçük Kale'de en uzun tik < 50 ms.
 
 ### v0.3.1 — Organizatör ve Aqualit Telefon
@@ -160,4 +159,129 @@ Hazır: model (v.t==5), İnşaatçı Sandığı, 25 yapı verisi (gen/yapilar.py
 - [ ] Güç motoru (aqualit:pw 0–64 sayı özelliği), güç seçimi, kombolar (7), takım taktikleri (6), takım kombolar (4).
 - [ ] %101 modu, Kılıçlı Robot Kostümü, Eşya toplama modu, Yükseltme Modülleri (öneri bölüm 11 — plan metninde gelmedi).
 - [ ] Bölge koruma ayrıntıları: saldırgan / sonradan gelen barışçıl / oyuncu için "saldır" ya da "haber ver";
-      dost oyuncu listesi; kurulumda içerideki moblar kaydedilir. *(metin burada kesildi)*
+      dost oyuncu listesi; kurulumda içerideki moblar kaydedilir. Takip modunda birden fazla canlı korunur, öncelik sahip.
+- [ ] Söz verilen 5 güç GIF'i + her yeni gücün 3B önizlemesi.
+- Riskler: telefon parçacık sınırı (sadeleştir, örn. daha kısa duvar koşusu); nanobot görüşü için özel arayüz katmanı
+  gerekir, olmazsa sis efekti; zaman durdurma mob yapay zekâsını kapatamaz, yalnız yerinde tutar.
+
+### v0.6.0 — Canlı kontrol, eşya yapma, onaylar
+- [ ] Canlı kontrol: canlı izlerken "Kontrolü al" → oyuncunun dokunmatik paneli gizlenir, yerine oyunun tuşlu panelinin
+      turkuaz kopyası (ortada artı, ekrana dokunma yok). Joystick robotu yürütür, zıpla/eğil robota geçer
+      (inputInfo.getMovementVector, getButtonState), kır/koy robotun önündeki bloğu işler. Kırmızı iptal bir adım geri:
+      kontrol → izleme → kendi ekranın. Çıkınca robot işine döner. Gerçek vücut yerinde kilitli + kısa koruma;
+      biri vurursa izleme biter. Panel değiştirmek JSON UI ister, bazı cihazlarda çalışmayabilir →
+      yedek: telsiz menüsünde turkuaz kır/koy düğmeleri.
+- [ ] Takip ekranı: izlerken gece görüşü, kamera seçenekleri; harita ilk planda ~25x25 hücre (şu an 15 satır).
+- [ ] Eşya yapma zinciri: iş eşya isterse malzemesi varsa çalışma masası aramadan yapar, yoksa malzemeyi en kısa yoldan
+      toplar. Liste: taş/demir kazma, balta, çakmak, kova, meşale, kalas, çubuk, külçe eritme, yakıt (genişletilebilir).
+      Yaptıkları normal kırılır; ana alet kırılmaz. Uzun zincirde önce plan + onay.
+- [ ] Onay sistemi: Onayla/Reddet/Değiştir; cevap yoksa 5 dk bekler, sonra sandığına dönüp bekler. Bilgi turkuaz,
+      yardım çağrısı kırmızı; ekranı kesmez, küçük bildirim.
+- [ ] Sınırsız robot envanteri: 27 yuvayı aşan kısım robota bağlı görünmez depolara (sandıktaki 128'lik yöntem);
+      **öneri** 1024 yuva.
+- [ ] Kürekçi alan düzleştirme ve geri doldurma (Bölge Seçici ile alan, hedef yükseklik, çukurları toprakla doldur).
+- [ ] "Acil işin yoksa geri dön" tam hali: yakındaki güzel cevherden birkaç tane, yanına koyduğu masa/fırınları toplar.
+- [ ] Sim: kontrol, esya_yap, onay (5 dk zaman aşımı).
+
+### v1.0 — Cilalama
+- [ ] 33 animasyonun tamamı (bölüm 9).
+- [ ] Çok oyunculu ve Realms denemesi (sahiplik, performans).
+- [ ] Denge: cevher sıklığı, alet gücü, Kılıçlı seviyeleri, enerji, zırh sayıları.
+- [ ] Telefon performansı: 20 robot + 6 Kılıçlı güç + 5 büyük sandık açıkken en uzun tik.
+- [ ] Eski sürüm geçişleri (kabuk, taş, sandık) en eski sürümden denenir.
+- [ ] **Öneri:** oyun içi rehber kitap (Aqualit Rehberi) ve İngilizce dil dosyası.
+
+## 7. Kılıçlı — 50 güç tam listesi ([VAR] = oyunda var)
+
+Seviye 2: 1 Duvar koşusu (duvarda koşar, duvardan duvara sıçrayıp düşmanın üstüne iner) · 2 Elektrik kancası [VAR]
+Seviye 3: 3 Uzun uçuş (sırt iticileriyle enerji bitene kadar uçar, havadan saldırır) · 4 Yıldırım kılıcı [VAR]
+Seviye 4: 5 Gölge adım [VAR] (12 bloğa kadar, düşmanın arkasında belirir) · 6 Elektrik kubbe [VAR] (10 sn, kendini/sahibini/takımı korur)
+
+Seviye 5 (44 güç):
+
+| # | Güç | Ne yapar |
+| --- | --- | --- |
+| 7 | Ayna klonları | 6 klona bölünür, klonlar gerçek hasar vurur |
+| 8 | Klon fırtınası | bütün klonlar aynı anda farklı yönlerden atılır |
+| 9 | Zaman yavaşlatma | 6 sn her şey yavaşlar, robot normal hızda |
+| 10 | Zaman durdurma | 3 sn her şey donar, vurulan hasar sonunda tek seferde patlar |
+| 11 | Geri sarma | ağır hasarda 5 sn önceki yerine ve canına döner |
+| 12 | Gök gürültüsü [VAR] | gökten dev yıldırım, geniş alan hasarı |
+| 13 | Yıldırım fırtınası | 10 sn yalnız düşmanlara yıldırım yağar |
+| 14 | Plazma lazeri | kol topundan 60 bloğa kadar delici, süpürülebilen ışın |
+| 15 | Enerji küresi | çarpınca patlar, sersemletir |
+| 16 | Kara delik | içine çeker, sıkıştırır, patlatır |
+| 17 | Yerçekimi kontrolü | havaya kaldırır, savurur, yere çarpar |
+| 18 | Manyetik fırtına | ok, mermi, ateş toplarını durdurup geri yollar |
+| 19 | Faz geçişi | 5 sn duvarlardan geçer, hasar almaz |
+| 20 | Görünmezlik | 10 sn; arkadan ilk darbe 3 kat |
+| 21 | Drone sürüsü | 6 mini drone 20 sn lazer atar |
+| 22 | Roket yumruk | kolunu fırlatır, düşmanı savurur, kol döner |
+| 23 | Kalkan fırlatma | kalkan düşmanlar arasında sekip döner |
+| 24 | Kılıç kasırgası | dönerek hortum, çekip savurur |
+| 25 | Bumerang kılıç | düşmandan düşmana zıplayıp ele döner |
+| 26 | Meteor dalışı | yüksekten çakılır, şok patlaması (blok kırmaz) |
+| 27 | Deprem darbesi | halka halka şok dalgası, havaya fırlatır |
+| 28 | Hayalet adımlar | 6 düşmanın arasından vurarak geçer |
+| 29 | Seken basış zinciri | 5 düşmana kadar kafasına basıp seker |
+| 30 | Yapışık saldırı | sırtına yapışıp kaldırır, yere çakar |
+| 31 | Elektrik ağı | 5 sn hareket edemezler |
+| 32 | Enerji kanatları | süzülür, enerji tüyleri yağdırır |
+| 33 | Işık kılıcı formu | menzil ve hasar 2 kat, kalkan deler |
+| 34 | Yansıtıcı zırh | 6 sn hasarı saldırana yansıtır |
+| 35 | Nano onarım | kendini ve sahibini iyileştirir, takımın zırhını onarır |
+| 36 | Kalkan uyduları | sahibin etrafında 3 kalkan |
+| 37 | Portal kapısı | 30 bloğa kadar iki portal; dostlar geçer, düşmanlar başka yere düşer |
+| 38 | Savaş analizi | sonraki 10 vuruş kritik |
+| 39 | Taktik görüş | duvar arkasındaki düşmanları görür ve işaretler |
+| 40 | Son form | 20 sn bekleme süreleri sıfır, şimşek aurası, sonra kısa yorgunluk |
+| 41 | Nanobot sürüsü | yüzlerce nanobot (2 piksel blok); alan hasarıyla ölürler |
+| 42 | Nanobot görüşü | düşman oyuncunun ekranında görüşü kısıtlar; moblarda körlük ve şaşkınlık |
+| 43 | Nanobot ısırığı | yapışıp sürekli hasar |
+| 44 | Nanobot bulutu | taşır, kaldırır, fırlatır, çakar |
+| 45 | Nanobot zırhı | sahibe/robota zırh olur, hasar emer |
+| 46 | Akıllı karşılık | havaya atılırsa dönüp çakılır, yere düşerse takla atıp karşı saldırır |
+| 47 | Savaş öğrenmesi | aynı düşman türüne karşı öğrenir, daha az hasar alır |
+| 48 | EMP darbesi | sersemletir, havadaki mermileri düşürür |
+| 49 | Yıldız kılıçları | 8 enerji kılıcı yağmur gibi iner |
+| 50 | Dev form | 15 sn 3 kat büyür, adımları şok dalgası |
+
+Her gücün kendi animasyonu var (ilk plandaki tarifler: `docs/ilk_plan_v1.txt`). Kalp ışığı = enerji göstergesi.
+
+Modeller: 1 Kırmızı (can 30, hasar 7) · 2 Yeşil (60, %10 hızlı, 8) · 3 Mor (100, %20, 10) · 4 Sarı (160, %35, 12)
+· 5 Mavi (300, %50, 15). Pelerin, gözler, anten ucu, kalp, omuzluklar model renginde; yanaklar her seviyede kırmızı.
+
+Kombolar: Sallanan şimşek (S3: kanca + yıldırım kılıcı) · Gölge şimşek (S4: gölge adım + yıldırım kılıcı) ·
+Yıldırım düşüşü (S5: koş, duvar koşusu, uçuş, meteor dalışı) · Klon kuşatması (S5: zaman yavaşlar, klonlar, klon fırtınası) ·
+Kara delik tuzağı (S5: elektrik ağı, kara delik, gök gürültüsü) · Hayalet avcı (S5: görünmezlik, gölge adım,
+hayalet adımlar) · Son kale (S5: kubbe + kalkan uyduları + plazma lazeri).
+
+Takım taktikleri: Kuşatma · Öncü ve destek · Yem ve pusu · Kalkan halkası · Sıralı vuruş · Hava ve yer.
+Takım kombolar: Çapraz kanca · Şimşek ağı · Çifte gölge · Fırtına çemberi.
+Dövüş tarzları: Dengeli, Saldırgan, Gizli [VAR]. Takım halinde dövüş ve akıllı güç seçimi ciddiyetten bağımsız, hep açık.
+
+## 8. Mimar yapı listesi (hedef 40 yapı + 40 çiftlik)
+
+Hazır 25 (`gen/yapilar.py`, oyuna bağlı değil):
+- Küçük: Minik Kulübe 7x7x7, Kamp Ateşi Alanı 7x3x7, Köy Kuyusu 6x6x6, Fener Direği 3x5x1, Çiçek Bahçesi 9x2x9, Çeşme 9x5x9
+- Ev: Ahşap Ev 9x9x9, İki Katlı Ev 11x13x11, Taş Ev 9x8x11, Çöl Evi 9x6x9, İglo 9x6x11, Cadı Kulübesi 7x9x9
+- Köy: Demirci 11x8x9, Kütüphane 11x9x13, Ambar 11x10x15, Yel Değirmeni 9x17x10
+- Kule: Gözetleme Kulesi 7x17x7, Deniz Feneri 9x25x9, Yağmacı Kulesi 11x24x11, Küçük Kale 23x14x23, End Şehri Kulesi 11x32x11
+- Çiftlik: Buğday Tarlası 11x3x11, Hayvan Ağılı 13x6x13, Şeker Kamışı Çiftliği 11x5x4
+- Dev: End of Light Mega Çiftlik (Bedrock'a uyarlanmış)
+
+Eklenecek 19 yapı (21 hazır + 19 = 40): kullanıcının istedikleri — Küçük kulübe (**Minik Kulübe karşılıyor mu, sor**),
+Başlangıç evi, Büyük ev, Lüks ev, Mini villa, Orta villa, Büyük villa — + **öneriler**: Ağaç ev, Robot atölyesi
+(Aqualit temalı), Depo binası (Organizatör için sandık odası), Sera, Liman/iskele, Köprü, Pazar yeri, Nether portalı
+çerçevesi, Tapınak, Kule ev, Karakol, Su değirmeni.
+
+Eklenecek 36 çiftlik (4 hazır + 36 = 40; hepsi Bedrock kurallarına göre, oyunda denenmeli): Demir (köylü + yatak + zombi
+korkutma) · Otomatik ekin (köylü çiftçi + huni) · Kavun-balkabağı (gözlemci + piston) · Otomatik şeker kamışı · Bambu ·
+Kaktüs · Yosun · Bal ve petek · Yün (koyun + makaslı dağıtıcı) · Tavuk/yumurta · İnek · Köylü üretme · Ticaret salonu ·
+Karanlık oda yaratık · Örümcek spawner · Zombi/iskelet spawner deneyim · Yağmacı baskını · Gardiyan · Balçık ·
+Creeper/barut · Cadı · Blaze · Wither iskeleti · Altın (zombi piglin) · Enderman · Shulker · Mürekkep balığı ·
+Kurbağa ışığı · Ağaç · Mantar · Nether siğili · Tatlı meyve · Kakao · Taş üretici · Bazalt üretici · Kemik tozu (kompost).
+
+Her yapının: anahtar, ad, kategori, boyut, malzeme listesi, menü resmi, hologram modeli, gereken köylü/mob/kızıltaş.
+
+<!-- Bölüm 9 (33 animasyon), 10, 11 (Yükseltme Modülleri) gelmedi. -->
