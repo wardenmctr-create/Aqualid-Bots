@@ -127,10 +127,17 @@ Hazır: model (v.t==5), İnşaatçı Sandığı, 25 yapı verisi (gen/yapilar.py
 - [ ] Dönen hologram önizleme (10 sn, greedy meshing, saydam turkuaz). Yedek: parlak çerçeve + kat kat parçacık.
 - [ ] Hologramla yer seçme: bakılan bloğa yapışır, bakışa göre 90° döner; dokun = onay, eğil + dokun = çevir, kırmızı İptal.
 - [ ] İnşa: alan temizleme, alttan üste, blok durumları yöne göre çevrilir, tik başına 2–4 blok, ilerleme telsize.
+- [ ] **Mini dron mimarlar** (kullanıcı isteği, 29 Ekim): yapının boyutuna göre Mimar animasyonla baretini çıkarır,
+      içinden **1–10 mini dron mimar** çıkar ve inşaya yardım eder (küçük yapı az, büyük yapı çok dron).
+      İş bitince dronlar barete döner, Mimar bareti takar. Animasyonlar: baret çıkarma, dron çıkışı, dron uçuşu/blok koyma,
+      dönüş. Her biri GIF ile gösterilecek. Telefon performansı: dron sayısı ve tik başına blok sınırı ayarlı.
 - [ ] Malzeme sandıklardan; eksik listesi telsize. Malzemesiz yap (yaratıcı).
 - [ ] Köylü/mob gereken çiftlikler kartta yazar.
 - [ ] İnşa Çubuğu `aqualit:insa_cubugu` (tarif önerisi 2 külçe + çubuk + kızıltaş).
 - [ ] Hedef **100 yapı + 50 Minecraft farmı** (liste bölüm 8).
+      Kaynak: GitHub'daki hazır yapı dosyaları (.mcstructure / .nbt / .schem / .litematic) de kullanılabilir; çok bulunursa
+      hedef **200 yapı + 100 farm**. Yalnız lisansı izin verenler alınır (kaynak ve lisans not edilir); farmlar
+      Bedrock kurallarına uygun olmalı (Java farmları Bedrock'ta çoğu zaman çalışmaz).
 - [ ] Sim "mimar": Minik Kulübe 4 yönde, eksik malzeme, malzemesiz mod, hologram, Küçük Kale'de en uzun tik < 50 ms.
 
 ### v0.3.1 — Organizatör ve Aqualit Telefon

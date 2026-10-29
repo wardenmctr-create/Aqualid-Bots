@@ -7,10 +7,12 @@ Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 ## Kullanıcı (kalıcı istekler — her oturumda uy)
 
 - **Her zaman Türkçe konuş.** Kullanıcı İngilizce anlamıyor. Kod yorumları, oyun içi yazılar, raporlar Türkçe.
-- **2-3 dakikada bir durum raporu:** yüzde kaç bitti ve tahmini kalan dakika. Tahminler dürüst olsun;
+- **Her 1 dakikada bir durum raporu** (29 Ekim'de 2-3 dk'dan 1 dk'ya indi): yüzde kaç bitti ve tahmini kalan dakika. Tahminler dürüst olsun;
   "yüzde" bütün işin yüzdesi olmalı, o anki küçük adımın değil.
 - **Bitirilen her tasarımı tek tek 3B önizlemeyle göster** (GIF ya da MP4): robot, eşya, blok, yapı, efekt.
   Çizim betikleri kökte (`robot.py`, `sandiklar.py`, `cift_sandik.py`, `kesif_donusum.py`, `addon/test/render_z.py` ...).
+- **Yeni doku yapınca görselini (PNG) göster; yeni animasyon yapınca GIF/MP4 göster.**
+- Bir API oyunda işe yaramıyorsa araştır ve oyundaki başka umut veren API'leri dene (yine kararlı API'ler; beta yok).
 - Kullanıcı oyunu **Android telefonda** oynuyor; dokunmatik kontroller. Arayüz turkuaz, iptal tuşu kırmızı.
 - Oyunda deneyemediğin her şeyi açıkça "oyunda denenmedi" diye yaz; sahte dünyada geçmek oyunda çalışır demek değil.
 - Kullanıcı "aga" diye hitap eder, kısa ve net cevap sever. Eleştiri gelirse sebebi kısaca söyle ve düzeltmeye geç.
