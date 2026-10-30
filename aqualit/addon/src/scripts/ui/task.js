@@ -11,7 +11,8 @@ import { rodRobot } from "./kilicli_ui.js";
 import { bagMenu, EDIT_RANGE } from "./canta.js";
 import { mimarMenu, yapi } from "../mimar.js";
 import { Yerler } from "../harita.js";
-import { YAPI, ikon, takipHedefiSec } from "../kesif_ai.js";
+import { ikon, takipHedefiSec } from "../kesif_ai.js";
+import { YAPI } from "../yapi_bilgi.js";
 
 const TOOL_ICON = {
   madenci: "textures/items/aqualit_pickaxe", kurekci: "textures/items/aqualit_shovel",

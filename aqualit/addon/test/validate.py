@@ -279,5 +279,25 @@ for _f in _sfiles:
             elif _props.get(_k) and _v not in _props[_k]:
                 print('HATA', os.path.basename(_f), f'{_name}.{_k}={_v} geçersiz'); errors += 1; _bad += 1
 print(f'yapı dosyaları denetlendi: {len(_sfiles)} yapı, {_bad} sorun')
+
+# betikler: başka modülden alınan adı aynen dışarı verme (telefondaki oyun motoru döngülü içe aktarmada
+# "Could not find export" verip BÜTÜN kodu yüklemiyor; v0.3.2'de robotlar bu yüzden konmuyordu)
+import re as _re
+_sd = os.path.join(BP, 'scripts')
+_yeniden = 0
+for _root, _dirs, _fs in os.walk(_sd):
+    for _fn in _fs:
+        if not _fn.endswith('.js'):
+            continue
+        _src = open(os.path.join(_root, _fn), encoding='utf-8').read()
+        _imp = set()
+        for _m in _re.finditer(r'import\s*\{([^}]*)\}\s*from', _src):
+            _imp |= {x.strip().split(' as ')[-1].strip() for x in _m.group(1).split(',') if x.strip()}
+        for _m in _re.finditer(r'^export\s*\{([^}]*)\}\s*(from\s*"[^"]+")?', _src, _re.M):
+            _ns = [x.strip().split(' as ')[0].strip() for x in _m.group(1).split(',') if x.strip()]
+            _bad2 = [x for x in _ns if _m.group(2) or x in _imp]
+            if _bad2 and _fn != 'insa.js':
+                print('HATA', _fn, 'başka modülden alınan ad yeniden dışarı veriliyor:', _bad2); errors += 1; _yeniden += 1
+print(f'betik yeniden aktarım denetimi: {_yeniden} sorun')
 print('TOPLAM HATA:', errors)
 sys.exit(1 if errors else 0)

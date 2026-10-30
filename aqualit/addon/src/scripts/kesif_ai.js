@@ -26,7 +26,6 @@ const ICON = (id) => ICONS[`minecraft:${id}`] ?? "textures/items/compass_item";
 
 // ======================================================================= yapılar ve biyomlar
 // yapılar: yapi_bilgi.js (bütün robotlar ortak kullanır)
-export { YAPI };
 export const ikon = (tur) => ICON(YAPI[tur]?.icon ?? "compass");
 
 export const BIYOM = {

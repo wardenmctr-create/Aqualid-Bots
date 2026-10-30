@@ -8,7 +8,8 @@ import { V, safe, clamp } from "./util.js";
 import { menu } from "./ui/forms.js";
 import { Yerler, Harita } from "./harita.js";
 import { KESIF_ID, formOf } from "./kesif.js";
-import { YAPI, ikon, yiginTara, kesifOf, hedefSec, otopilotBaslat, otopilotDur } from "./kesif_ai.js";
+import { YAPI } from "./yapi_bilgi.js";
+import { ikon, yiginTara, kesifOf, hedefSec, otopilotBaslat, otopilotDur } from "./kesif_ai.js";
 import { selector } from "./konum.js";
 
 export const RADAR = "aqualit:kesif_radar";

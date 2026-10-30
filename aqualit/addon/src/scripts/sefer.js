@@ -7,7 +7,8 @@
 // Not: Deneme odası çıkarıcıları (trial spawner) yalnız oyuncu yakındayken mob çıkarır ve anahtar düşürür.
 import { V, wait } from "./util.js";
 import { bots } from "./brain.js";
-import { kesifler, YAPI, ikon, yapiBul, gotur, uc, in_, robotlariBindir, robotlariIndir, basla } from "./kesif_ai.js";
+import { YAPI } from "./yapi_bilgi.js";
+import { kesifler, ikon, yapiBul, gotur, uc, in_, robotlariBindir, robotlariIndir, basla } from "./kesif_ai.js";
 import { Yerler } from "./harita.js";
 import { yapiIsleri, yagmaOzet } from "./yagma.js";
 import { guardZone, setMode } from "./kilicli.js";

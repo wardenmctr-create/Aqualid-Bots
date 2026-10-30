@@ -480,4 +480,3 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     + "kabuklar iki kez düşmesin diye o paketi bu dünyadan kaldır.")), 80);
 });
 
-export { TREE_NAME };
