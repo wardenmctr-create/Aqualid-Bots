@@ -1,6 +1,7 @@
 // Aqualit Robotları — özel eşya bileşenleri, alet davranışları, cevher düşüşleri
 import { world, system, ItemStack, BlockPermutation, GameMode } from "@minecraft/server";
 import { radarMenu, hizMenu } from "./kesif_radar.js";
+import { H } from "./kayit.js";
 import { spawnKesif } from "./kesif.js";
 import { safe, rand, V, log, fire } from "./util.js";
 import { spawnRobotFromItem, isCreative } from "./place.js";
@@ -46,8 +47,10 @@ export function useDevice(player, kind, opts = {}) {
   });
 }
 
-system.beforeEvents.startup.subscribe((ev) => {
-  const reg = ev.itemComponentRegistry;
+// Bileşenler kayit.js'te oyun açılırken kaydolur; burası yalnız işleyicileri H tablosuna koyar.
+{
+  const reg = { registerCustomComponent: (ad, o) => (H[ad] = o) };
+  const ev = { itemComponentRegistry: reg, blockComponentRegistry: reg };
   reg.registerCustomComponent("aqualit:robot_item", {
     onUseOn(e, p) {
       const pl = e.source;
@@ -119,7 +122,7 @@ system.beforeEvents.startup.subscribe((ev) => {
       system.run(() => toolUse(pl, kind, block, e.blockFace));
     },
   });
-});
+}
 
 // ------------------------------------------------------------------ alet: dayanıklılık
 function damageHeld(player, amount) {

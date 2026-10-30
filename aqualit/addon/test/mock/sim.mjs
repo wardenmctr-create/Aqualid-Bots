@@ -91,6 +91,7 @@ system.runInterval(() => {
 const player = MC.__makePlayer("Kral", ow, { x: 0.5, y: GROUND + 1, z: -3.5 });
 const comps = { item: {}, block: {} };
 await import("./scripts/main.js");
+await import("./scripts/ana.js");     // güvenli açılış: asıl kod ayrı yüklenir
 system.beforeEvents.startup.fire({
   itemComponentRegistry: { registerCustomComponent: (n, c) => (comps.item[n] = c) },
   blockComponentRegistry: { registerCustomComponent: (n, c) => (comps.block[n] = c) },
