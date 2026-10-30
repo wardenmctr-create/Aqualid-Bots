@@ -2,12 +2,13 @@
 // Yapılar paketin yapı dosyalarında (aqualit:<kimlik>); bloklar structureManager ile tek tek okunur.
 import { world, system, BlockPermutation, ItemStack } from "@minecraft/server";
 import { V, wait, safe, yawOf, clamp } from "./util.js";
-import { YAPILAR, KATEGORI } from "./yapi_data.js";
+import { YAPILAR, KATEGORI, BLOK_DURUM, ALTERNATIF, BLOK_ESYA } from "./yapi_data.js";
 import { getJSON, setJSON, setProp } from "./store.js";
 import { menu, confirm } from "./ui/forms.js";
 import { idleJob } from "./jobs.js";
 import { isCreative } from "./place.js";
 import { Budget } from "./budget.js";
+import { ICONS } from "./ikon_data.js";
 
 export const DRON_ID = "aqualit:dron";
 const BY_ID = new Map(YAPILAR.map((y) => [y.id, y]));
@@ -24,11 +25,34 @@ export function yapi(id) {
   return BY_ID.get(id);
 }
 const full = (id) => (id.includes(":") ? id : `minecraft:${id}`);
-/** Yapının malzeme listesi (tam eşya kimlikleriyle). */
-export function needOf(y) {
+/** Yapının malzeme listesi (tam eşya kimlikleriyle); degis: {blok: yeni blok} oyuncunun değiştirdikleri. */
+export function needOf(y, degis = {}) {
   const out = {};
+  if (y.bloklar) {
+    for (const [b, n] of Object.entries(y.bloklar)) {
+      const e = BLOK_ESYA[degis[b] ?? b];
+      if (!e) continue;
+      out[full(e[0])] = (out[full(e[0])] ?? 0) + n * e[1];
+    }
+    return out;
+  }
   for (const [id, n] of Object.entries(y.malzeme ?? {})) out[full(id)] = (out[full(id)] ?? 0) + n;
   return out;
+}
+
+/** Değiştirilen bloğu yerine koyarken: aynı durumları taşır (yeni blokta olmayanları atar). */
+function degistir(perm, degis) {
+  const to = degis?.[perm.type.id.replace("minecraft:", "")];
+  if (!to) return perm;
+  const st = safe(() => perm.getAllStates(), {}) ?? {};
+  const full2 = `minecraft:${to}`;
+  const tam = safe(() => BlockPermutation.resolve(full2, st));
+  if (tam) return tam;
+  const bos = safe(() => BlockPermutation.resolve(full2));
+  if (!bos) return perm;
+  let p = bos;
+  for (const [k, v] of Object.entries(st)) p = safe(() => p.withState(k, v), p) ?? p;
+  return p;
 }
 
 // ======================================================================= döndürme
@@ -357,7 +381,7 @@ export function* mimarJob(bot) {
   // 1) malzeme (hayatta kalma)
   if (!T.free && !P.mal) {
     bot.setStatus("Malzeme topluyor");
-    const left = yield* gather(bot, needOf(Y));
+    const left = yield* gather(bot, needOf(Y, T.degis));
     P.mal = true;
     bot.save(true);
     if (Object.keys(left).length) bot.say(`Malzemenin bir kısmı eksik: ${needText(left)}. Olanlarla başlıyorum, eksikleri sandığıma koyarsan tamamlarım.`);
@@ -394,13 +418,14 @@ export function* mimarJob(bot) {
       if (NATURAL.test(b.typeId)) safe(() => b.setType("minecraft:air"));
       return true;
     }
-    const perm = placedPerm(job.perm, T.rot);
+    const src = degistir(job.perm, T.degis);
+    const perm = placedPerm(src, T.rot);
     if (perm.type.id === "minecraft:air") {
       if (NATURAL.test(b.typeId)) safe(() => b.setType("minecraft:air"));
       return true;
     }
     if (!T.free) {
-      const item = itemFor(job.perm);
+      const item = itemFor(src);
       if (item && !takeDepo(d, item)) {
         missing[item] = (missing[item] ?? 0) + 1;
         dirty++;
@@ -548,11 +573,18 @@ export async function mimarMenu(player, bot, startTask) {
     const picked = await listMenu(player, r.k);
     if (picked === "back") continue;
     if (!picked) return;
-    const card = await cardMenu(player, picked);
+    const degis = {};
+    let card;
+    for (;;) {
+      card = await cardMenu(player, picked, degis);
+      if (card?.v !== "mal") break;
+      await malzemeMenu(player, picked, degis);
+    }
     if (card === "back") continue;
     if (!card) return;
     const plan = await chooseSite(player, picked, card.free);
     if (!plan) continue;
+    if (Object.keys(degis).length) plan.degis = { ...degis };
     startTask(bot, plan);
     return;
   }
@@ -566,59 +598,161 @@ async function listMenu(player, kat) {
   return r?.v;
 }
 
-function matLines(y, n = 8) {
+/** Bloğun oyundaki adı (çeviri anahtarıyla, Türkçe görünür). */
+function blokAdi(b) {
+  const e = BLOK_ESYA[b];
+  const key = safe(() => new ItemStack(full(e ? e[0] : b), 1).localizationKey);
+  return key ? { translate: key } : { text: itemName(b) };
+}
+const DURUM_YAZI = { yok: "§c  ✖ hayatta kalmada bulunmaz", zor: "§6  ! zor bulunur" };
+
+function matLines(y, degis, n = 8) {
   const out = [];
-  for (const [id, c] of Object.entries(y.malzeme).slice(0, n)) {
-    const key = safe(() => new ItemStack(full(id), 1).localizationKey);
+  const need = needOf(y, degis);
+  for (const [id, c] of Object.entries(need).sort((a, b) => b[1] - a[1]).slice(0, n)) {
+    const key = safe(() => new ItemStack(id, 1).localizationKey);
     out.push({ text: `\n§f${c} §7` }, key ? { translate: key } : { text: itemName(id) });
   }
-  const rest = Object.keys(y.malzeme).length - n;
+  const rest = Object.keys(need).length - n;
   if (rest > 0) out.push({ text: `\n§8... ve ${rest} çeşit daha` });
+  const yok = Object.keys(y.bloklar ?? {}).filter((b) => !degis[b] && BLOK_DURUM[b] === "yok").length;
+  const zor = Object.keys(y.bloklar ?? {}).filter((b) => !degis[b] && BLOK_DURUM[b] === "zor").length;
+  if (yok) out.push({ text: `\n§c${yok} çeşit blok hayatta kalmada bulunmaz` });
+  if (zor) out.push({ text: `\n§6${zor} çeşit blok zor bulunur` });
+  if (yok || zor) out.push({ text: "\n§7\"Malzemeyi değiştir\" ile kolay bulunanlarla değiştirebilirsin." });
   return out;
 }
 
-async function cardMenu(player, y) {
+/** Malzeme listesi: her blok bir satır; dokununca en iyi alternatifler, seçilen yerine konur. */
+async function malzemeMenu(player, y, degis) {
+  for (;;) {
+    const list = Object.entries(y.bloklar ?? {}).sort((a, b) => {
+      const o = { yok: 0, zor: 1 };
+      return (o[BLOK_DURUM[a[0]]] ?? 2) - (o[BLOK_DURUM[b[0]]] ?? 2) || b[1] - a[1];
+    });
+    const btns = [{ text: "§l§2Tamam ▶", v: "ok" }];
+    if (Object.keys(degis).length) btns.push({ text: "§cDeğişiklikleri geri al", v: "sifir" });
+    for (const [b, n] of list) {
+      const now = degis[b] ?? b;
+      const durum = BLOK_DURUM[now];
+      btns.push({
+        text: { rawtext: [{ text: `§f${n} × ` }, blokAdi(now), { text: degis[b] ? "§a (değişti)" : "" },
+          { text: durum ? `\n${DURUM_YAZI[durum]}` : ALTERNATIF[b] ? "\n§7dokun: alternatifler" : "\n§8alternatif yok" }] },
+        icon: blokIcon(now), b });
+    }
+    const r = await menu(player, `${y.ad} · malzeme`, "Bir bloğa dokun, yerine kullanılacak bloğu seç.", btns);
+    if (!r || r.v === "ok") return;
+    if (r.v === "sifir") {
+      for (const k of Object.keys(degis)) delete degis[k];
+      continue;
+    }
+    const alts = ALTERNATIF[r.b] ?? [];
+    if (!alts.length) {
+      player.sendMessage("§7Bu blok için alternatif yok.");
+      continue;
+    }
+    const a = await menu(player, "Yerine ne koyalım?", { rawtext: [{ text: `§7${y.bloklar[r.b]} tane ` }, blokAdi(r.b),
+      { text: " yerine (en iyisi üstte):" }] }, [
+      { text: { rawtext: [{ text: "§8Aslı kalsın: " }, blokAdi(r.b)] }, icon: blokIcon(r.b), v: null },
+      ...alts.map((alt) => ({ text: { rawtext: [blokAdi(alt), { text: BLOK_DURUM[alt] ? `\n${DURUM_YAZI[BLOK_DURUM[alt]]}` : "\n§akolay bulunur" }] },
+        icon: blokIcon(alt), v: alt })),
+    ]);
+    if (!a) continue;
+    if (a.v) degis[r.b] = a.v;
+    else delete degis[r.b];
+  }
+}
+
+function blokIcon(b) {
+  return ICONS[`minecraft:${BLOK_ESYA[b]?.[0] ?? b}`] ?? ICONS[`minecraft:${b}`];
+}
+
+async function cardMenu(player, y, degis = {}) {
   const body = { rawtext: [
     { text: `§7Boyut: §f${y.boyut[0]}×${y.boyut[1]}×${y.boyut[2]}§7 (en × yükseklik × boy)\n§7Blok: §f${y.blok}` },
     { text: `\n§7Yardımcı dron: §f${dronCount(y.blok)}` },
     ...(y.aciklama ? [{ text: `\n§7${y.aciklama}` }] : []),
     ...(y.yazar ? [{ text: `\n§8Tasarım: ${y.yazar} (Planet Minecraft)` }] : []),
-    { text: "\n\n§lMalzeme:§r" }, ...matLines(y),
+    { text: "\n\n§lMalzeme:§r" }, ...matLines(y, degis),
   ] };
   const btns = [{ text: "§l§2Yer seç ▶§r\n§7Malzemeyi sandıklardan toplar", icon: ICON(y.id), v: { free: false } }];
+  if (y.bloklar) btns.push({ text: `§lMalzemeyi değiştir§r\n§7${Object.keys(degis).length ? `${Object.keys(degis).length} blok değişti` : "Zor bulunanları kolaylarla değiştir"}`,
+    icon: "textures/items/book_writable", v: { v: "mal" } });
   if (isCreative(player)) btns.push({ text: "§l§bMalzemesiz yap§r\n§7Yaratıcı: hiçbir şey harcamaz", icon: "textures/items/nether_star", v: { free: true } });
   btns.push({ text: "§8◀ Geri", v: "back" });
   const r = await menu(player, `§l${y.ad}`, body, btns);
   return r?.v;
 }
 
-/** Bakılan yere çerçeve çizer; onay / 90° çevir / iptal. */
-async function chooseSite(player, y, free) {
+const BAKMA = 100;                 // panel kapalıyken yer seçme süresi (tik): 5 sn
+
+/** Baktığın yer: bloğun üstü (yoksa 6 blok önün). */
+function bakilanYer(player) {
   const hit = safe(() => player.getBlockFromViewDirection({ maxDistance: 48 }));
-  let base;
-  if (hit?.block) base = { x: hit.block.x, y: hit.block.y + 1, z: hit.block.z };
-  else {
-    const v = player.getViewDirection();
-    const l = player.location;
-    base = { x: Math.floor(l.x + v.x * 6), y: Math.floor(l.y), z: Math.floor(l.z + v.z * 6) };
-  }
-  const pl = player.location;
-  let rot = rotForFront(dirOf(pl.x - (base.x + 0.5), pl.z - (base.z + 0.5)));
+  if (hit?.block) return { x: hit.block.x, y: hit.block.y + 1, z: hit.block.z };
+  const v = player.getViewDirection();
+  const l = player.location;
+  return { x: Math.floor(l.x + v.x * 6), y: Math.floor(l.y), z: Math.floor(l.z + v.z * 6) };
+}
+function kutu(y, base, rot) {
+  const [W2, D2] = rotSize(y.boyut[0], y.boyut[2], rot);
+  return { at: { x: base.x - Math.floor(W2 / 2), y: base.y, z: base.z - Math.floor(D2 / 2) }, size: { x: W2, y: y.boyut[1], z: D2 } };
+}
+
+/**
+ * Yer seçme: panel kapanır; 5 sn boyunca çerçeve baktığın yeri izler (kapı tarafı sana döner).
+ * Sonra onay paneli gelir: Onayla / 90° çevir / Yeniden seç / kırmızı İptal.
+ */
+async function chooseSite(player, y, free) {
+  let base = bakilanYer(player);
+  let rot = 0;
+  let serbest = true;              // yön kendiliğinden (kapı sana bakar) mı, elle mi çevrildi
+  const izle = async (sure) => {
+    let stop = () => {};
+    for (let t = 0; t < sure; t += 10) {
+      const nb = bakilanYer(player);
+      if (!stop.base || V.dist(nb, stop.base) >= 1 || stop.rot !== rot) {
+        stop();
+        base = nb;
+        if (serbest) {
+          const pl = player.location;
+          rot = rotForFront(dirOf(pl.x - (base.x + 0.5), pl.z - (base.z + 0.5)));
+        }
+        const k = kutu(y, base, rot);
+        stop = outline(player.dimension, k.at, k.size, rot);
+        stop.base = base;
+        stop.rot = rot;
+      }
+      const kalan = Math.ceil((sure - t) / 20);
+      safe(() => player.onScreenDisplay.setActionBar(`§s${y.ad}§r: yerine bak · §f${kalan} sn§r sonra onay paneli`));
+      await system.waitTicks(10);
+    }
+    return stop;
+  };
+  let stop = await izle(BAKMA);
   for (;;) {
-    const [W2, D2] = rotSize(y.boyut[0], y.boyut[2], rot);
-    const at = { x: base.x - Math.floor(W2 / 2), y: base.y, z: base.z - Math.floor(D2 / 2) };
-    const stop = outline(player.dimension, at, { x: W2, y: y.boyut[1], z: D2 }, rot);
+    const k = kutu(y, base, rot);
     const r = await menu(player, `§l${y.ad} · yer`,
-      `§7Turkuaz çerçeve yapının yerini gösteriyor. Kapı tarafı ${["güneye", "batıya", "kuzeye", "doğuya"][rot]} bakıyor.\n§7Köşe: §f${at.x}, ${at.y}, ${at.z}`,
-      [{ text: "§l§2Onayla, inşa et", v: "ok" }, { text: "90° çevir", icon: "textures/items/compass_item", v: "turn" },
-        { text: "§l§cİptal", v: "no" }]);
+      `§7Turkuaz çerçeve yapının yerini gösteriyor. Kapı tarafı (turuncu) ${["güneye", "batıya", "kuzeye", "doğuya"][rot]} bakıyor.\n§7Köşe: §f${k.at.x}, ${k.at.y}, ${k.at.z}`,
+      [{ text: "§l§2Onayla, inşa et", v: "ok" }, { text: "90° çevir\n§7Paneli kapatıp 3 sn gösterir", icon: "textures/items/compass_item", v: "turn" },
+        { text: "Yeniden seç\n§75 sn yeni yere bak", icon: "textures/items/spyglass", v: "again" }, { text: "§l§cİptal", v: "no" }]);
     stop();
     if (!r || r.v === "no") return null;
     if (r.v === "turn") {
       rot = (rot + 1) % 4;
+      serbest = false;
+      const kk = kutu(y, base, rot);
+      stop = outline(player.dimension, kk.at, kk.size, rot);
+      safe(() => player.onScreenDisplay.setActionBar(`§s${y.ad}§r: döndürüldü · 3 sn sonra onay paneli`));
+      await system.waitTicks(60);
       continue;
     }
-    return { type: "insaatci", yapi: y.id, at, rot, dim: player.dimension.id, free: !!free, owner: player.id };
+    if (r.v === "again") {
+      serbest = true;
+      stop = await izle(BAKMA);
+      continue;
+    }
+    return { type: "insaatci", yapi: y.id, at: k.at, rot, dim: player.dimension.id, free: !!free, owner: player.id };
   }
 }
 

@@ -134,6 +134,7 @@ function chestTotals(ch) {
   }
   return m;
 }
+const V3floor = (a) => ({ x: Math.floor(a.x), y: Math.floor(a.y), z: Math.floor(a.z) });
 const V3dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const amt = (ch, id) => chestTotals(ch)[id] ?? 0;
 const safe = (f, d) => { try { return f(); } catch { return d; } };
@@ -1732,6 +1733,52 @@ if (run("mimar")) {
   const msgs = store.getJSON(world, `aq:msgs:${player.id}`, []);
   check(msgs.some((m) => /eksik/.test(m.text)), "eksik malzeme telsizle bildirildi");
 
+  // 3b) malzeme değiştirme: Köy Kuyusu'nun kırık taşları taş tuğla olsun
+  const kb = MI.yapi("koy_kuyusu");
+  check(Object.keys(YD.ALTERNATIF).length > 300 && Object.keys(YD.BLOK_DURUM).length > 20, "alternatif ve zorluk tabloları var");
+  check(Object.values(YD.BLOK_DURUM).includes("zor") && Object.entries(YD.BLOK_DURUM).every(([b, d]) => d !== "yok" || !!YD.ALTERNATIF[b] || true), "zor bloklar işaretli");
+  const n0 = MI.needOf(kb)["minecraft:cobblestone"] ?? 0;
+  const n1 = MI.needOf(kb, { cobblestone: "stone_bricks" });
+  check(n0 > 0 && !n1["minecraft:cobblestone"] && n1["minecraft:stone_bricks"] === n0, "değiştirilen blok malzeme listesine yansıyor");
+  const at3b = { x: 380, y: G + 1, z: 300 };
+  mb.task = { type: "insaatci", yapi: "koy_kuyusu", at: at3b, rot: 0, dim: "minecraft:overworld", free: true, degis: { cobblestone: "stone_bricks" } };
+  mb.saveTask();
+  brain.startTask(mb);
+  ticks(20 * 60 * 5, () => mb.task?.done);
+  let tas = 0, kirik = 0;
+  for (let x = 0; x < kb.boyut[0]; x++) for (let y = 0; y < kb.boyut[1]; y++) for (let z = 0; z < kb.boyut[2]; z++) {
+    const t = ow._cell({ x: at3b.x + x, y: at3b.y + y, z: at3b.z + z }).type;
+    if (t === "minecraft:stone_bricks") tas++;
+    if (t === "minecraft:cobblestone") kirik++;
+  }
+  check(tas === n0 && kirik === 0, `kırık taş yerine taş tuğla kondu (${tas}/${n0})`);
+
+  // 3c) menü: malzeme değiştir + yer seçerken panel kapanır, 5 sn sonra onay paneli gelir
+  const txt = (b) => (typeof b.text === "string" ? b.text : JSON.stringify(b.text));
+  const sec = (re) => (f) => ({ canceled: false, selection: f.buttons.findIndex((b) => re.test(txt(b))) });
+  UI.answers.length = 0;
+  UI.answers.push(sec(/Küçük yapılar/), sec(/Köy Kuyusu/), sec(/Malzemeyi değiştir/), sec(/cobblestone|Cobblestone|tile\.cobblestone/),
+    (f) => ({ canceled: false, selection: 2 }), sec(/Tamam/), sec(/Yer seç/));
+  const TA = await import("./scripts/ui/task.js");
+  player.teleport({ x: 400.5, y: G + 1, z: 340.5 });
+  player._rot = { x: 30, y: 0 };
+  const once = UI.shown.length;
+  let verilen = null;
+  const flush = async (n = 4) => { for (let j = 0; j < n; j++) { ticks(1); for (let i = 0; i < 30; i++) await Promise.resolve(); } };
+  const pmimar = MI.mimarMenu(player, mb, (b, plan) => { verilen = plan; });
+  await flush(6);
+  const panelSayisi = UI.shown.length;
+  if (process.env.DBG) for (const f of UI.shown.slice(once)) console.log("   form:", f._title, "|", (f.buttons ?? []).slice(0, 4).map(txt).join(" / ").slice(0, 300));
+  check(panelSayisi - once === 7, `kart ve malzeme panelleri açıldı (${panelSayisi - once})`);
+  await flush(60);
+  check(UI.shown.length === panelSayisi, "yer seçerken panel kapalı (3 sn sonra hâlâ kapalı)");
+  check(player.actionbar.some((a) => /yerine bak/.test(a)), "ekranda 'yerine bak' sayacı var");
+  UI.answers.push(sec(/Onayla/));
+  await flush(60);
+  await pmimar;
+  check(UI.shown.length === panelSayisi + 1 && !!verilen, "5 sn sonra onay paneli geldi, plan verildi");
+  check(verilen?.degis && Object.keys(verilen.degis).length === 1, `değiştirilen malzeme plana geçti ${JSON.stringify(verilen?.degis)}`);
+
   // 4) büyük yapı: en uzun tik
   const at4 = { x: 300, y: G + 1, z: 380 };
   mb.task = { type: "insaatci", yapi: "japon_kalesi", at: at4, rot: 2, dim: "minecraft:overworld", free: true };
@@ -1749,6 +1796,234 @@ if (run("mimar")) {
   console.log(`  Japon Kalesi: ${Math.round(tt.n / 20)} sn, en uzun tik ${tt.worst.toFixed(1)} ms, ort ${tt.avg.toFixed(2)} ms, doğru ${v4.ok}, yanlış ${v4.bad} ${v4.first}`);
   check(mb.task?.done && v4.bad === 0, "Japon Kalesi (17 bin blok) tamamlandı");
   check(tt.worst < 50, "en uzun tik 50 ms altında");
+}
+
+// ---------------------------------------------------------------- 23) Keşif yapay zekâsı (v0.3.1)
+if (run("kesifai")) {
+  console.log("== Keşif yapay zekâsı: menü, yapı/biyom bulma, keşif haritası, beni götür, robot taşıma");
+  const fs = await import("node:fs");
+  const bp = JSON.parse(fs.readFileSync("../../out/Aqualit_BP/entities/kesif.json", "utf8"))["minecraft:entity"];
+  const groups = Object.entries(bp.component_groups).filter(([k]) => /^k_(robot|ucak|gemi|denizalti|arazi|matkap)$/.test(k));
+  check(groups.length === 6 && groups.every(([, g]) => g["minecraft:interact"]?.interactions?.length),
+    "her biçimde dokunma etkileşimi var (v0.3.0'da yoktu: menü açılmıyordu)");
+  const rInt = bp.component_groups.k_robot["minecraft:interact"].interactions[0].on_interact.filters.all_of;
+  check(!rInt.some((f) => f.test === "is_sneaking"), "robotken eğilmeden dokununca menü açılır");
+  check(bp.component_groups.k_ucak["minecraft:rideable"].family_types.includes("aqualit_robot"), "robotlar araca binebilir");
+  check(!!bp.component_groups.k_tick?.["minecraft:tick_world"], "uzaktayken dünyayı işletme grubu var");
+
+  const KA = await import("./scripts/kesif_ai.js");
+  const H = await import("./scripts/harita.js");
+  const O = { x: 0, z: 800 };
+  const G1 = GROUND + 1;
+  // biyomlar: doğuda çöl, gerisi ova
+  ow.biome = (x, z) => (x > 380 && x < 700 && z > 600 && z < 1100 ? "minecraft:desert" : "minecraft:plains");
+  player.teleport({ x: O.x + 0.5, y: G1, z: O.z - 3.5 });
+  give("aqualit:robot_kesif");
+  useOn("aqualit:robot_kesif", { x: O.x, y: GROUND, z: O.z }, "Up", { comp: "aqualit:robot_item", p: { type: "kesif", model: 1 } });
+  ticks(3);
+  const ke = world.entities.find((e) => e.typeId === "aqualit:kesif" && e.isValid && Math.abs(e.location.z - O.z) < 3);
+  const k = KA.kesifOf(ke);
+  check(!!k && k.owner === player.id && k.home && /^Keşif-\d+$/.test(k.name), `Keşif kaydoldu (${k?.name})`);
+  check(store.Robots.list(player.id).some((r) => r.rid === k.rid && r.type === "kesif"), "telsiz listesinde Keşif var");
+
+  // 1) çöl tapınağı
+  set({ x: 520, y: GROUND + 2, z: 820 }, "minecraft:blue_terracotta");
+  KA.gorevVer(k, { is: "yapi", tur: "col_tapinagi", max: 1000 });
+  let used = ticks(20 * 60 * 20, () => k.task?.done && !k.job);
+  const yer = H.Yerler.list(player.id).find((y) => y.tur === "col_tapinagi");
+  console.log("  çöl tapınağı:", JSON.stringify(yer?.pos), "süre(sn):", Math.round(used / 20));
+  check(!!yer && Math.abs(yer.pos.x - 520) < 2 && Math.abs(yer.pos.z - 820) < 2, "çöl tapınağını buldu ve kaydetti");
+  const msgs = () => store.getJSON(world, `aq:msgs:${player.id}`, []).map((m) => m.text);
+  check(msgs().some((t) => /Çöl tapınağı buldum/.test(t)), "telsize 'buldum' mesajı geldi");
+  check(V3dist(ke.location, k.home) < 3 && ke._props["aqualit:form"] === "robot", "eve döndü, robota döndü");
+  check(world.tickingAreaManager.areas.size === 0, "işleme alanı kapatıldı");
+
+  // 2) bilinen yer: ikinci kez sorunca uçmadan söyler
+  const t0 = world.teleports;
+  KA.gorevVer(k, { is: "yapi", tur: "col_tapinagi", max: 1000 });
+  ticks(200, () => k.task?.done && !k.job);
+  check(msgs().some((t) => /zaten biliyorum/.test(t)), "bilinen yapıyı hatırlıyor");
+
+  // 3) çevreyi keşfet: yoldaki köyü kaydeder, haritayı doldurur
+  set({ x: O.x + 70, y: GROUND + 1, z: O.z + 50 }, "minecraft:bell");
+  KA.gorevVer(k, { is: "kesfet", yaricap: 128 });
+  const tt = timedTicks(20 * 60 * 20, () => k.task?.done && !k.job);
+  const koy = H.Yerler.list(player.id).find((y) => y.tur === "koy");
+  console.log(`  keşif: ${Math.round(tt.n / 20)} sn, en uzun tik ${tt.worst.toFixed(1)} ms, harita ${H.Harita.boyut(player.id)} yığın`);
+  check(!!koy, "keşfederken köyü gördü ve kaydetti");
+  check(H.Harita.boyut(player.id) > 40, "DEVASA harita doldu");
+  check(H.Harita.bak(player.id, "minecraft:overworld", { x: O.x + 64, z: O.z })?.biome === "minecraft:plains", "haritada biyom kayıtlı");
+  check(tt.worst < 50, "keşif sırasında en uzun tik 50 ms altında");
+
+  // 4) biyom bul
+  KA.gorevVer(k, { is: "biyom", biyom: "desert", max: 1000 });
+  ticks(20 * 60 * 10, () => k.task?.done && !k.job);
+  const cy = H.Yerler.list(player.id).find((y) => y.tur === "biyom:desert");
+  check(!!cy && ow.getBiome(cy.pos).id === "minecraft:desert", "çölü buldu, yeri gerçekten çöl");
+
+  // 5) yer altı: deneme odası
+  set({ x: O.x - 150, y: -30, z: O.z + 20 }, "minecraft:trial_spawner");
+  KA.gorevVer(k, { is: "yapi", tur: "deneme_odasi", max: 500 });
+  ticks(20 * 60 * 15, () => k.task?.done && !k.job);
+  check(H.Yerler.list(player.id).some((y) => y.tur === "deneme_odasi" && y.pos.y === -30), "yer altındaki deneme odasını buldu");
+
+  // 6) beni götür: araç olur, bindirir, kendisi sürer
+  ke._fizik = true;
+  player.teleport({ x: ke.location.x + 1, y: ke.location.y, z: ke.location.z });
+  const hedef = { x: O.x + 200, y: G1, z: O.z + 60 };
+  await KA.bindirVeGotur(player, k, hedef, "Deneme yeri");
+  ticks(40);
+  check(player._ridingOn === ke && ke._props["aqualit:form"] === "ucak", "uçağa dönüp sahibini bindirdi");
+  ticks(20 * 60 * 3, () => !k.job);
+  console.log("  varış:", JSON.stringify(ke.location));
+  check(Math.hypot(ke.location.x - hedef.x, ke.location.z - hedef.z) < 5, "hedefe kendisi uçtu");
+  check(ke._props["aqualit:form"] === "robot" && !player._ridingOn, "vardı, robota döndü, sahibi indi");
+
+  // 7) robot taşı: yakındaki madenci binip yeni yerine iner
+  give("aqualit:robot_madenci");
+  useOn("aqualit:robot_madenci", V3floor({ x: ke.location.x + 3, y: GROUND, z: ke.location.z }), "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
+  ticks(5);
+  const mb2 = myBots().find((b) => b.type === "madenci" && V3dist(b.loc, ke.location) < 8);
+  const hedef2 = { x: O.x + 260, y: G1, z: O.z + 60 };
+  KA.tasiBaslat(k, [mb2], hedef2, "Maden yeri", true);
+  ticks(60);
+  check(mb2.e._ridingOn === ke && KA.robotYolcuMu(mb2.id), "madenci Keşif'e bindi, beyni durdu");
+  ticks(20 * 60 * 3, () => !k.job);
+  check(!mb2.e._ridingOn && !KA.robotYolcuMu(mb2.id) && Math.hypot(mb2.home.x - hedef2.x, mb2.home.z - hedef2.z) < 6,
+    "robot indi, yeni evi taşındığı yer");
+  ke._fizik = false;
+}
+
+// ---------------------------------------------------------------- 24) Yağma ve sefer (v0.3.1)
+if (run("sefer")) {
+  console.log("== Yağma ve sefer: sandık/fıçı/çömlek/kasa, Keşif'le ekip seferi");
+  const KA = await import("./scripts/kesif_ai.js");
+  const SF = await import("./scripts/sefer.js");
+  const YG = await import("./scripts/yagma.js");
+  const H = await import("./scripts/harita.js");
+  const G1 = GROUND + 1;
+  const B0 = { x: -400, z: -400 };
+  ow.biome = () => "minecraft:plains";
+  player.teleport({ x: B0.x + 0.5, y: G1, z: B0.z - 3.5 });
+  const koy = (tip, p, model = 1) => {
+    const once = new Set(myBots().map((b) => b.id));
+    player.teleport({ x: p.x + 0.5, y: G1, z: p.z - 2.5 });
+    give(`aqualit:robot_${tip === "kilicli" ? "kilicli_" + model : tip}`);
+    ticks(12);                                       // eşya kullanımı arası bekleme (debounce 10 tik)
+    useOn("x", { x: p.x, y: GROUND, z: p.z }, "Up", { comp: "aqualit:robot_item", p: { type: tip, model } });
+    ticks(4);
+    const yeni = myBots().find((b) => b.type === tip && !once.has(b.id));
+    if (!yeni) console.log("  ! robot konamadı", tip, JSON.stringify(p), player.messages.slice(-2));
+    return yeni;
+  };
+
+  // 1) tek robot yağması (üssün dışında)
+  const m1 = koy("madenci", { x: B0.x, z: B0.z });
+  const L = { x: B0.x + 40, y: G1, z: B0.z };
+  set(L, "minecraft:chest");
+  ow._chest(L).addItem(new ItemStack("minecraft:gold_ingot", 5));
+  const Lb = { x: L.x + 4, y: G1, z: L.z + 2 };
+  set(Lb, "minecraft:barrel");
+  ow._chest(Lb).addItem(new ItemStack("minecraft:bread", 7));
+  set({ x: L.x - 3, y: G1, z: L.z + 3 }, "minecraft:decorated_pot");
+  const Lv = { x: L.x + 2, y: G1, z: L.z - 4 };
+  set(Lv, "minecraft:vault", { ominous: false });
+  ow.spawnItem(new ItemStack("minecraft:trial_key", 1), { x: L.x + 1.5, y: G1, z: L.z - 2 });
+  // üssün yanındaki yabancı sandığa dokunmamalı
+  const near = { x: B0.x + 6, y: G1, z: B0.z + 6 };
+  set(near, "minecraft:chest");
+  ow._chest(near).addItem(new ItemStack("minecraft:apple", 3));
+  m1.task = { type: "madenci", mode: "yagma", merkez: L, dim: "minecraft:overworld", r: 16, finish: "chest" };
+  m1.saveTask();
+  brain.startTask(m1);
+  ticks(20 * 60 * 6, () => m1.task?.done);
+  const tot = chestTotals(m1.homeChest());
+  console.log("  yağma sonrası sandık:", JSON.stringify(tot));
+  check(m1.task?.done, "yağma görevi bitti");
+  check(ow._chest(L).total("minecraft:gold_ingot") === 0 && (tot["minecraft:gold_ingot"] ?? 0) === 5, "sandık boşaltıldı, altın Madenci sandığında");
+  check((tot["minecraft:bread"] ?? 0) === 7, "fıçı boşaltıldı");
+  check(ow._cell({ x: L.x - 3, y: G1, z: L.z + 3 }).type === "minecraft:air", "çömlek kırıldı");
+  check((tot["minecraft:diamond"] ?? 0) === 2 && !!store.getJSON(world, "aq:kasa", {})[`minecraft:overworld:${Lv.x},${Lv.y},${Lv.z}`],
+    "yerdeki anahtarla kasa açıldı, ödül ganimet tablosundan geldi");
+  check(ow._chest(near).total("minecraft:apple") === 3, "üssün 24 blok çevresindeki sandığa dokunmadı");
+  check(store.getJSON(world, `aq:msgs:${player.id}`, []).some((m) => /yağmaladım/.test(m.text)), "telsize yağma özeti geldi");
+
+  // 1b) yapı bilgisi: çöl tapınağı — önce TNT tuzağı sökülür, şüpheli kum fırçalanır, sonra sandık
+  const YB = await import("./scripts/yapi_bilgi.js");
+  check(Object.keys(YB.YAPI).length >= 23 && Object.values(YB.YAPI).every((y) => y.blocks?.length && y.isler?.length && y.dims?.length),
+    `${Object.keys(YB.YAPI).length} yapı tanınıyor, her birinin işi belli`);
+  const D0 = { x: B0.x + 70, y: G1, z: B0.z - 40 };
+  set({ x: D0.x, y: G1 + 3, z: D0.z }, "minecraft:blue_terracotta");
+  set({ x: D0.x + 1, y: G1, z: D0.z + 1 }, "minecraft:stone_pressure_plate");
+  for (let i = 0; i < 3; i++) set({ x: D0.x + i, y: G1 - 2, z: D0.z + 1 }, "minecraft:tnt");
+  set({ x: D0.x + 3, y: G1, z: D0.z + 3 }, "minecraft:chest");
+  ow._chest({ x: D0.x + 3, y: G1, z: D0.z + 3 }).addItem(new ItemStack("minecraft:diamond", 1));
+  set({ x: D0.x - 3, y: G1, z: D0.z - 2 }, "minecraft:suspicious_sand");
+  m1.task = { type: "madenci", mode: "yagma", merkez: D0, dim: "minecraft:overworld", r: 12, tur: "col_tapinagi", finish: "chest" };
+  m1.saveTask();
+  brain.startTask(m1);
+  ticks(20 * 60 * 6, () => m1.task?.done);
+  const t2 = chestTotals(m1.homeChest());
+  let tnt = 0;
+  for (let i = 0; i < 3; i++) tnt += ow._cell({ x: D0.x + i, y: G1 - 2, z: D0.z + 1 }).type === "minecraft:tnt" ? 1 : 0;
+  check(m1.task?.done && tnt === 0 && (t2["minecraft:tnt"] ?? 0) >= 3, "çöl tapınağının TNT tuzağı söküldü, TNT'ler sandıkta");
+  check(ow._cell({ x: D0.x + 1, y: G1, z: D0.z + 1 }).type === "minecraft:air", "basınç levhası söküldü");
+  check(ow._cell({ x: D0.x - 3, y: G1, z: D0.z - 2 }).type === "minecraft:sand" && (t2["minecraft:archer_pottery_sherd"] ?? 0) >= 1,
+    "şüpheli kum fırçalandı (arkeoloji ganimeti)");
+  check((t2["minecraft:diamond"] ?? 0) >= 3, "tapınak sandığı da boşaltıldı");
+
+  // 2) sefer: 4 Kılıçlı + 6 madenci (10 robot: 8 koltukta/kanatta/üstte, 2 içeride), yer altındaki deneme odası
+  give("aqualit:robot_kesif");
+  useOn("aqualit:robot_kesif", { x: B0.x - 6, y: GROUND, z: B0.z + 10 }, "Up", { comp: "aqualit:robot_item", p: { type: "kesif", model: 1 } });
+  ticks(3);
+  const ke = world.entities.find((e) => e.typeId === "aqualit:kesif" && e.isValid && V3dist(e.location, { x: B0.x - 5.5, y: G1, z: B0.z + 10.5 }) < 2);
+  const k = KA.kesifOf(ke);
+  ke._fizik = true;
+  const ekip = [m1];
+  for (let i = 0; i < 5; i++) ekip.push(koy("madenci", { x: B0.x - 10 - i * 3, z: B0.z + 14 }));
+  for (let i = 0; i < 4; i++) ekip.push(koy("kilicli", { x: B0.x + i * 3, z: B0.z + 16 }, 1 + (i % 2)));
+  check(ekip.every(Boolean) && ekip.length === 10, "10 robotluk ekip hazır");
+  // deneme odası: yer altında 24x5x24 oda, sandıklar, çömlek, kasa, çıkarıcı
+  const T0 = { x: B0.x + 220, y: -30, z: B0.z + 40 };
+  for (let x = -12; x <= 12; x++) for (let z = -12; z <= 12; z++) for (let y = 0; y < 5; y++) set({ x: T0.x + x, y: T0.y + y, z: T0.z + z }, "minecraft:air");
+  for (let x = -12; x <= 12; x++) for (let z = -12; z <= 12; z++) set({ x: T0.x + x, y: T0.y - 1, z: T0.z + z }, "minecraft:tuff_bricks");
+  set({ x: T0.x, y: T0.y, z: T0.z }, "minecraft:trial_spawner");
+  const TC = [{ x: T0.x + 6, y: T0.y, z: T0.z + 6 }, { x: T0.x - 7, y: T0.y, z: T0.z + 5 }];
+  for (const c of TC) { set(c, "minecraft:chest"); ow._chest(c).addItem(new ItemStack("minecraft:iron_ingot", 4)); }
+  set({ x: T0.x - 5, y: T0.y, z: T0.z - 6 }, "minecraft:decorated_pot");
+  set({ x: T0.x + 8, y: T0.y, z: T0.z - 8 }, "minecraft:vault", { ominous: false });
+  ow.spawnItem(new ItemStack("minecraft:trial_key", 1), { x: T0.x + 7.5, y: T0.y, z: T0.z - 7.5 });
+  const err = SF.seferBaslat({ k, ekip, tur: "deneme_odasi", max: 600 });
+  check(!err, `sefer başladı ${err ?? ""}`);
+  let bindi = 0, guard = 0, vardi = false, gizli = 0;
+  const used = ticks(20 * 60 * 40, () => {
+    bindi = Math.max(bindi, ekip.filter((b) => b.e._ridingOn === ke).length);
+    gizli = Math.max(gizli, ekip.filter((b) => b.e._effects.invisibility && KA.robotYolcuMu(b.id)).length);
+    if (ekip.some((b) => b.type === "kilicli" && b.mode === "guard" && b.zone && Math.hypot(b.zone.x - T0.x, b.zone.z - T0.z) < 4)) guard++;
+    if (V3dist(ke.location, T0) < 6) vardi = true;
+    if (process.env.DBG && (globalThis.__dc = (globalThis.__dc ?? 0) + 1) % 10 === 0) console.log("   dbg", globalThis.__dc, SF.seferler.get(k.rid)?.asama, JSON.stringify(V3floor(ke.location)), ke._props["aqualit:form"],
+      ekip.map((b) => (b.e._ridingOn === ke ? "B" : "-") + b.type[0] + (b.mode ?? "") ).join(" "), ke._riders.length, ke._riders.map((r) => ekip.findIndex((b) => b.e === r)).join(","), ekip.map((b) => b.e.id).join(","));
+    return !SF.seferler.has(k.rid);
+  });
+  const left = TC.reduce((n, c) => n + ow._chest(c).total("minecraft:iron_ingot"), 0);
+  const msgs = store.getJSON(world, `aq:msgs:${player.id}`, []).map((m) => m.text);
+  console.log("  sefer süresi(sn):", Math.round(used / 20), "en çok binen:", bindi, "kalan demir:", left);
+  check(!SF.seferler.has(k.rid), "sefer bitti");
+  check(bindi === 8 && gizli === 2, `8 robot koltuk/kanat/üstte, 2 robot içeride (${bindi}+${gizli})`);
+  check(ekip.every((b) => !b.e._effects.invisibility), "inince içeridekiler görünür oldu");
+  check(vardi, "Keşif yer altındaki deneme odasına indi");
+  check(guard > 0, "Kılıçlılar deneme odasını korudu");
+  check(left === 0, "deneme odası sandıkları yağmalandı");
+  check(ekip.every((b) => !b.e._ridingOn && !KA.robotYolcuMu(b.id)), "dönüşte herkes indi");
+  if (!ekip.every((b) => V3dist(b.loc, ke.location) < 12)) console.log("   konumlar:", JSON.stringify(V3floor(ke.location)), ekip.map((b) => JSON.stringify(V3floor(b.loc))).join(" "));
+  check(ekip.every((b) => V3dist(b.loc, ke.location) < 12), "ekip Keşif'le birlikte eve döndü");
+  check(msgs.some((t) => /Sefer bitti/.test(t)), "telsize sefer özeti geldi");
+  ticks(20 * 60 * 2);
+  const all = {};
+  for (const b of ekip) if (b.type === "madenci") for (const [id, n] of Object.entries(chestTotals(b.homeChest()))) all[id] = (all[id] ?? 0) + n;
+  check((all["minecraft:iron_ingot"] ?? 0) >= 8, "ganimet madencilerin sandıklarına kondu");
+  check(ekip.filter((b) => b.type === "kilicli").every((b) => b.mode === "follow"), "Kılıçlılar eski moduna döndü");
+  ke._fizik = false;
 }
 
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");

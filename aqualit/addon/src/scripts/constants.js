@@ -10,6 +10,7 @@ export const TYPE_NAME = {
   oduncu: "Oduncu",
   kilicli: "Kılıçlı",
   insaatci: "Mimar",
+  kesif: "Keşif",
 };
 export const TYPE_TOOL = {
   madenci: "aqualit:aqualit_pickaxe",
@@ -26,6 +27,7 @@ export const TYPE_ICON = {
   oduncu: "textures/items/robot_oduncu",
   kilicli: "textures/items/robot_kilicli_1",
   insaatci: "textures/items/robot_insaatci",
+  kesif: "textures/items/robot_kesif",
 };
 export function robotIcon(type, model = 1) {
   return type === "kilicli" ? `textures/items/robot_kilicli_${model}` : TYPE_ICON[type];

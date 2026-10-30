@@ -9,6 +9,7 @@ import { safe, fire } from "./util.js";
 import * as B from "./blocks.js";
 import * as FX from "./fx.js";
 import { ICONS } from "./ikon_data.js";
+import { anaMenu, kesifKuruldu, kesifToplandi } from "./kesif_ai.js";
 
 export const KESIF_ID = "aqualit:kesif";
 export const KFORMS = ["robot", "ucak", "gemi", "denizalti", "arazi", "matkap"];
@@ -34,7 +35,7 @@ const snd = (dim, id, p, o) => safe(() => dim.playSound(id, p, o));
 
 export const formOf = (e) => safe(() => e.getProperty("aqualit:form"), "robot");
 const ownerOf = (e) => safe(() => e.getDynamicProperty("aq:sahip"));
-const ridersOf = (e) => safe(() => e.getComponent("minecraft:rideable")?.getRiders() ?? [], []);
+export const ridersOf = (e) => safe(() => e.getComponent("minecraft:rideable")?.getRiders() ?? [], []);
 
 export function ridingKesif(pl) {
   const r = safe(() => pl.getComponent("minecraft:riding")?.entityRidingOn);
@@ -60,12 +61,14 @@ export function spawnKesif(player, block, face) {
     if (it?.typeId === "aqualit:robot_kesif") safe(() => inv.setItem(slot, it.amount > 1 ? Object.assign(it, { amount: it.amount - 1 }) : undefined));
   }
   snd(dim, "aqualit.robot.boot", p, { volume: 0.8 });
-  safe(() => player.sendMessage("§s§lKeşif hazır!§r §7Robotken ona dokun: araç seç. Araçken dokun: bin, ileri tuşuyla baktığın yöne sür. " +
-    "Eğilip dokun ya da binerken telsizi/kumandayı kullan: menü."));
+  system.run(() => kesifKuruldu(e));
+  safe(() => player.sendMessage("§s§lKeşif hazır!§r §7Ona dokun: menü (yapı/biyom bul, keşfet, beni götür, araç ol). " +
+    "Araçken dokun: bin; eğilip dokun ya da binerken telsizi kullan: menü."));
 }
 
-function collect(e, pl) {
+export function collect(e, pl) {
   const dim = e.dimension, p = { ...e.location };
+  kesifToplandi(e);
   for (const r of ridersOf(e)) safe(() => e.getComponent("minecraft:rideable").ejectRider(r));
   safe(() => e.remove());
   safe(() => {
@@ -125,8 +128,8 @@ export function transform(e, to, pl) {
   return true;
 }
 
-// ------------------------------------------------------------------ menü
-async function menu(pl, e) {
+// ------------------------------------------------------------------ araç menüsü (kendin sür)
+export async function aracMenu(pl, e) {
   if (!safe(() => e.isValid, false)) return;
   const form = formOf(e);
   const kaz = safe(() => e.getDynamicProperty("aq:kaz"), "yatay") ?? "yatay";
@@ -295,7 +298,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
   }
   if (form === "robot" || pl.isSneaking) {
     ev.cancel = true;
-    system.run(() => fire(menu(pl, e), "keşif menüsü"));
+    system.run(() => fire(anaMenu(pl, e), "keşif menüsü"));
   }
 });
 
@@ -305,5 +308,5 @@ world.beforeEvents.itemUse.subscribe((ev) => {
   const v = ridingKesif(ev.source);
   if (!v) return;
   ev.cancel = true;
-  system.run(() => fire(menu(ev.source, v), "keşif menüsü"));
+  system.run(() => fire(anaMenu(ev.source, v), "keşif menüsü"));
 });

@@ -16,12 +16,17 @@ ROOT = {'robot': 'root', 'ucak': 'u_root', 'gemi': 'g_root', 'denizalti': 'd_roo
 # çarpışma kutusu (genişlik, yükseklik) ve koltuklar (y, [(x, z)...]); +z ileri
 BOX = {'robot': (0.7, 1.4), 'ucak': (2.2, 1.2), 'gemi': (1.3, 1.0), 'denizalti': (1.5, 1.5), 'arazi': (1.7, 1.3),
        'matkap': (1.7, 1.5)}
-SEATS = {
-    'ucak': (0.75, [(0, 0.6), (-1.1, 0.0), (1.1, 0.0), (0, -0.4), (0, -1.3)]),
-    'gemi': (0.45, [(0, 1.0), (0, 0.3), (0, -0.4), (0, -1.1), (0, 1.6)]),
-    'denizalti': (1.0, [(0, 0.6), (0, -0.2), (0, -1.0), (0, -1.7), (0, 1.3)]),
-    'arazi': (0.7, [(0.35, 0.3), (-0.35, 0.3), (0.35, -0.5), (-0.35, -0.5), (0, -1.1)]),
-    'matkap': (1.0, [(0, -0.3), (0.5, -0.9), (-0.5, -0.9)]),
+# koltuklar: (x, y, z); +z ileri. Robotlar koltuk dışında kanatlara, tavana ve üst üste de oturur.
+# Koltuk yetmezse (en çok 10 robot) kalanlar aracın içine girer: görünmez olur, inince çıkar (kesif_ai.js).
+SEATS = {   # robot binince 0.56 ölçekli oturur: oturan robot ~0.6 blok, üst üste binen onun başına oturur
+    'ucak': [(0, 0.75, 0.6), (0, 0.75, -0.4), (-1.1, 0.75, 0.0), (1.1, 0.75, 0.0), (-1.75, 0.7, -0.1), (1.75, 0.7, -0.1),
+             (0, 0.75, -1.3), (0, 1.35, -0.4)],                      # pilot, arka, iki kanat ×2, kuyruk, arkadakinin üstü
+    'gemi': [(0, 0.45, 1.0), (0, 0.45, 0.3), (0, 0.45, -0.4), (0, 0.45, -1.1), (0, 0.45, 1.6), (-0.45, 0.45, 0.3),
+             (0.45, 0.45, -0.4), (0, 1.05, -0.4)],
+    'denizalti': [(0, 1.0, 0.6), (0, 1.0, -0.2), (0, 1.0, -1.0), (0, 1.0, -1.7), (0, 1.0, 1.3), (0, 1.6, -0.2)],
+    'arazi': [(0.35, 0.7, 0.3), (-0.35, 0.7, 0.3), (0.35, 0.7, -0.5), (-0.35, 0.7, -0.5), (0, 0.7, -1.1),
+              (0, 1.45, -0.1), (0, 2.05, -0.1)],                       # tavanda iki robot üst üste
+    'matkap': [(0, 1.0, -0.3), (0.5, 1.0, -0.9), (-0.5, 1.0, -0.9), (0, 1.6, -0.9), (0, 2.2, -0.9)],
 }
 
 
@@ -37,17 +42,29 @@ def kesif_bp():
         g = {'minecraft:collision_box': {'width': w, 'height': h},
              'minecraft:physics': {'has_gravity': f not in ('ucak', 'denizalti'), 'has_collision': True}}
         if f in SEATS:
-            y, pos = SEATS[f]
+            pos = SEATS[f]
             g['minecraft:rideable'] = {
-                'seat_count': len(pos), 'family_types': ['player'], 'interact_text': 'Bin',
+                'seat_count': len(pos), 'family_types': ['player', 'aqualit_robot'], 'interact_text': 'Bin',
                 'crouching_skip_interact': True, 'pull_in_entities': False,
-                'seats': [{'position': [x, y, z], 'min_rider_count': 0, 'max_rider_count': len(pos)} for x, z in pos]}
+                'seats': [{'position': [x, y, z], 'min_rider_count': 0, 'max_rider_count': len(pos)} for x, y, z in pos]}
         if f == 'gemi':
             g['minecraft:buoyant'] = {'base_buoyancy': 1.0, 'apply_gravity': True, 'simulate_waves': True,
                                       'big_wave_probability': 0.03, 'big_wave_speed': 10.0,
                                       'liquid_blocks': ['minecraft:water', 'minecraft:flowing_water']}
+        # dokununca menü: robotken her dokunuşta, araçken eğilip dokununca (dokunmak binmek)
+        # (v0.3.0'a kadar etkileşim yoktu: robot haline dokunmak oyunda vuruş sayılıyor, menü hiç açılmıyordu)
+        g['minecraft:interact'] = {'interactions': [{
+            'on_interact': {'filters': {'all_of': [{'test': 'is_family', 'subject': 'other', 'value': 'player'}] + (
+                [] if f == 'robot' else [{'test': 'is_sneaking', 'subject': 'other'}])},
+                'event': 'aqualit:kesif_menu', 'target': 'self'},
+            'interact_text': 'action.interact.aqualit.kesif', 'swing': True}]}
         groups[f'k_{f}'] = g
-    events = {'minecraft:entity_spawned': {'add': {'component_groups': ['k_robot']}}}
+    # uzaktayken (yapı ararken, harita çıkarırken) çevresindeki yığınları işletir
+    groups['k_tick'] = {'minecraft:tick_world': {'radius': 2, 'never_despawn': True}}
+    events = {'minecraft:entity_spawned': {'add': {'component_groups': ['k_robot']}},
+              'aqualit:kesif_menu': {},
+              'aqualit:tick_on': {'add': {'component_groups': ['k_tick']}},
+              'aqualit:tick_off': {'remove': {'component_groups': ['k_tick']}}}
     for f in FORMS:
         events[f'aqualit:form_{f}'] = {
             'remove': {'component_groups': [f'k_{o}' for o in FORMS if o != f]},
@@ -72,6 +89,7 @@ def kesif_bp():
             'minecraft:breathable': {'breathes_water': True, 'breathes_air': True},
             'minecraft:collision_box': {'width': 0.7, 'height': 1.4},
             'minecraft:physics': {'has_gravity': True, 'has_collision': True},
+            'minecraft:nameable': {'always_show': False, 'allow_name_tag_renaming': False},
         },
         'events': events,
     }}
@@ -203,6 +221,31 @@ def kesif_anims():
     return {'format_version': '1.8.0', 'animations': {f'animation.aqualit.kesif.{k}': v for k, v in A.items()}}
 
 
+def kafa_simgeleri(geo, tex, glow, out_dir):
+    """Konum çubuğu: Keşif'in kafası (pilot başlığı, gözlük) ve gönderdiği konum iğnesi."""
+    import kafa_ikon as KI
+    import render_z as Z
+    from PIL import Image
+    os.makedirs(out_dir, exist_ok=True)
+    roots = {ROOT[f] for f in FORMS if f != 'robot'}
+    size = 32
+    cam = Z.Cam(yaw=24, elev=12, scale=1.25, size=(size, size), center=(0, 17.5, 0))
+    img = Z.render(geo, tex, {}, roots, cam, glow=glow, bg=KI.KEY, ss=1, shadow=False, only={'head'}).convert('RGBA')
+    px = img.load()
+    for y in range(size):
+        for x in range(size):
+            r, g, b, _ = px[x, y]
+            if abs(r - 255) < 40 and g < 60 and abs(b - 255) < 40:
+                px[x, y] = (0, 0, 0, 0)
+    out = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    a = img.split()[3]
+    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        out.paste(Image.new('RGBA', (size, size), (8, 30, 28, 255)), (dx, dy), a)
+    out.alpha_composite(img)
+    out.save(os.path.join(out_dir, 'bas_kesif.png'))
+    KI.pin_icon(out).save(os.path.join(out_dir, 'pin_kesif.png'))
+
+
 def build(RP, BP, wj):
     import kesif as K
     geo, tex, glow = K.build(W=512)
@@ -216,6 +259,7 @@ def build(RP, BP, wj):
     wj(f'{RP}/render_controllers/aqualit_kesif.render_controllers.json', kesif_render())
     wj(f'{RP}/animation_controllers/aqualit_kesif.animation_controllers.json', kesif_ctrl())
     wj(f'{RP}/animations/aqualit_kesif.animation.json', kesif_anims())
+    kafa_simgeleri(geo, tex, glow, f'{RP}/textures/ui/aqualit_bas')
     bones = {b['name'] for b in geo['minecraft:geometry'][0]['bones']}
     used = set()
     for a in kesif_anims()['animations'].values():

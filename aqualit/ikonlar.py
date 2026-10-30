@@ -112,6 +112,29 @@ def toplayici():
         g[y][3] = 'u'; g[y][12] = 't'
     return g
 
+def kesif():
+    """Keşif Robotu: 3B modeldeki gibi deri pilot başlığı + kulaklıklar, alında mavi camlı pirinç gözlük,
+    krem atkı, göğüste pusula, yanlarda jet çantası, antenin ucunda radar çanağı."""
+    g = base()
+    g[0] = list(".....LHHWHHL....")     # radar çanağı
+    g[1] = list("......DLYLD.....")
+    g[2] = list("........M.......")
+    g[3] = list("...mooovvooom...")     # başlığın kubbesi (dikiş)
+    g[4] = list("..myUSyQQyUSym..")     # pirinç gözlük, mavi camlar
+    for y in range(5, 10):              # kulak kapakları
+        g[y][1] = 'm' if y in (5, 9) else 'o'
+        g[y][14] = 't' if y in (5, 9) else 'm'
+    g[5][2] = 'o'
+    g[5][13] = 'm'
+    g[11] = list("...nNnNnNnNnN...")    # krem atkı
+    g[12][12] = 'N'
+    g[12] = list("...cLMyYRyMDa...")    # jet çantası + pusula
+    g[13] = list("...cLMybYyMDa...")
+    g[14] = list("...cLMMMMMMDa...")
+    g[15] = list(".....DD..DD.....")
+    g[12][13] = 'N'                     # atkının ucu sırta sarkar
+    return g
+
 DIGIT = {
     1: [".Y.", "YY.", ".Y.", ".Y.", "YYY"],
     2: ["YY.", "..Y", ".Y.", "Y..", "YYY"],
@@ -180,6 +203,7 @@ ICONS = {
     'robot_oduncu': ('Oduncu Robot', oduncu),
     'robot_insaatci': ('İnşaatçı Robot', insaatci),
     'robot_toplayici': ('Toplayıcı Robot', toplayici),
+    'robot_kesif': ('Keşif Robotu', kesif),
 }
 for m in range(1, 6):
     ICONS[f'robot_kilicli_{m}'] = (f'Kılıçlı Robot M{m}', (lambda mm: (lambda: kilicli(mm)))(m))

@@ -69,7 +69,9 @@ def robot_bp():
                 'priority': 3, 'must_see': False, 'reselect_targets': True, 'within_radius': 16,
                 'entity_types': [{'filters': {'all_of': [
                     {'test': 'is_family', 'subject': 'other', 'value': 'monster'},
-                    {'test': 'is_family', 'subject': 'other', 'operator': '!=', 'value': 'creeper'}]},
+                    {'test': 'is_family', 'subject': 'other', 'operator': '!=', 'value': 'creeper'},
+                    # Warden'a asla saldırmaz (antik şehirde herkesi öldürür)
+                    {'test': 'is_family', 'subject': 'other', 'operator': '!=', 'value': 'warden'}]},
                     'max_dist': 16}]},
         },
         'aqualit:k_retreat': {
@@ -601,7 +603,7 @@ def robot_rp(skins):
                 'geometry': {'default': 'geometry.aqualit.robot'},
                 'animations': anims,
                 'scripts': {
-                    'scale': '0.8',
+                    'scale': '0.8 * (q.is_riding ? 0.7 : 1.0)',      # Keşif'e binince küçülür: koltuklara, kanatlara sığar
                     'pre_animation': pre,
                     'animate': ['setup', {'look_at_target': f"{P('act')} == 'none' && {P('act2')} == 'none'"},
                                 'move_ctrl', 'act_ctrl', 'act2_ctrl'],

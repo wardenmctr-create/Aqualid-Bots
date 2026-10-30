@@ -8,6 +8,7 @@ import os
 
 import yapilar as Y
 import yapi_paket as P
+import yapi_alternatif as AL
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIS = os.path.join(HERE, '..', 'yapilar')
@@ -41,16 +42,26 @@ def build(bp, rp, js_path):
         os.makedirs(os.path.join(rp, 'textures', 'ui', 'aqualit_yapi'), exist_ok=True)
         img.save(os.path.join(rp, 'textures', 'ui', 'aqualit_yapi', key + '.png'))
         mal = P.malzeme(cells)
+        bloklar = {}
+        for name, st in cells.values():
+            if name != 'air' and P.esya(name, st):
+                bloklar[name] = bloklar.get(name, 0) + 1
         d = {'id': key, 'ad': info['ad'], 'kat': info['kat'], 'boyut': [W, H, D],
              'blok': sum(1 for v in cells.values() if v[0] != 'air'),
-             'malzeme': {k: v for k, v in mal.items() if not k.startswith('?')}}
+             'malzeme': {k: v for k, v in mal.items() if not k.startswith('?')},
+             'bloklar': dict(sorted(bloklar.items(), key=lambda kv: -kv[1]))}
         if info.get('aciklama'):
             d['aciklama'] = info['aciklama']
         if info.get('yazar'):
             d['yazar'] = info['yazar']
         data.append(d)
+    durum, alt, esya = AL.tablo({b for d in data for b in d['bloklar']})
     with open(js_path, 'w', encoding='utf-8') as f:
         f.write('// build.py üretir (gen/yapi_kutuphane.py). Elle düzenleme.\n')
         f.write(f'export const KATEGORI = {json.dumps(KATEGORI, ensure_ascii=False)};\n')
+        f.write('// hayatta kalmada: yok = bulunmaz, zor = Nether/End/nadir/ipeksi dokunuş\n')
+        f.write(f'export const BLOK_DURUM = {json.dumps(durum, separators=(",", ":"))};\n')
+        f.write(f'export const ALTERNATIF = {json.dumps(alt, separators=(",", ":"))};\n')
+        f.write(f'export const BLOK_ESYA = {json.dumps(esya, separators=(",", ":"))};\n')
         f.write(f'export const YAPILAR = {json.dumps(data, ensure_ascii=False, separators=(",", ":"))};\n')
     return data

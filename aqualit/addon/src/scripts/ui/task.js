@@ -10,6 +10,8 @@ import { setProp, getProp } from "../store.js";
 import { rodRobot } from "./kilicli_ui.js";
 import { bagMenu, EDIT_RANGE } from "./canta.js";
 import { mimarMenu, yapi } from "../mimar.js";
+import { Yerler } from "../harita.js";
+import { YAPI, ikon } from "../kesif_ai.js";
 
 const TOOL_ICON = {
   madenci: "textures/items/aqualit_pickaxe", kurekci: "textures/items/aqualit_shovel",
@@ -29,6 +31,7 @@ export function describeTask(bot) {
   const T = bot.task;
   if (!T) return "Görev yok";
   if (T.mode === "skyblock") return `Taş makinesinden ${T.items?.[0]?.amount ?? 0} taş`;
+  if (T.mode === "yagma") return `Yağma: ${T.ad ?? "seçilen yer"} (${T.r} blok çevre)`;
   if (T.type === "insaatci") {
     const y = yapi(T.yapi);
     const pct = y ? Math.min(100, Math.floor(((bot.prog?.done ?? 0) * 100) / Math.max(1, y.blok))) : 0;
@@ -61,6 +64,7 @@ export async function robotMenu(player, bot) {
     `§7En fazla uzaklık: §f${distText(bot.maxDist)}`,
   ].join("\n");
   const btns = [{ text: "§lGörev ver", icon: TOOL_ICON[bot.type], act: "task" }];
+  if (bot.type !== "insaatci") btns.push({ text: "§lYağmala§r\n§7Sandık, fıçı, çömlek, kasa boşaltır", icon: "textures/blocks/barrel_side", act: "yagma" });
   if (active) btns.push({ text: "Görevi durdur", icon: "textures/items/clock_item", act: "stop" });
   else if (T && !T.done) btns.push({ text: "Görevi sürdür", icon: "textures/items/clock_item", act: "resume" });
   btns.push({ text: "Çantası", icon: "textures/items/aqualit_chest", act: "inv" });
@@ -73,6 +77,7 @@ export async function robotMenu(player, bot) {
   if (!r) return;
   switch (r.act) {
     case "task": return giveTask(player, bot);
+    case "yagma": return yagmaTask(player, bot);
     case "stop": commandStop(bot); return player.sendMessage(`§s${bot.name}§r görevi durdurdu.`);
     case "resume": commandResume(bot); return player.sendMessage(`§s${bot.name}§r göreve devam ediyor.`);
     case "inv": {
@@ -131,6 +136,23 @@ function beginTask(player, bot, task) {
   startTask(bot);
   player.sendMessage(`§s${bot.name}§r: Göreve başlıyorum! (${describeTask(bot)})`);
   safe(() => player.playSound("random.levelup", { pitch: 1.8, volume: 0.5 }));
+}
+
+/** Yağma görevi: yer ve çevre seçilir. */
+async function yagmaTask(player, bot) {
+  const btns = [{ text: "§lBulunduğum yer§r\n§7Senin çevren", icon: "textures/items/compass_item", v: "ben" }];
+  for (const y of Yerler.list(player.id).filter((y) => y.dim === bot.dim.id && YAPI[y.tur]).slice(-20).reverse()) {
+    btns.push({ text: `§l${y.ad}§r\n§7Keşif buldu · ${Math.round(V.hdist(y.pos, bot.loc))} blok`, icon: ikon(y.tur), y });
+  }
+  const r = await menu(player, `${bot.name} · yağma`, "Nereyi yağmalasın? Senin Aqualit sandıklarına ve üssünün 24 blok çevresine dokunmaz.\n§7Uzak yerler için Keşif'le sefer düzenlemek daha hızlı.", btns);
+  if (!r) return;
+  const o = await modal(player, `${bot.name} · yağma`, [
+    { type: "dropdown", label: "Ne kadar çevresi?", items: ["16 blok", "32 blok", "48 blok"], value: 1 },
+  ], "Başla");
+  if (!o) return;
+  const merkez = r.y ? r.y.pos : { x: Math.floor(player.location.x), y: Math.floor(player.location.y), z: Math.floor(player.location.z) };
+  beginTask(player, bot, { type: bot.type, mode: "yagma", merkez, dim: bot.dim.id, r: [16, 32, 48][o[0]] ?? 32,
+    ad: r.y?.ad ?? "senin yanın", tur: r.y?.tur, finish: "chest" });
 }
 
 async function amounts(player, title, keys, by, def = 16) {

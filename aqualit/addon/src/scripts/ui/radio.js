@@ -4,6 +4,7 @@ import { menu, modal, confirm } from "./forms.js";
 import { Robots, Chests, getJSON, setJSON, setProp } from "../store.js";
 import { bots, botByRid, commandReturn, commandStop, commandResume } from "../brain.js";
 import { messages, unreadCount, markAllRead, markRead, answer, clearMessages, timeAgo } from "../messages.js";
+import { anaMenu, kesifByRid } from "../kesif_ai.js";
 import { TYPE_NAME, robotIcon, CHEST_NAME, CHEST_ICON, distText, DIST_OPTS, DIST_LABELS, distIndex } from "../constants.js";
 import { V, fmtPos, direction, dimName, safe } from "../util.js";
 import { describeTask, inventoryText, renameRobot } from "./task.js";
@@ -65,6 +66,15 @@ export async function radioRobot(player, bot) {
 }
 
 async function radioEntry(player, r) {
+  if (r.type === "kesif") {
+    const k = kesifByRid(r.rid);
+    if (k) return anaMenu(player, k.e);
+    const c = await menu(player, `§l${r.name}`, `§7Keşif şu an yüklü değil.\n§7Son konumu: §f${r.pos ? fmtPos(r.pos) : "?"}`, [
+      { text: "Son konumunu gönder", icon: "textures/items/map_filled", v: "pin" }, { text: "§cListeden sil", v: "sil" }]);
+    if (c?.v === "sil") Robots.remove(player.id, r.rid);
+    else if (c?.v === "pin" && r.pos) player.sendMessage(`§s${r.name}§r son görüldüğü yer: §f${fmtPos(r.pos)}`);
+    return;
+  }
   const info = liveInfo(player, r);
   const b = info.b;
   if (b && b.type === "kilicli") return rodRobot(player, b);

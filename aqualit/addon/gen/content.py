@@ -179,6 +179,7 @@ LANG_EXTRA = {
     'action.interact.aqualit.gear': 'Ayarla',
     'action.interact.aqualit.chest': 'Aç',
     'action.interact.aqualit.kit': 'Onar',
+    'action.interact.aqualit.kesif': 'Menü',
     'tile.aqualit.kapali_robot.name': 'Kapalı Robot',
     'tile.aqualit:kapali_robot.name': 'Kapalı Robot',
 }

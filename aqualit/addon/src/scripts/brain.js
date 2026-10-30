@@ -9,6 +9,7 @@ import { ROBOT_ID } from "./constants.js";
 import { safe, log } from "./util.js";
 import { Budget } from "./budget.js";
 import { Robots, getJSON, setJSON, setProp } from "./store.js";
+import { robotYolcuMu } from "./kesif_ai.js";
 
 export const bots = new Map(); // varlık kimliği -> Bot
 
@@ -134,6 +135,7 @@ function tickBot(id, b) {
     return;
   }
   if (!b.owner) return;
+  if (robotYolcuMu(b.id)) return;            // Keşif'te yolcu: yerinden kıpırdamaz
   if (b.type === "kilicli") {
     try {
       kilicliTick(b);

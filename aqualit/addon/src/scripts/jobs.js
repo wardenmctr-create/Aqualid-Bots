@@ -8,6 +8,7 @@ import { canReach } from "./path.js";
 import { WALK, RUN } from "./bot.js";
 import { readAnswer } from "./messages.js";
 import { mimarJob } from "./mimar.js";
+import { yagmaGorevi } from "./yagma.js";
 
 const M = (s) => "minecraft:" + s;
 
@@ -1351,6 +1352,7 @@ export function* farmerJob(bot) {
 // ======================================================================= dağıtıcı
 export function jobFor(bot) {
   if (!bot.task || bot.task.done || bot.task.paused) return idleJob(bot);
+  if (bot.task.mode === "yagma") return yagmaGorevi(bot);
   switch (bot.type) {
     case "madenci": return minerJob(bot);
     case "kurekci": return diggerJob(bot);
