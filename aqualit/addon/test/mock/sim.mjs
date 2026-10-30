@@ -1874,7 +1874,10 @@ if (run("kesifai")) {
   await KA.bindirVeGotur(player, k, hedef, "Deneme yeri");
   ticks(40);
   check(player._ridingOn === ke && ke._props["aqualit:form"] === "ucak", "uçağa dönüp sahibini bindirdi");
-  ticks(20 * 60 * 3, () => !k.job);
+  ticks(20 * 60 * 3, () => {
+    if (process.env.DBG3) console.log("   d", JSON.stringify(V3floor(ke.location)), ke._props["aqualit:form"], ke._riders.length, k.status);
+    return !k.job;
+  });
   console.log("  varış:", JSON.stringify(ke.location));
   check(Math.hypot(ke.location.x - hedef.x, ke.location.z - hedef.z) < 5, "hedefe kendisi uçtu");
   check(ke._props["aqualit:form"] === "robot" && !player._ridingOn, "vardı, robota döndü, sahibi indi");
