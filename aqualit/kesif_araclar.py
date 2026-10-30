@@ -592,6 +592,8 @@ def arazi():
     lb = fill(14, 2, 'y')
     for x0 in range(1, 13, 3):
         dots(lb, [(x0, 0), (x0 + 1, 0), (x0, 1), (x0 + 1, 1)], '$')
+    add_box(f, 'a_body', 'a_rack', (-8, 23, -13), (8, 24, 4), base='v',
+            **auto((-8, 23, -13), (8, 24, 4), base='v', top=deck(16, 17), bottom=fill(16, 17, 't')))
     add_box(f, 'a_body', 'a_lightbar', (-7, 24, 3), (7, 26, 5), base='y', glow='$',
             **auto((-7, 24, 3), (7, 26, 5), base='y', front=lb, top=fill(14, 2, 'Y')))
     radar(f, 'a_body', 0, 24, -13.5, 'a_radar', mast=2)
@@ -639,14 +641,85 @@ def matkap():
             add_box(f, f'm_rw_{side}{i}', f'm_rw_{side}{i}', (x0, 1, z - 3.5), (x0 + 1, 8, z + 3.5), base='&',
                     left=tw, right=mirror_h(tw), front=fill(1, 7, '%'), back=fill(1, 7, '%'), top=fill(1, 7, '&'),
                     bottom=fill(1, 7, '%'))
-    # gövde (zırh, pusula, perçin), önde tehlike şeridi
-    hs = stripe_panel(26, 12, 'M', stripe=[2], stripe_c='y', seams=(8, 17), rivets=True)
-    over(hs, COMPASS7, 10, 4)
-    hf = panel(18, 12, 'M')
-    over(hf, hazard(18, 3), 0, 9)
-    add_box(f, 'm_body', 'm_hull', (-9, 5, -16), (9, 17, 10), left=hs, right=mirror_h(hs), front=hf,
-            back=over(panel(18, 12, 'M'), rows('kkkkkk', 'k%%%%k', 'kkkkkk'), 6, 4),
-            top=panel(18, 26, 'L', t='H', b='M', l='H', r='M'), bottom=fill(18, 26, 'D'))
+    # gövde: içi boş (v0.3.1). Duvarlar, taban, tavan ayrı kutular; arkada küçük giriş kapısı, içeride 4 robot yeri
+    hs = stripe_panel(26, 15, 'M', stripe=[2], stripe_c='y', seams=(8, 17), rivets=True)
+    over(hs, COMPASS7, 10, 5)
+    iw = fill(26, 14, 'D')                                    # iç duvar: koyu levha, boru, lamba
+    hline(iw, 2, '&')
+    hline(iw, 3, '%')
+    for x in (4, 12, 20):
+        vline(iw, x, '%', 4, 14)
+    for x in (8, 16):
+        over(iw, rows('yYy', 'Y$Y', 'yYy'), x - 1, 6)
+    hline(iw, 13, 'k')
+    add_box(f, 'm_body', 'm_floor', (-9, 4, -16), (9, 5, 10), base='M',
+            top=tread(18, 26, 'v'), bottom=fill(18, 26, 'D'), front=fill(18, 1, 'M'), back=fill(18, 1, 'M'),
+            left=fill(26, 1, 'M'), right=fill(26, 1, 'M'))
+    for nm, x0, dis, ic in (('m_wall_l', -9, 'left', 'right'), ('m_wall_r', 8, 'right', 'left')):
+        faces = {'top': fill(1, 26, 'H'), 'bottom': fill(1, 26, 'D'), 'front': fill(1, 14, 'M'), 'back': fill(1, 14, 'M')}
+        faces[dis] = [r[:] for r in hs][1:] if dis == 'left' else mirror_h(hs)[1:]
+        faces[ic] = [r[:] for r in iw] if ic == 'right' else mirror_h(iw)
+        add_box(f, 'm_body', nm, (x0, 5, -16), (x0 + 1, 19, 10), base='M', glow='$', **faces)
+    hf = panel(16, 14, 'M')
+    over(hf, hazard(16, 3), 0, 11)
+    con = fill(16, 14, 'D')                                   # ön iç duvar: radar ekranı ve göstergeler
+    over(con, rows('kkkkkkkkkk', 'k<~<<<<<~k', 'k<<~<<~<<k', 'k<<<~~<<<k', 'k<<~<<~<<k', 'k<~<<<<<~k',
+                   'kkkkkkkkkk'), 3, 1)
+    over(con, rows('R y f R y f'), 2, 10)
+    add_box(f, 'm_body', 'm_wall_f', (-8, 5, 9), (8, 19, 10), base='M', glow='<~Ryf',
+            front=hf, back=con, top=fill(16, 1, 'H'), bottom=fill(16, 1, 'D'), left=fill(1, 14, 'M'), right=fill(1, 14, 'M'))
+    ce = fill(18, 26, 'D')                                    # tavan: ortada lamba şeridi
+    vline(ce, 8, '$', 3, 23)
+    vline(ce, 9, '#', 3, 23)
+    add_box(f, 'm_body', 'm_ceil', (-9, 19, -16), (9, 20, 10), base='M', glow='$#',
+            top=panel(18, 26, 'L', t='H', b='M', l='H', r='M'), bottom=ce, front=fill(18, 1, 'M'), back=fill(18, 1, 'M'),
+            left=fill(26, 1, 'M'), right=fill(26, 1, 'M'))
+    # arka duvar: ortada 8x11 kapı boşluğu, çevresinde tehlike şeritli çerçeve
+    bw = panel(4, 14, 'M')
+    for nm, x0 in (('m_back_l', -8), ('m_back_r', 4)):
+        add_box(f, 'm_body', nm, (x0, 5, -16), (x0 + 4, 19, -15), base='M',
+                back=[r[:] for r in bw], front=fill(4, 14, 'D'), top=fill(4, 1, 'H'), bottom=fill(4, 1, 'D'),
+                left=fill(1, 14, 'D'), right=fill(1, 14, 'D'))
+    add_box(f, 'm_body', 'm_back_t', (-4, 16, -16), (4, 19, -15), base='M',
+            back=over(panel(8, 3, 'M'), rows('kRk'), 3, 1), front=fill(8, 3, 'D'), top=fill(8, 1, 'H'),
+            bottom=fill(8, 1, 'D'), left=fill(1, 3, 'D'), right=fill(1, 3, 'D'))
+    for nm, a, b in (('m_door_l', (-5, 5, -17), (-4, 17, -16)), ('m_door_r', (4, 5, -17), (5, 17, -16)),
+                     ('m_door_t', (-5, 16, -17), (5, 17, -16))):
+        w, h, d = sz(a, b)
+        add_box(f, 'm_body', nm, a, b, base='y', **auto(a, b, base='y', front=hazard(w, h), back=hazard(w, h),
+                                                       side=hazard(d, h), top=hazard(w, d)))
+    lamp(f, 'm_body', 'm_door_lamp', (-1, 17, -17), (1, 18, -16), facing='back')
+    # kapı kanadı: robot binmişken açık, yalnız oyuncu binince ya da Keşif tek gidince kapanır (aqualit:kapi)
+    f.bone('m_door', 'm_body', (-4, 5, -16))
+    dd = panel(8, 11, 'M')
+    over(dd, PORT, 2, 2)
+    dots(dd, [(6, 7)], 'y')
+    hline(dd, 10, 'D')
+    add_box(f, 'm_door', 'm_door', (-4, 5, -16), (4, 16, -15), base='M', glow='',
+            back=dd, front=over(fill(8, 11, 'D'), rows('  y'), 4, 6), top=fill(8, 1, 'H'), bottom=fill(8, 1, 'D'),
+            left=fill(1, 11, 'D'), right=fill(1, 11, 'D'))
+    # arka platform: tabanla aynı yükseklikte güverte, köprü, korkuluk, küçük tekerlekler
+    add_box(f, 'm_root', 'm_bridge', (-9, 3, -18), (9, 5, -16), base='M', top=deck(18, 2),
+            **{k: v for k, v in auto((-9, 3, -18), (9, 5, -16), base='M').items() if k != 'top'})
+    add_box(f, 'm_root', 'm_deck', (-15, 3, -35), (15, 5, -18), base='M',
+            top=deck(30, 17), **{k: v for k, v in auto((-15, 3, -35), (15, 5, -18), base='M',
+                                                        side=stripe_panel(17, 2, 'M'), front=hazard(30, 2),
+                                                        back=hazard(30, 2)).items() if k != 'top'})
+    for nm, a, b, ax in (('m_rail_l', (-15, 5, -35), (-14, 11, -18), 'x'), ('m_rail_r', (14, 5, -35), (15, 11, -18), 'x'),
+                         ('m_rail_b', (-14, 5, -35), (14, 11, -34), 'z')):
+        w, h, d = sz(a, b)
+        n = d if ax == 'x' else w
+        g = rail(n, h, post_every=4)
+        faces = {'top': fill(w, d, 'y'), 'bottom': [[' '] * w for _ in range(d)]}
+        if ax == 'x':
+            faces.update(left=g, right=mirror_h(g), front=fill(1, h, 'y'), back=fill(1, h, 'y'))
+        else:
+            faces.update(front=g, back=mirror_h(g), left=fill(1, h, 'y'), right=fill(1, h, 'y'))
+        add_box(f, 'm_root', nm, a, b, base='y', **faces)
+    for nm, x0 in (('m_caster_l', -13), ('m_caster_r', 10)):
+        tw = tire_side(3, 3, hub='y')
+        add_box(f, 'm_root', nm, (x0, 0, -33), (x0 + 3, 3, -30), base='k', left=tw, right=mirror_h(tw),
+                front=tread(3, 3, 'v'), back=tread(3, 3, 'v'), top=tread(3, 3, 'v'), bottom=tread(3, 3, 'v'))
     # matkap yuvası (sabit halka)
     col = panel(16, 16, '&', t='*', b='%', l='*', r='%')
     for y in range(16):
@@ -655,6 +728,8 @@ def matkap():
                 col[y][x] = 'y' if (x in (3, 12) or y in (3, 12)) else '%'
     add_box(f, 'm_body', 'm_collar', (-8, 3, 10), (8, 19, 13), base='&',
             **auto((-8, 3, 10), (8, 19, 13), base='&', front=col, side=fill(3, 16, '&'), top=fill(16, 3, '*')))
+    add_box(f, 'm_body', 'm_collar_top', (-8, 19, 10), (8, 21, 12), base='&',
+            **auto((-8, 19, 10), (8, 21, 12), base='&', top=fill(16, 2, '*')))
 
     def flute(w, h, phase=0, edge='H'):
         g = fill(w, h, '*')
@@ -679,34 +754,34 @@ def matkap():
     add_box(f, 'm_drill', 'm_tip', (-0.5, 10.5, 28), (0.5, 11.5, 31), base='H',
             **auto((-0.5, 10.5, 28), (0.5, 11.5, 31), base='H', front=rows('W'), top=fill(1, 3, 'W')))
     # kabin = robot yüzü, deri tavan
-    add_box(f, 'm_body', 'm_cabin', (-6, 17, -10), (6, 26, 2), front=eyes(12, 9, big=False, frame='M'),
-            **{k: v for k, v in auto((-6, 17, -10), (6, 26, 2), side=over(panel(12, 9, 'M'), rows('yyyy', 'y<~y', 'y<>y', 'yyyy'), 4, 2)).items()
+    add_box(f, 'm_body', 'm_cabin', (-6, 20, -10), (6, 29, 2), front=eyes(12, 9, big=False, frame='M'),
+            **{k: v for k, v in auto((-6, 20, -10), (6, 29, 2), side=over(panel(12, 9, 'M'), rows('yyyy', 'y<~y', 'y<>y', 'yyyy'), 4, 2)).items()
                if k != 'front'})
     rt = fill(13, 13, 'o')
     hline(rt, 0, '7')
     vline(rt, 0, '7')
     vline(rt, 6, 'm')
-    add_box(f, 'm_body', 'm_roof', (-6.5, 26, -10.5), (6.5, 28, 2.5), base='o',
-            **auto((-6.5, 26, -10.5), (6.5, 28, 2.5), base='o', top=rt,
+    add_box(f, 'm_body', 'm_roof', (-6.5, 29, -10.5), (6.5, 31, 2.5), base='o',
+            **auto((-6.5, 29, -10.5), (6.5, 31, 2.5), base='o', top=rt,
                    side=rows('7777777777777', 'ooooooooooooo'), front=rows('7777777777777', 'ooooooooooooo'),
                    back=rows('7777777777777', 'ooooooooooooo')))
     for nm, x0 in (('m_lamp_l', -6), ('m_lamp_r', 3)):
-        lamp(f, 'm_body', nm, (x0, 28, -1), (x0 + 3, 31, 2))
-    radar(f, 'm_body', 0, 28, -7, 'm_radar', mast=2)
+        lamp(f, 'm_body', nm, (x0, 31, -1), (x0 + 3, 34, 2))
+    radar(f, 'm_body', 0, 31, -7, 'm_radar', mast=2)
     # egzoz bacaları
     for nm, x0 in (('m_exh_l', -8), ('m_exh_r', 5)):
         es = fill(3, 10, '&')
         hline(es, 0, 'k')
         hline(es, 3, 'y')
         hline(es, 7, 'y')
-        add_box(f, 'm_body', nm, (x0, 17, -16), (x0 + 3, 27, -13), base='&',
+        add_box(f, 'm_body', nm, (x0, 20, -16), (x0 + 3, 30, -13), base='&',
                 front=[r[:] for r in es], back=[r[:] for r in es], left=[r[:] for r in es], right=[r[:] for r in es],
                 top=rows('kkk', 'kgk', 'kkk'), bottom=fill(3, 3, '%'))
-    # sürücü koltuğu (arkada açık)
+    # sürücü koltuğu: kabinin arkasında, gövdenin üstünde (sırt dayanağı)
     sb = fill(6, 5, 'o')
     hline(sb, 0, '7')
-    add_box(f, 'm_body', 'm_seat', (-3, 17, -15), (3, 22, -13), base='o',
-            **auto((-3, 17, -15), (3, 22, -13), base='o', front=sb, back=fill(6, 5, 'm'), top=fill(6, 2, '7'),
+    add_box(f, 'm_body', 'm_seat', (-3, 20, -17), (3, 25, -15), base='o',
+            **auto((-3, 20, -17), (3, 25, -15), base='o', front=sb, back=fill(6, 5, 'm'), top=fill(6, 2, '7'),
                    side=fill(2, 5, 'o')))
     return f
 

@@ -32,6 +32,7 @@ export function describeTask(bot) {
   if (!T) return "Görev yok";
   if (T.mode === "skyblock") return `Taş makinesinden ${T.items?.[0]?.amount ?? 0} taş`;
   if (T.mode === "yagma") return `Yağma: ${T.ad ?? "seçilen yer"} (${T.r} blok çevre)`;
+  if (T.mode === "takip") return `${T.ad} adlı oyuncuyu takip ediyor`;
   if (T.type === "insaatci") {
     const y = yapi(T.yapi);
     const pct = y ? Math.min(100, Math.floor(((bot.prog?.done ?? 0) * 100) / Math.max(1, y.blok))) : 0;
@@ -65,6 +66,10 @@ export async function robotMenu(player, bot) {
   ].join("\n");
   const btns = [{ text: "§lGörev ver", icon: TOOL_ICON[bot.type], act: "task" }];
   if (bot.type !== "insaatci") btns.push({ text: "§lYağmala§r\n§7Sandık, fıçı, çömlek, kasa boşaltır", icon: "textures/blocks/barrel_side", act: "yagma" });
+  const takipte = T?.mode === "takip" && !T.done;
+  btns.push(takipte
+    ? { text: "§l§cTakibi bırak§r\n§7Eve döner", icon: "textures/ui/cancel", act: "takip_birak" }
+    : { text: "§lBeni takip et§r\n§7Peşinden gelir", icon: "textures/items/lead", act: "takip" });
   if (active) btns.push({ text: "Görevi durdur", icon: "textures/items/clock_item", act: "stop" });
   else if (T && !T.done) btns.push({ text: "Görevi sürdür", icon: "textures/items/clock_item", act: "resume" });
   btns.push({ text: "Çantası", icon: "textures/items/aqualit_chest", act: "inv" });
@@ -78,6 +83,18 @@ export async function robotMenu(player, bot) {
   switch (r.act) {
     case "task": return giveTask(player, bot);
     case "yagma": return yagmaTask(player, bot);
+    case "takip":
+      bot.task = { type: bot.type, mode: "takip", kim: player.id, ad: player.name };
+      bot.saveTask();
+      startTask(bot);
+      return player.sendMessage(`§s${bot.name}§r seni takip ediyor.`);
+    case "takip_birak":
+      if (bot.task) {
+        bot.task.done = true;
+        bot.saveTask();
+      }
+      commandReturn(bot, false);
+      return player.sendMessage(`§s${bot.name}§r takibi bıraktı, eve dönüyor.`);
     case "stop": commandStop(bot); return player.sendMessage(`§s${bot.name}§r görevi durdurdu.`);
     case "resume": commandResume(bot); return player.sendMessage(`§s${bot.name}§r göreve devam ediyor.`);
     case "inv": {

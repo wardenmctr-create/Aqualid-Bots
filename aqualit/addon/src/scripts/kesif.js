@@ -9,7 +9,8 @@ import { safe, fire } from "./util.js";
 import * as B from "./blocks.js";
 import * as FX from "./fx.js";
 import { ICONS } from "./ikon_data.js";
-import { anaMenu, kesifKuruldu, kesifToplandi } from "./kesif_ai.js";
+import { anaMenu, kesifKuruldu, kesifToplandi, koltuksuzIceri } from "./kesif_ai.js";
+import { hizCarpani } from "./kesif_radar.js";
 
 export const KESIF_ID = "aqualit:kesif";
 export const KFORMS = ["robot", "ucak", "gemi", "denizalti", "arazi", "matkap"];
@@ -116,7 +117,11 @@ export function transform(e, to, pl) {
     if (to !== "robot") {
       system.runTimeout(() => {
         const rc = safe(() => e.getComponent("minecraft:rideable"));
-        for (const r of riders) if (safe(() => r.isValid, false)) safe(() => rc.addRider(r));
+        for (const r of riders) {
+          if (!safe(() => r.isValid, false)) continue;
+          // koltuk kalmadıysa (denizaltıya robot binmez) robot aracın içine girer
+          if (!safe(() => rc.addRider(r), false) && r.typeId === "aqualit:robot") koltuksuzIceri(e, r);
+        }
       }, 2);
     }
     system.runTimeout(() => {
@@ -192,6 +197,33 @@ function dig(v, fwd, mode) {
   return n;
 }
 
+// matkabın kazdıkları: düşen eşyalar Keşif deposuna (aq:kdepo); madenci varsa ona verilir (kesif_ai.js depoyuDagit)
+export function depoOku(e) {
+  return safe(() => JSON.parse(e.getDynamicProperty("aq:kdepo") ?? "{}"), {}) ?? {};
+}
+export function depoYaz(e, d) {
+  safe(() => e.setDynamicProperty("aq:kdepo", JSON.stringify(d)));
+}
+export function depoSay(e) {
+  return Object.values(depoOku(e)).reduce((a, n) => a + n, 0);
+}
+/** Kazıdan birkaç tik sonra çevredeki düşen eşyaları depoya alır. */
+export function kaziTopla(v) {
+  system.runTimeout(() => {
+    if (!safe(() => v.isValid, false)) return;
+    const items = safe(() => v.dimension.getEntities({ type: "minecraft:item", location: v.location, maxDistance: 5 }), []) ?? [];
+    if (!items.length) return;
+    const d = depoOku(v);
+    for (const it of items) {
+      const st = safe(() => it.getComponent("minecraft:item")?.itemStack);
+      if (!st) continue;
+      d[st.typeId] = (d[st.typeId] ?? 0) + st.amount;
+      safe(() => it.remove());
+    }
+    depoYaz(v, d);
+  }, 4);
+}
+
 function drive(v, pl, t) {
   const form = formOf(v);
   if (form === "robot" || busy.has(v.id)) return;
@@ -201,7 +233,7 @@ function drive(v, pl, t) {
   const yr = (rot.y * Math.PI) / 180;
   const fwd = { x: -Math.sin(yr), y: 0, z: Math.cos(yr) };
   const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 });
-  const sp = SPEED[form];
+  const sp = SPEED[form] * hizCarpani(v, pl);       // hız sayacı (kesif_radar.js)
   const f = Math.max(-0.4, Math.min(1, mv.y));
   let tgt = { x: fwd.x * sp * f, y: 0, z: fwd.z * sp * f };
   let fly = false;
@@ -242,6 +274,7 @@ function drive(v, pl, t) {
     const mode = safe(() => v.getDynamicProperty("aq:kaz"), "yatay") ?? "yatay";
     if (f > 0.1 && t % 4 === 0) {
       const n = dig(v, fwd, mode);
+      if (n) kaziTopla(v);
       if (n && t % 20 === 0) snd(dim, "aqualit.kesif.drill_loop", v.location, { volume: 0.8 });
     }
     if (mode === "dikey") tgt = { x: 0, y: 0, z: 0 };

@@ -1,5 +1,6 @@
 // Aqualit Robotları — özel eşya bileşenleri, alet davranışları, cevher düşüşleri
 import { world, system, ItemStack, BlockPermutation, GameMode } from "@minecraft/server";
+import { radarMenu, hizMenu } from "./kesif_radar.js";
 import { spawnKesif } from "./kesif.js";
 import { safe, rand, V, log, fire } from "./util.js";
 import { spawnRobotFromItem, isCreative } from "./place.js";
@@ -36,6 +37,8 @@ export function useDevice(player, kind, opts = {}) {
         case "rod": return player.isSneaking ? UI.rodComeHere(player) : fire(() => UI.openRod(player));
         case "zone": return fire(() => UI.zoneMenu(player));
         case "gear": return fire(() => UI.gearFromAir(player));
+        case "radar": return fire(() => radarMenu(player));
+        case "hiz": return fire(() => hizMenu(player));
       }
     } catch (e) {
       log("cihaz hatası", kind, e, e?.stack);

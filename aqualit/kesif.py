@@ -380,7 +380,7 @@ def build(forms=None, W=256, ident='geometry.aqualit.kesif'):
                             glow.putpixel((x + xx, y + yy), im.getpixel((xx, yy)))
     geo = {'format_version': '1.12.0', 'minecraft:geometry': [{
         'description': {'identifier': ident, 'texture_width': W, 'texture_height': H,
-                        'visible_bounds_width': 6, 'visible_bounds_height': 4, 'visible_bounds_offset': [0, 1.5, 0]},
+                        'visible_bounds_width': 9, 'visible_bounds_height': 6, 'visible_bounds_offset': [0, 2, 0]},
         'bones': bones}]}
     return geo, tex, glow
 

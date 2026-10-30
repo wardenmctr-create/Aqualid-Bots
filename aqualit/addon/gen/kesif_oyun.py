@@ -4,6 +4,7 @@ Model ve doku: kesif.py (önizlemelerdeki modelin aynısı). Açılma animasyonl
 zaman çizelgesinden 0,05 sn aralıkla pişirilir. Sürüş betikte (src/scripts/kesif.js).
 """
 import math
+import json
 import os
 import sys
 
@@ -13,21 +14,48 @@ sys.path.insert(0, ART)
 KID = 'aqualit:kesif'
 FORMS = ['robot', 'ucak', 'gemi', 'denizalti', 'arazi', 'matkap']
 ROOT = {'robot': 'root', 'ucak': 'u_root', 'gemi': 'g_root', 'denizalti': 'd_root', 'arazi': 'a_root', 'matkap': 'm_root'}
-# çarpışma kutusu (genişlik, yükseklik) ve koltuklar (y, [(x, z)...]); +z ileri
-BOX = {'robot': (0.7, 1.4), 'ucak': (2.2, 1.2), 'gemi': (1.3, 1.0), 'denizalti': (1.5, 1.5), 'arazi': (1.7, 1.3),
-       'matkap': (1.7, 1.5)}
-# koltuklar: (x, y, z); +z ileri. Robotlar koltuk dışında kanatlara, tavana ve üst üste de oturur.
-# Koltuk yetmezse (en çok 10 robot) kalanlar aracın içine girer: görünmez olur, inince çıkar (kesif_ai.js).
-SEATS = {   # robot binince 0.56 ölçekli oturur: oturan robot ~0.6 blok, üst üste binen onun başına oturur
-    'ucak': [(0, 0.75, 0.6), (0, 0.75, -0.4), (-1.1, 0.75, 0.0), (1.1, 0.75, 0.0), (-1.75, 0.7, -0.1), (1.75, 0.7, -0.1),
-             (0, 0.75, -1.3), (0, 1.35, -0.4)],                      # pilot, arka, iki kanat ×2, kuyruk, arkadakinin üstü
-    'gemi': [(0, 0.45, 1.0), (0, 0.45, 0.3), (0, 0.45, -0.4), (0, 0.45, -1.1), (0, 0.45, 1.6), (-0.45, 0.45, 0.3),
-             (0.45, 0.45, -0.4), (0, 1.05, -0.4)],
-    'denizalti': [(0, 1.0, 0.6), (0, 1.0, -0.2), (0, 1.0, -1.0), (0, 1.0, -1.7), (0, 1.0, 1.3), (0, 1.6, -0.2)],
-    'arazi': [(0.35, 0.7, 0.3), (-0.35, 0.7, 0.3), (0.35, 0.7, -0.5), (-0.35, 0.7, -0.5), (0, 0.7, -1.1),
-              (0, 1.45, -0.1), (0, 2.05, -0.1)],                       # tavanda iki robot üst üste
-    'matkap': [(0, 1.0, -0.3), (0.5, 1.0, -0.9), (-0.5, 1.0, -0.9), (0, 1.6, -0.9), (0, 2.2, -0.9)],
+VS = 1.4                                # araçların ölçeği (robot hali 0.8); v0.3.1'de büyütüldü
+PXB = VS / 16                           # model pikseli → blok
+# çarpışma kutusu (genişlik, yükseklik) blok
+BOX = {'robot': (0.7, 1.4), 'ucak': (3.0, 1.6), 'gemi': (2.0, 1.4), 'denizalti': (1.6, 1.6), 'arazi': (2.4, 1.8),
+       'matkap': (2.6, 2.4)}
+# Oturma planı: (x, y, z, tür) model pikseli, +z ileri. Binen robot oturur (tutun: tekerleğe tutunur).
+# Koltuklar sırayla dolar; ilk koltuk sürücünün. Yer kalmazsa kalanlar aracın içine girer (görünmez, kesif_ai.js).
+SEATS = {
+    'ucak': [(0, 18, -1, 'koltuk'), (0, 18, -14, 'koltuk'),
+             (-14, 11, -1, 'kanat'), (14, 11, -1, 'kanat'), (-26, 11, -1, 'kanat'), (26, 11, -1, 'kanat'),
+             (-10, 14, -35.5, 'arka_kanat'), (10, 14, -35.5, 'arka_kanat'),
+             (-13, -3, -5, 'tutun'), (13, -3, -5, 'tutun')],
+    'gemi': [(0, 12, 11, 'koltuk'), (-6, 12, 19, 'guverte'), (6, 12, 19.5, 'guverte'), (0, 12, 26, 'bas'),
+             (-6, 12, -16.5, 'guverte'), (6, 12, -16.5, 'guverte'), (-5, 12, -22, 'kic'), (5, 12, -22, 'kic'),
+             (-3.8, 24, 0, 'tavan'), (3.8, 24, 0, 'tavan')],
+    # denizaltı: robotlar dışarıda boğulur, hepsi içeri girer; tek koltuk oyuncunun
+    'denizalti': [(0, 16, 12, 'koltuk')],
+    'arazi': [(5, 13, -3, 'koltuk'), (-5, 13, -3, 'koltuk'), (-5, 13, -11, 'koltuk'), (5, 13, -11, 'koltuk'),
+              (0, 13, -15.5, 'koltuk'), (0, 15, 12, 'kaput'), (-13.5, 13, 14, 'camurluk'), (13.5, 13, 14, 'camurluk'),
+              (-3.8, 24, -4, 'tavan'), (3.8, 24, -4, 'tavan')],
+    # matkap: sürücü kabinin arkasında, 4 robot içeride (arka kapıdan girilir), 5 robot arka platformda
+    'matkap': [(0, 20, -12.4, 'koltuk'), (-3.8, 5, -11, 'ic'), (3.8, 5, -11, 'ic'), (-3.8, 5, -3.5, 'ic'),
+               (3.8, 5, -3.5, 'ic'), (-8, 5, -22.5, 'platform'), (8, 5, -22.5, 'platform'), (-9, 5, -30.5, 'platform'),
+               (0, 5, -30.5, 'platform'), (9, 5, -30.5, 'platform')],
 }
+YALNIZ_OYUNCU = {'denizalti'}           # bu araçlara robot binmez (içeri girer)
+KAPI_ACI = -100                         # matkap kapısının açık hali (derece, Y ekseni)
+
+
+def seat_pos(s):
+    """Bedrock koltuğu (blok, varlık uzayı +z ileri)."""
+    return [round(s[0] * PXB, 3), round(s[1] * PXB, 3), round(s[2] * PXB, 3)]
+
+
+def koltuk_js(path):
+    """Oyun içi kod için oturma planı (kesif_ai.js poz ve kapasite için okur)."""
+    d = {f: [{'x': seat_pos(s)[0], 'y': seat_pos(s)[1], 'z': seat_pos(s)[2], 'tur': s[3]} for s in v] for f, v in SEATS.items()}
+    with open(path, 'w') as fh:
+        fh.write('// gen/kesif_oyun.py üretir — elle değiştirme.\n')
+        fh.write('// Keşif araçlarının oturma planı: koltuk sırası, yeri (blok) ve türü (tutun = tekerleğe tutunur).\n')
+        fh.write(f'export const KOLTUK = {json.dumps(d, ensure_ascii=False)};\n')
+        fh.write(f'export const YALNIZ_OYUNCU = {json.dumps(sorted(YALNIZ_OYUNCU))};\n')
 
 
 def P(n):
@@ -44,9 +72,9 @@ def kesif_bp():
         if f in SEATS:
             pos = SEATS[f]
             g['minecraft:rideable'] = {
-                'seat_count': len(pos), 'family_types': ['player', 'aqualit_robot'], 'interact_text': 'Bin',
-                'crouching_skip_interact': True, 'pull_in_entities': False,
-                'seats': [{'position': [x, y, z], 'min_rider_count': 0, 'max_rider_count': len(pos)} for x, y, z in pos]}
+                'seat_count': len(pos), 'family_types': ['player'] + ([] if f in YALNIZ_OYUNCU else ['aqualit_robot']),
+                'interact_text': 'Bin', 'crouching_skip_interact': True, 'pull_in_entities': False,
+                'seats': [{'position': seat_pos(sp), 'min_rider_count': 0, 'max_rider_count': len(pos)} for sp in pos]}
         if f == 'gemi':
             g['minecraft:buoyant'] = {'base_buoyancy': 1.0, 'apply_gravity': True, 'simulate_waves': True,
                                       'big_wave_probability': 0.03, 'big_wave_speed': 10.0,
@@ -76,6 +104,7 @@ def kesif_bp():
                             'aqualit:form': {'type': 'enum', 'values': FORMS, 'default': 'robot', 'client_sync': True},
                             'aqualit:gecis': {'type': 'bool', 'default': False, 'client_sync': True},
                             'aqualit:egim': {'type': 'float', 'range': [-60, 60], 'default': 0, 'client_sync': True},
+                            'aqualit:kapi': {'type': 'bool', 'default': False, 'client_sync': True},  # matkap kapısı açık
                         }},
         'component_groups': groups,
         'components': {
@@ -97,8 +126,8 @@ def kesif_bp():
 
 # ------------------------------------------------------------------ istemci (RP)
 def kesif_rp():
-    anims = {'ctrl': 'controller.animation.aqualit.kesif'}
-    for n in ['fold', 'robot_in'] + [f'run_{f}' for f in FORMS] + [f'unfold_{f}' for f in FORMS if f != 'robot']:
+    anims = {'ctrl': 'controller.animation.aqualit.kesif', 'kapi_ctrl': 'controller.animation.aqualit.kesif.kapi'}
+    for n in ['fold', 'robot_in', 'kapi_ac', 'kapi_kapa'] + [f'run_{f}' for f in FORMS] + [f'unfold_{f}' for f in FORMS if f != 'robot']:
         anims[n] = f'animation.aqualit.kesif.{n}'
     return {'format_version': '1.10.0', 'minecraft:client_entity': {'description': {
         'identifier': KID,
@@ -106,7 +135,7 @@ def kesif_rp():
         'textures': {'default': 'textures/entity/aqualit_kesif/kesif', 'glow': 'textures/entity/aqualit_kesif/kesif_glow'},
         'geometry': {'default': 'geometry.aqualit.kesif'},
         'animations': anims,
-        'scripts': {'scale': '0.8', 'animate': ['ctrl']},
+        'scripts': {'scale': f"{P('form')} == 'robot' ? 0.8 : {VS}", 'animate': ['ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
     }}}
 
@@ -129,8 +158,13 @@ def kesif_ctrl():
         anims = ['robot_in', 'run_robot'] if f == 'robot' else [f'unfold_{f}', f'run_{f}']
         states[f] = {'animations': anims, 'transitions': [{'gecis': G}] + to(f), 'blend_transition': 0.08}
     states['gecis'] = {'animations': ['fold'], 'transitions': to()}
+    K = P('kapi')
+    kapi = {'initial_state': 'kapali', 'states': {
+        'kapali': {'animations': ['kapi_kapa'], 'transitions': [{'acik': K}]},
+        'acik': {'animations': ['kapi_ac'], 'transitions': [{'kapali': f'!{K}'}]}}}
     return {'format_version': '1.10.0', 'animation_controllers': {
-        'controller.animation.aqualit.kesif': {'initial_state': 'default', 'states': states}}}
+        'controller.animation.aqualit.kesif': {'initial_state': 'default', 'states': states},
+        'controller.animation.aqualit.kesif.kapi': kapi}}
 
 
 def _r(v):
@@ -191,6 +225,11 @@ def kesif_anims():
                  'rotation': {'0.0': [0, -360, 0], '0.45': [0, 0, 0]},
                  'position': {'0.0': [0, 6, 0], '0.35': [0, 0, 0], '0.5': [0, 0.6, 0], '0.7': [0, 0, 0]}},
         'k_goggles': {'position': {'0.0': [0, -6, 0], '0.5': [0, -6, 0], '0.7': [0, 0, 0]}}}}
+    # matkabın arka kapısı (0,4 sn): dışarı, platforma doğru açılır
+    A['kapi_ac'] = {'loop': 'hold_on_last_frame', 'animation_length': 0.4, 'bones': {
+        'm_door': {'rotation': {'0.0': [0, 0, 0], '0.4': [0, KAPI_ACI, 0]}}}}
+    A['kapi_kapa'] = {'loop': 'hold_on_last_frame', 'animation_length': 0.4, 'bones': {
+        'm_door': {'rotation': {'0.0': [0, KAPI_ACI, 0], '0.4': [0, 0, 0]}}}}
     spin = lambda k: [0, 0, f'q.life_time * {k}']
     wave = [0, 'math.sin(q.life_time * 400) * 12', 0]
     radar = [0, 'q.life_time * 220', 0]
@@ -260,6 +299,7 @@ def build(RP, BP, wj):
     wj(f'{RP}/animation_controllers/aqualit_kesif.animation_controllers.json', kesif_ctrl())
     wj(f'{RP}/animations/aqualit_kesif.animation.json', kesif_anims())
     kafa_simgeleri(geo, tex, glow, f'{RP}/textures/ui/aqualit_bas')
+    koltuk_js(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'scripts', 'kesif_koltuk.js'))
     bones = {b['name'] for b in geo['minecraft:geometry'][0]['bones']}
     used = set()
     for a in kesif_anims()['animations'].values():

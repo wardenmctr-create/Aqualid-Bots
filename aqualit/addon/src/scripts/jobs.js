@@ -1,5 +1,5 @@
 // Aqualit Robotları — iş robotlarının görevleri (jeneratörler)
-import { system, BlockPermutation, ItemStack } from "@minecraft/server";
+import { world, system, BlockPermutation, ItemStack } from "@minecraft/server";
 import { V, DIRS4, wait, safe, rand, clamp, log } from "./util.js";
 import { getProp } from "./store.js";
 import * as B from "./blocks.js";
@@ -1350,9 +1350,44 @@ export function* farmerJob(bot) {
 }
 
 // ======================================================================= dağıtıcı
+/** "Beni takip et": oyuncunun peşinden gelir (4 bloktan uzaklaşınca yürür, çok uzakta kalırsa yanına ışınlanır). */
+export function* takipIsi(bot) {
+  const T = bot.task;
+  bot.say(`Peşindeyim, ${T.ad}!`);
+  for (;;) {
+    if (bot.task !== T || T.done || T.paused) return;
+    const pl = world.getAllPlayers().find((p) => p.id === T.kim);
+    if (!pl || safe(() => pl.dimension.id) !== bot.dim.id) {
+      bot.setMove("none");
+      bot.setStatus("Takip ettiği oyuncuyu bekliyor");
+      yield* wait(40);
+      continue;
+    }
+    const at = pl.location;
+    const d = V.dist(bot.loc, at);
+    if (d > 48) {
+      // çok geride kaldı: oyuncunun arkasına ışınlanır (evcil hayvanlar gibi)
+      const dir = safe(() => pl.getViewDirection(), { x: 0, y: 0, z: 1 });
+      safe(() => bot.e.teleport({ x: at.x - dir.x * 2, y: at.y, z: at.z - dir.z * 2 }));
+      yield* wait(10);
+      continue;
+    }
+    if (d > 4) {
+      bot.setStatus(`${T.ad} adlı oyuncuyu takip ediyor`);
+      yield* bot.goTo(V.floor(at), { range: 3, maxNodes: 1500, radius: 48, run: d > 12 });
+    } else {
+      bot.setMove("none");
+      bot.face(at);
+      yield* wait(10);
+    }
+    yield;
+  }
+}
+
 export function jobFor(bot) {
   if (!bot.task || bot.task.done || bot.task.paused) return idleJob(bot);
   if (bot.task.mode === "yagma") return yagmaGorevi(bot);
+  if (bot.task.mode === "takip") return takipIsi(bot);
   switch (bot.type) {
     case "madenci": return minerJob(bot);
     case "kurekci": return diggerJob(bot);

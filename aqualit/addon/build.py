@@ -135,6 +135,9 @@ def items():
         if kind == 'gear':
             comps['minecraft:glint'] = True
         item(iid, comps, 'equipment', None, icon)
+    for iid, name, icon, kind in C.KESIF_ESYA:
+        item(iid, {'minecraft:max_stack_size': 1, 'aqualit:device': {'kind': kind}, 'minecraft:rarity': 'rare',
+                   'minecraft:glint': kind == 'radar'}, 'none', None, icon)
     # kapalı robot eşyaları (heykel) ve tamir kiti
     for iid, name, icon, variant in C.STATUE_ITEMS:
         src = Image.open(os.path.join(DOK, f'robot_{variant}.png'))

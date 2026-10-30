@@ -10,7 +10,8 @@ ACTS2 = ['none',
          'p_hook', 'p_sword', 'p_dash', 'p_dome', 'p_thunder',   # V3: Kılıçlı güç hareketleri
          'water_throw', 'water_catch', 'water_pour',           # V3: çiftçinin Aqualit kova numarası
          'kit',                                                # V3: tamir kitiyle onarma
-         'fly', 'hat_off', 'hat_hold', 'hat_on']               # v0.3.0 Mimar: uçuş, baretten dron çıkarma
+         'fly', 'hat_off', 'hat_hold', 'hat_on',               # v0.3.0 Mimar: uçuş, baretten dron çıkarma
+         'tutun']                                              # v0.3.1 Keşif: uçağın tekerleğine tutunur
 assert len(ACTS) <= 16 and len(ACTS2) <= 16
 DMG_TIERS = [3, 5, 7, 8, 10, 12, 15, 18, 20, 25, 30, 40, 50, 75, 100]
 SPD_TIERS = [0.2, 0.25, 0.3, 0.33, 0.36, 0.4, 0.45, 0.5, 0.55, 0.6]
@@ -336,6 +337,15 @@ def robot_animations():
         'right_arm': {'rotation': [-25, 0, 5]}, 'left_arm': {'rotation': [-25, 0, -5]},
         'head': {'rotation': ['math.sin(q.anim_time * 180) * 2', 0, 0]},
     }}
+    # Keşif uçağının tekerleğine tutunma: kollar öne (tekerleği kavrar), bacaklar sallanır
+    A['tutun'] = {'loop': True, 'animation_length': 1.2, 'bones': {
+        'body': {'rotation': [10, 0, 0]},
+        'right_arm': {'rotation': ['-82 + math.sin(q.anim_time * 300) * 3', -12, 0]},
+        'left_arm': {'rotation': ['-82 - math.sin(q.anim_time * 300) * 3', 12, 0]},
+        'right_leg': {'rotation': ['25 + math.sin(q.anim_time * 300) * 18', 0, 0]},
+        'left_leg': {'rotation': ['25 - math.sin(q.anim_time * 300) * 18', 0, 0]},
+        'head': {'rotation': [-12, 0, 0]},
+    }}
     A['wave'] = {'loop': True, 'animation_length': 1.0, 'bones': {
         'left_arm': {'rotation': [-10, 0, '-130 + math.sin(q.anim_time * 720) * 20']},
         'head': {'rotation': [0, 0, 8]},
@@ -528,23 +538,28 @@ def robot_controllers():
     mv = P('move')
     act_none = f"({P('act')} == 'none' && {P('act2')} == 'none')"
     moving_native = "(q.modified_move_speed > 0.08)"
+    ride = {'ride': 'q.is_riding'}
     states = {
         'default': {'animations': ['idle'], 'transitions': [
+            ride,
             {'swim': f"{mv} == 'swim'"},
             {'climb': f"{mv} == 'climb'"},
             {'run': f"{mv} == 'run' || ({mv} == 'none' && q.modified_move_speed > 0.6)"},
             {'walk': f"{mv} == 'walk' || ({mv} == 'none' && {moving_native})"},
             {'air': f"{mv} == 'none' && !q.is_on_ground && !q.is_in_water && q.vertical_speed < -0.3"},
         ], 'blend_transition': 0.2},
-        'walk': {'animations': [{'walk': act_none}, {'walk_legs': f'!({act_none})'}], 'transitions': [
+        'walk': {'animations': [{'walk': act_none}, {'walk_legs': f'!({act_none})'}], 'transitions': [ride,
             {'default': f"!({mv} == 'walk' || ({mv} == 'none' && {moving_native}))"}], 'blend_transition': 0.2},
-        'run': {'animations': [{'run': act_none}, {'run_legs': f'!({act_none})'}], 'transitions': [
+        'run': {'animations': [{'run': act_none}, {'run_legs': f'!({act_none})'}], 'transitions': [ride,
             {'default': f"!({mv} == 'run' || ({mv} == 'none' && q.modified_move_speed > 0.6))"}],
             'blend_transition': 0.2},
-        'climb': {'animations': ['climb'], 'transitions': [{'default': f"{mv} != 'climb'"}], 'blend_transition': 0.2},
-        'swim': {'animations': ['swim'], 'transitions': [{'default': f"{mv} != 'swim'"}], 'blend_transition': 0.3},
-        'air': {'animations': ['air'], 'transitions': [{'default': 'q.is_on_ground || q.is_in_water'}],
+        'climb': {'animations': ['climb'], 'transitions': [ride, {'default': f"{mv} != 'climb'"}], 'blend_transition': 0.2},
+        'swim': {'animations': ['swim'], 'transitions': [ride, {'default': f"{mv} != 'swim'"}], 'blend_transition': 0.3},
+        'air': {'animations': ['air'], 'transitions': [ride, {'default': 'q.is_on_ground || q.is_in_water'}],
                 'blend_transition': 0.25},
+        # Keşif'e binen robot hep oturur (araç giderken yürüme hareketi oynamaz); tekerlektekiler tutunur (act2)
+        'ride': {'animations': [{'sit': f"{P('act')} != 'sit' && {P('act2')} != 'tutun'"}],
+                 'transitions': [{'default': '!q.is_riding'}], 'blend_transition': 0.2},
     }
     move = {'initial_state': 'default', 'states': states}
     act_states = {'default': {'transitions': [{a: f"{P('act')} == '{a}'"} for a in ACTS if a != 'none'],
@@ -603,7 +618,7 @@ def robot_rp(skins):
                 'geometry': {'default': 'geometry.aqualit.robot'},
                 'animations': anims,
                 'scripts': {
-                    'scale': '0.8 * (q.is_riding ? 0.7 : 1.0)',      # Keşif'e binince küçülür: koltuklara, kanatlara sığar
+                    'scale': '0.8',
                     'pre_animation': pre,
                     'animate': ['setup', {'look_at_target': f"{P('act')} == 'none' && {P('act2')} == 'none'"},
                                 'move_ctrl', 'act_ctrl', 'act2_ctrl'],

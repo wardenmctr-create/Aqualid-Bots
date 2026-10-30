@@ -1,7 +1,7 @@
 # Aqualit Robotları — Claude Code çalışma rehberi
 
-Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.3.0**
-(Mimar: uçan inşaatçı, 217 yapı, mini dronlar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
+Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.3.1**
+(akıllı Keşif, sefer, yağma, büyük araçlar ve oturma planları, radar, hız sayacı, beni takip et). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
 Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 
 ## Kullanıcı (kalıcı istekler — her oturumda uy)
@@ -27,7 +27,8 @@ python3 test/validate.py             # "TOPLAM HATA: 0" olmalı
 python3 test/apicheck.py             # "0 sorun" olmalı (gerçek @minecraft/server 2.10.0 tanımlarına göre)
 cd test/mock && rm -rf scripts && cp -r ../../src/scripts scripts && node sim.mjs          # bütün senaryolar
 node sim.mjs sandik                  # tek senaryo (madenci, kurekci, oduncu, ciftci, skyblock, kilicli, ui, heykel,
-                                     # eritme, zirh, guc, cokme, takim, uzak, canta, bos, konum, efekt, kesif, sandik, mimar)
+                                     # eritme, zirh, guc, cokme, takim, uzak, canta, bos, konum, efekt, kesif, sandik, mimar,
+                                     # kesifai, sefer)
 ```
 
 Gerekenler: Python 3.10+ (Pillow, numpy, scipy, nbtlib), Node.js 18+, ffmpeg (önizleme ve ses). Bütün senaryolar ~10 dk sürer.
@@ -69,6 +70,10 @@ ortam değişkeniyle başka yer gösterilebilir.
 - `zirh.js` kabuk/taş/Aqualit zırh mekaniği ve kabuk kitabı ganimeti. `statue.js` kapalı robot ve tamir kiti.
 - `kesif.js` Mini Keşif, `konum.js` konum çubuğu, `place.js` robot ve sandık koyma, `items.js` eşya bileşenleri,
   `messages.js` telsiz mesajları, `insa.js` İnşa Çubuğu (bağlı değil).
+- **v0.3.1:** `kesif_ai.js` Keşif yapay zekâsı (yapı/biyom bulma, götürme, robot taşıma, oturma pozu, matkap kapısı ve deposu),
+  `harita.js` keşif haritası + Bilinen yerler, `yapi_bilgi.js` 23 yapı ve her yapıda yapılacak işler, `yagma.js` yağma,
+  `sefer.js` Keşif'le ekip seferi, `kesif_radar.js` radar + hız sayacı, `kesif_koltuk.js` oturma planı (**gen/kesif_oyun.py
+  üretir**, elle değiştirme). Araç ölçeği `kesif_oyun.VS` (1.4); koltuklar model pikseli cinsinden `SEATS`.
 - `ui/` menüler: `forms.js` (menu/modal/confirm), `task.js` Görev Kumandası, `radio.js` Telsiz, `tracker.js` Takip Ekranı,
   `kilicli_ui.js` Komut Çubuğu/Ayar Dişlisi/Bölge Seçici, `canta.js` çanta ekranı.
 

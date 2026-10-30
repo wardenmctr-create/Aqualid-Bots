@@ -1995,9 +1995,15 @@ if (run("sefer")) {
   ow.spawnItem(new ItemStack("minecraft:trial_key", 1), { x: T0.x + 7.5, y: T0.y, z: T0.z - 7.5 });
   const err = SF.seferBaslat({ k, ekip, tur: "deneme_odasi", max: 600 });
   check(!err, `sefer başladı ${err ?? ""}`);
-  let bindi = 0, guard = 0, vardi = false, gizli = 0;
+  let bindi = 0, guard = 0, vardi = false, gizli = 0, tutun = 0, ayakta = 0, kapi = false, kapiKapali = true, kapiYanlis = 0;
   const used = ticks(20 * 60 * 40, () => {
     bindi = Math.max(bindi, ekip.filter((b) => b.e._ridingOn === ke).length);
+    const binen = ekip.filter((b) => b.e._ridingOn === ke);
+    if (ke._props["aqualit:form"] === "ucak") tutun = Math.max(tutun, binen.filter((b) => b.e._props["aqualit:act2"] === "tutun").length);
+    ayakta = Math.max(ayakta, binen.filter((b) => b.e._props["aqualit:act"] === "sit" || (b.e._props["aqualit:move"] ?? "none") !== "none").length);
+    if (ke._props["aqualit:form"] === "matkap" && binen.length) kapi = kapi || ke._props["aqualit:kapi"] === true;
+    kapiYanlis = !binen.length && ke._props["aqualit:kapi"] === true ? kapiYanlis + 1 : 0;   // yarım saniyelik gecikme olabilir
+    if (kapiYanlis >= 2) kapiKapali = false;
     gizli = Math.max(gizli, ekip.filter((b) => b.e._effects.invisibility && KA.robotYolcuMu(b.id)).length);
     if (ekip.some((b) => b.type === "kilicli" && b.mode === "guard" && b.zone && Math.hypot(b.zone.x - T0.x, b.zone.z - T0.z) < 4)) guard++;
     if (V3dist(ke.location, T0) < 6) vardi = true;
@@ -2009,7 +2015,11 @@ if (run("sefer")) {
   const msgs = store.getJSON(world, `aq:msgs:${player.id}`, []).map((m) => m.text);
   console.log("  sefer süresi(sn):", Math.round(used / 20), "en çok binen:", bindi, "kalan demir:", left);
   check(!SF.seferler.has(k.rid), "sefer bitti");
-  check(bindi === 8 && gizli === 2, `8 robot koltuk/kanat/üstte, 2 robot içeride (${bindi}+${gizli})`);
+  check(bindi === 10 && gizli === 0, `uçakta 10 yer: koltuk, kanat, arka kanat, tekerlek (${bindi}+${gizli})`);
+  check(tutun === 2, `tekerlekteki 2 robot tutunuyor (${tutun})`);
+  check(ayakta === 0, "binen robotlar ayakta durmuyor (oturuyor ya da tutunuyor)");
+  check(kapi, "matkapta robotlar binmişken arka kapı açık");
+  check(kapiKapali, "robot binmemişken kapı kapalı");
   check(ekip.every((b) => !b.e._effects.invisibility), "inince içeridekiler görünür oldu");
   check(vardi, "Keşif yer altındaki deneme odasına indi");
   check(guard > 0, "Kılıçlılar deneme odasını korudu");
@@ -2023,6 +2033,20 @@ if (run("sefer")) {
   for (const b of ekip) if (b.type === "madenci") for (const [id, n] of Object.entries(chestTotals(b.homeChest()))) all[id] = (all[id] ?? 0) + n;
   check((all["minecraft:iron_ingot"] ?? 0) >= 8, "ganimet madencilerin sandıklarına kondu");
   check(ekip.filter((b) => b.type === "kilicli").every((b) => b.mode === "follow"), "Kılıçlılar eski moduna döndü");
+  // 2b) denizaltı: robotlar dışarıda boğulur, hepsi içeri girer; uçağa dönünce yine koltuklara (inince çıkarlar)
+  const W0 = V3floor(ke.location);
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) for (let y = 0; y < 4; y++) set({ x: W0.x + x, y: W0.y + y, z: W0.z + z }, "minecraft:water");
+  const uc3 = ekip.slice(0, 3);
+  k.job = (function* () { yield* KA.robotlariBindir(k, uc3); })();
+  ticks(80, () => !k.job);
+  check(uc3.every((b) => b.e._ridingOn === ke), "3 robot uçağa bindi");
+  const KS = await import("./scripts/kesif.js");
+  check(KS.transform(ke, "denizalti"), "Keşif suda denizaltı oldu");
+  ticks(40);
+  check(uc3.every((b) => !b.e._ridingOn && b.e._effects.invisibility && KA.robotYolcuMu(b.id)), "denizaltıda robotların hepsi içeride (boğulmazlar)");
+  KA.robotlariIndir(k, uc3);
+  check(uc3.every((b) => !b.e._effects.invisibility && !KA.robotYolcuMu(b.id)), "inince dışarı çıktılar");
+  for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) for (let y = 0; y < 4; y++) set({ x: W0.x + x, y: W0.y + y, z: W0.z + z }, "minecraft:air");
   ke._fizik = false;
 }
 

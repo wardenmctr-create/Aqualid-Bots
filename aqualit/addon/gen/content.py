@@ -1,7 +1,7 @@
 """Aqualit Robotlari: esya, blok, tarif ve dil tanimlari (tek kaynak)."""
 
 NS = 'aqualit'
-VERSION = [0, 3, 0]
+VERSION = [0, 3, 1]
 
 # ---------------------------------------------------------------- esyalar
 MATERIALS = [
@@ -68,6 +68,12 @@ DEVICES = [
     ('command_rod', 'Komut Çubuğu', 'command_rod', 'rod', 'Komut ver'),
     ('zone_selector', 'Bölge Seçici', 'zone_selector', 'zone', 'Seç'),
     ('tuning_gear', 'Kılıçlı Ayar Dişlisi', 'tuning_gear', 'gear', 'Ayarla'),
+]
+
+# Keşif'e binince oyuncuya verilen eşyalar (inince geri alınır; yaratıcı menüde yok): id, ad, ikon, tür
+KESIF_ESYA = [
+    ('kesif_radar', 'Yer Bulucu Radar (basılı tut)', 'kesif_radar', 'radar'),
+    ('kesif_hiz', 'Keşif Hız Sayacı', 'kesif_hiz', 'hiz'),
 ]
 
 # Kapalı robot (heykel) eşyaları: tür + model -> blok durumu 'aqualit:tur'
@@ -187,7 +193,7 @@ LANG_EXTRA = {
 
 def lang_lines():
     out = {}
-    for iid, name, *_ in (MATERIALS + TOOLS + CHESTS + SANDIK_MARKERS + ROBOTS + DEVICES + STATUE_ITEMS + [REPAIR_KIT] + BARKS + BARK_ARMORS
+    for iid, name, *_ in (MATERIALS + TOOLS + CHESTS + SANDIK_MARKERS + ROBOTS + DEVICES + KESIF_ESYA + STATUE_ITEMS + [REPAIR_KIT] + BARKS + BARK_ARMORS
                           + STONE_ARMORS + AQ_ARMORS + BOOKS):
         out[f'item.aqualit.{iid}.name'] = name
     for bid, name, *_ in BLOCKS:

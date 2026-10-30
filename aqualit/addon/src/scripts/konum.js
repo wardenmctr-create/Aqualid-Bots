@@ -14,7 +14,7 @@ const state = new Map(); // oyuncu kimliği -> { wps: Map(rid -> {wp, kind, eid,
 export function skinOf(type, model) {
   return type === "kilicli" ? `kilicli_${clamp(model ?? 1, 1, 5)}` : type;
 }
-function selector(path) {
+export function selector(path) {
   return { textureBoundsList: [{ lowerBound: 0, texture: { path, iconWidth: SIZE, iconHeight: SIZE } }] };
 }
 function st(player) {

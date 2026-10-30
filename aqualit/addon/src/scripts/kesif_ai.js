@@ -3,19 +3,21 @@
 // bulduklarını "Bilinen yerler"e yazar ve sahibine konum gönderir. Sahibini ya da robotları araçla götürür.
 // Aracı kendi seçer: uzun yol uçak, su üstü gemi, su altı denizaltı, yer altı matkap.
 // Yalnız yüklü yığınlara bakar; uzaktayken çevresini işletir (tick_world) ve küçük bir işleme alanı açar.
-import { world, system, BlockVolume } from "@minecraft/server";
+import { world, system, BlockVolume, ItemStack } from "@minecraft/server";
 import { V, safe, fire, yawOf, clamp, wait } from "./util.js";
 import { Robots, getJSON, setJSON, getProp, setProp } from "./store.js";
 import { sendMessage } from "./messages.js";
 import { menu, modal, confirm } from "./ui/forms.js";
 import { Harita, Yerler } from "./harita.js";
-import { KESIF_ID, KAD, formOf, transform, ridersOf, aracMenu, collect } from "./kesif.js";
+import { KESIF_ID, KAD, formOf, transform, ridersOf, aracMenu, collect, depoOku, depoYaz, depoSay, kaziTopla } from "./kesif.js";
 import { sendLocation } from "./konum.js";
 import { bots } from "./brain.js";
 import { TYPE_NAME, robotIcon } from "./constants.js";
 import { ICONS } from "./ikon_data.js";
 import { YAPI } from "./yapi_bilgi.js";
 import { seferMenu } from "./sefer.js";
+import { KOLTUK, YALNIZ_OYUNCU } from "./kesif_koltuk.js";
+import { hizCarpani } from "./kesif_radar.js";
 
 const CRUISE = 14;            // yüzeyin kaç blok üstünden uçar
 const FLY = 0.9;              // tek başına uçuş hızı (blok/tik)
@@ -255,7 +257,7 @@ function haritaya(k) {
 }
 
 /** Bir yığında yapı imzası arar. Bulursa {tur, pos}. */
-function yiginTara(dim, cx, cz, turler) {
+export function yiginTara(dim, cx, cz, turler) {
   const ys = turler.map((t) => YAPI[t].y);
   const y0 = Math.max(dim.heightRange?.min ?? -64, Math.min(...ys.map((y) => y[0])));
   const y1 = Math.min((dim.heightRange?.max ?? 320) - 1, Math.max(...ys.map((y) => y[1])));
@@ -495,7 +497,8 @@ export function* gotur(k, hedef, ad) {
     const dx = hedef.x - p.x, dz = hedef.z - p.z;
     const hd = Math.hypot(dx, dz);
     if (hd < 3) break;
-    const sp = Math.min(form === "gemi" ? 0.6 : CARRY, hd / 10 + 0.1);
+    const sur = ridersOf(k.e).find((r) => r.typeId === "minecraft:player");
+    const sp = Math.min((form === "gemi" ? 0.6 : CARRY) * hizCarpani(k.e, sur), hd / 10 + 0.1);
     let vy = 0;
     if (form === "ucak") {
       const ahead = { x: p.x + (dx / hd) * 12, z: p.z + (dz / hd) * 12 };
@@ -541,6 +544,7 @@ export function* gotur(k, hedef, ad) {
 }
 
 function kazAsagi(k) {
+  kaziTopla(k.e);
   const p = k.loc;
   const cx = Math.floor(p.x), cy = Math.floor(p.y + 0.05) - 1, cz = Math.floor(p.z);
   for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
@@ -556,7 +560,7 @@ const yolcu = new Set();       // binmiş robotların kimlikleri (brain onları 
 export function robotYolcuMu(id) {
   return yolcu.has(id);
 }
-export const KAPASITE = 10;    // koltuklar + kanatlar + üst üste; yetmezse içeri
+export const KAPASITE = 10;    // koltuklar, kanatlar, tavan, platform (kesif_koltuk.js); yetmezse içeri
 const gizlenen = new Map();     // Keşif kimliği -> içeri giren robotlar (görünmez, araçla taşınır)
 
 function iceriAl(k, b) {
@@ -594,11 +598,12 @@ export function* robotlariBindir(k, list) {
   yield* araca(k, "ucak");
   const rc = safe(() => k.e.getComponent("minecraft:rideable"));
   let n = 0;
+  const yalniz = YALNIZ_OYUNCU.includes(formOf(k.e));
   for (const b of list) {
     if (!b.valid || n >= KAPASITE) continue;
     b.setMove?.("none");
-    b.setAct?.("sit");
-    if (safe(() => rc.addRider(b.e), false)) {
+    b.setAct?.("none");            // binen robot kendiliğinden oturur (istemci: q.is_riding), tutunanlar act2
+    if (!yalniz && safe(() => rc.addRider(b.e), false)) {
       yolcu.add(b.id);
       n++;
     } else {
@@ -623,6 +628,7 @@ export function robotlariIndir(k, list, yeniEv) {
     } else safe(() => rc?.ejectRider(b.e));
     yolcu.delete(b.id);
     b.setAct?.("none");
+    safe(() => b.e.setProperty("aqualit:act2", "none"));
     if (yeniEv) {
       const l = b.loc;
       b.home = { x: Math.floor(l.x) + 0.5, y: Math.floor(l.y), z: Math.floor(l.z) + 0.5 };
@@ -652,9 +658,65 @@ function* robotTasi(k, list, hedef, ad, yeniEv) {
   k.say(yeniEv ? `Robotlar indi; yeni evleri burası. Görev verirsen buradan çalışırlar.` : "Robotlar indi.", { force: true });
 }
 
+/** Araç değişince koltuğu kalmayan robot (ör. denizaltı: robotlar dışarıda boğulur) aracın içine girer. */
+export function koltuksuzIceri(e, r) {
+  const k = kesifler.get(e.id);
+  const b = bots.get(r.id);
+  if (!k || !b) return false;
+  iceriAl(k, b);
+  yolcu.add(b.id);
+  return true;
+}
+
+/** Matkap deposundakileri madenciye verir: önce binen/içerideki madenciler, yoksa yakındaki (8 blok) madenciler. */
+function depoyuDagit(k) {
+  const d = depoOku(k.e);
+  const ids = Object.keys(d);
+  if (!ids.length) return;
+  const ic = gizlenen.get(k.id) ?? new Set();
+  const adaylar = [...ridersOf(k.e).map((r) => bots.get(r.id)), ...ic,
+    ...[...bots.values()].filter((b) => b.valid && b.owner === k.owner && V.dist(b.loc, k.loc) < 8)];
+  const madenci = adaylar.filter((b, i) => b?.valid && b.type === "madenci" && adaylar.indexOf(b) === i);
+  if (!madenci.length) return;
+  let verilen = 0;
+  for (const b of madenci) {
+    for (const id of Object.keys(d)) {
+      const left = b.addItem(id, d[id]);
+      verilen += d[id] - left;
+      if (left > 0) d[id] = left;
+      else delete d[id];
+    }
+    if (!Object.keys(d).length) break;
+  }
+  depoYaz(k.e, d);
+  if (verilen) k.say(`Matkapla kazdıklarımı madenciye verdim (${verilen} eşya).`);
+}
+
+/** Her yarım saniye: binen robotların pozu (koltuk sırasına göre: tutun ya da otur) ve matkabın arka kapısı. */
+function koltukPozlari() {
+  for (const k of kesifler.values()) {
+    if (!k.valid) continue;
+    const form = formOf(k.e);
+    const plan = KOLTUK[form] ?? [];
+    let robot = 0;
+    ridersOf(k.e).forEach((r, i) => {
+      if (r.typeId !== "aqualit:robot") return;
+      robot++;
+      const want = plan[i]?.tur === "tutun" ? "tutun" : "none";
+      if (safe(() => r.getProperty("aqualit:act2")) !== want) safe(() => r.setProperty("aqualit:act2", want));
+      if (safe(() => r.getProperty("aqualit:act")) === "sit") safe(() => r.setProperty("aqualit:act", "none"));
+    });
+    // kapı robot binmişken açık; yalnız oyuncu binince ya da Keşif tek başına giderken kapanır
+    const ac = form === "matkap" && robot > 0;
+    if (safe(() => k.e.getProperty("aqualit:kapi")) !== ac) safe(() => k.e.setProperty("aqualit:kapi", ac));
+  }
+}
+
 // ======================================================================= iş döngüsü
 system.runInterval(() => {
   icerdekileriTasi();
+  if (system.currentTick % 10 === 0) koltukPozlari();
+  if (system.currentTick % 40 === 20) for (const k of kesifler.values()) if (k.valid) safe(() => depoyuDagit(k));
   for (const [id, k] of kesifler) {
     if (!k.valid) {
       kesifler.delete(id);
@@ -712,6 +774,8 @@ export async function anaMenu(pl, e) {
   btns.push({ text: "§lBeni götür§r\n§7Araç olur, bindirir, kendisi sürer", icon: ICON("elytra"), v: "gotur" });
   btns.push({ text: "§lSefer düzenle§r\n§7Robot ekibini bir yapıya götürür: korur, yağmalar, döner", icon: ICON("trial_key"), v: "sefer" });
   btns.push({ text: "§lRobotları taşı§r\n§7Yakındaki robotları başka yere götürür", icon: robotIcon("madenci", 1), v: "tasi" });
+  const depo = depoSay(e);
+  if (depo) btns.push({ text: `§lMatkap deposu§r\n§7${depo} eşya: bana ver`, icon: ICON("chest"), v: "depo" });
   btns.push({ text: "Araç ol (kendin sür)", icon: ICON("rail"), v: "arac" });
   btns.push({ text: "Eve dön", icon: ICON("bed"), v: "eve" });
   btns.push({ text: "İsim ver", icon: ICON("name_tag"), v: "isim" });
@@ -731,6 +795,26 @@ export async function anaMenu(pl, e) {
     case "tasi": return tasiMenu(pl, k);
     case "sefer": return seferMenu(pl, k);
     case "arac": return aracMenu(pl, e);
+    case "depo": {
+      const d = depoOku(e);
+      const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
+      let n = 0;
+      for (const [id, say] of Object.entries(d)) {
+        let left = say;
+        while (left > 0) {
+          const max = safe(() => new ItemStack(id, 1).maxAmount, 0);
+          const st = max ? safe(() => new ItemStack(id, Math.min(left, max))) : null;
+          if (!st) break;
+          const amt = st.amount;
+          const rest = inv ? safe(() => inv.addItem(st)) : st;
+          if (rest) safe(() => pl.dimension.spawnItem(rest, pl.location));
+          left -= amt;
+          n += amt;
+        }
+      }
+      depoYaz(e, {});
+      return k.say(`Matkap deposunu sana verdim (${n} eşya).`, { force: true });
+    }
     case "eve": return basla(k, eveDon(k), "Eve dönüyorum.");
     case "isim": {
       const v = await modal(pl, "İsim ver", [{ type: "text", label: "Keşif'in yeni adı", value: k.name }], "Kaydet");
