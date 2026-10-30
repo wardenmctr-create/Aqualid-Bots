@@ -192,6 +192,17 @@ export const ESYA = {
   "carpik govde": E("Çarpık gövde", "minecraft:warped_stem", ["oduncu", "carpik"]),
   fidan: E("Fidan", null, ["oduncu", "mese"], { ids: [/_sapling$/] }),
   yaprak: E("Yaprak", null, ["oduncu", "mese"], { ids: [/_leaves$/] }),
+  cubuk: E("Çubuk", "minecraft:stick", null),
+  merdiven: E("Merdiven", "minecraft:ladder", null),
+  fici: E("Fıçı", "minecraft:barrel", null),
+  kitaplik: E("Kitaplık", "minecraft:bookshelf", null),
+  "cam panel": E("Cam panel", "minecraft:glass_pane", null),
+  "demir kazma": E("Demir kazma", "minecraft:iron_pickaxe", null),
+  "elmas kazma": E("Elmas kazma", "minecraft:diamond_pickaxe", null),
+  "demir kilic": E("Demir kılıç", "minecraft:iron_sword", null),
+  "elmas kilic": E("Elmas kılıç", "minecraft:diamond_sword", null),
+  "aqualit kablo": E("Aqualit Kablo", "aqualit:aqualit_kablo", null),
+  kablo: E("Aqualit Kablo", "aqualit:aqualit_kablo", null),
   elma: E("Elma", "minecraft:apple", ["oduncu", "mese"]),
   // çiftçi
   bugday: E("Buğday", "minecraft:wheat", ["ciftci", "bugday"]),
@@ -349,6 +360,8 @@ export const EYLEM = {
   git: ["git", "gidin", "gitsin", "gidip", "gidin", "uc", "ucun", "yola cik", "yolculuk", "seyahat", "yonel", "ulas"],
   bul: ["bul", "bulun", "bulsun", "ara", "arayin", "arasin", "kesfet", "kesfedin", "yerini bul", "nerede oldugunu bul", "konumunu bul"],
   kesfet: ["harita", "haritala", "cevreyi kesfet", "etrafi kesfet", "gez", "dolas", "tara"],
+  craft: ["uret", "uretin", "uretsin", "imal", "craft", "hazirla", "hazirlayin", "hazirlasin"],
+  firin: ["aqualit firin", "firin kur", "firin koy"],
   insa: ["insa", "kur", "kurun", "kursun", "yap", "yapin", "yapsin", "dik", "olustur", "in sa"],
   duzenle: ["duzenle", "sirala", "tasnif", "ayikla", "topla sandik", "derle", "temizle sandik", "duzen", "organize"],
   sor: ["nerede", "nerde", "var mi", "kac tane", "kac", "ne kadar", "bende ne var", "neler var", "envanter", "sayim", "say"],
@@ -672,6 +685,8 @@ function parcaCoz(ogeler, baglam, oncekiRobotlar) {
   // eylem öncelikleri
   if (eylemler.includes("sor") && !eylemler.includes("topla")) eylem = "sor";
   if (eylemler.includes("insa")) eylem = "insa";
+  // "10 meşale yap": eşya varsa ve yapı adı yoksa üretim
+  if ((eylem === "insa" || eylem === "craft") && esyalar.length && !ogeler.some((o) => o.tip === "bilinmeyen" && !DOLGU.has(o.deger))) eylem = "craft";
   if (eylemler.includes("yagma")) eylem = "yagma";
   if (eylemler.includes("ver") && (yerler.some((y) => y.deger === "ben") || ogeler.some((o) => o.yazilan === "bana"))) eylem = "ver";
   if (eylem === "ek" || eylem === "kes" || eylem === "kaz") eylem = "topla";

@@ -2224,6 +2224,15 @@ if (run("organizator")) {
   check(player.messages.length >= 2, "sohbet cevabı geldi");
   await OU.isle(player, "durum", true);
   check(player.messages.some((m) => /robot/.test(m) && /sandık/.test(m)), "durum raporu");
+  // 8) üretim: "10 meşale yap" -> kütükten tahta, tahtadan çubuk, kömürle meşale (çalışma masası gerekmez)
+  cg.addItem(new ItemStack("minecraft:coal", 3));
+  const meseOnce = sayC(so, "minecraft:oak_log");
+  player.messages.length = 0;
+  await OU.isle(player, "10 meşale yap", true);
+  ticks(20 * 90, () => player.messages.some((m) => /meşale yaptım|Meşale yaptım|Meşale.*sandığa/i.test(m)));
+  const mesale = [sg, sm, so, sc].reduce((n, h) => n + sayC(h, "minecraft:torch"), 0);
+  if (process.env.DBG4) console.log(player.messages.join("\n"), org.status);
+  check(mesale >= 15 && sayC(so, "minecraft:oak_log") < meseOnce, `"10 meşale yap" planlandı ve üretildi (meşale ${mesale}, mesajlar: ${player.messages.slice(-2).join(" / ").slice(0, 120)})`);
 }
 
 if (run("kit")) {

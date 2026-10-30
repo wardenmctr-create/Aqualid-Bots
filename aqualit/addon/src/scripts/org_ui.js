@@ -12,6 +12,7 @@ import { seferBaslat, bosKesif } from "./sefer.js";
 import { yapiAra, chooseSite } from "./mimar.js";
 import { YAPI } from "./yapi_bilgi.js";
 import { robotIcon } from "./constants.js";
+import { uretimKomutu } from "./org_uretim.js";
 
 const ICON = {
   yaz: "textures/items/writable_book", tekrar: "textures/items/clock_item", zincir: "textures/items/paper",
@@ -22,6 +23,7 @@ const ICON = {
 // ======================================================================= Organizatör'ün dış işleri (Keşif, Mimar, sefer)
 ORG.bagla({
   kesifListesi,
+  uretim: uretimKomutu,
   kesifEveDon: (k) => basla(k, eveDon(k), "Eve dönüyorum."),
   kesifTakip: (k, pl) => basla(k, takipEt(k, () => pl, pl.name), `${pl.name} adlı oyuncuyu takip ediyorum.`),
   sefer(pl, a, robotlar) {

@@ -384,6 +384,45 @@ export function sikistir(cid) {
   return Math.max(0, once - sonra);
 }
 
+/** Çantadakileri türüne göre uygun sandığa (yoksa genel sandığa) koyar. Konan adet. */
+export function* sandigaKoy(org) {
+  const owner = org.owner;
+  const d = dizin(owner, true);
+  const uygun = (tur) => d.sandiklar.filter((s) => s.kind === tur && s.bos > 0 && s.dim === org.dim.id && !acikMi(s.cid))
+    .sort((a, b) => V.dist(a.pos, org.loc) - V.dist(b.pos, org.loc))[0];
+  const gruplar = new Map();
+  for (const [id] of org.contents()) {
+    const s = uygun(sinifOf(id)) ?? uygun("genel") ?? uygun("toplayici") ?? d.sandiklar.find((x) => x.bos > 0 && !acikMi(x.cid));
+    if (!s) continue;
+    let g = gruplar.get(s.cid);
+    if (!g) gruplar.set(s.cid, (g = []));
+    g.push(id);
+  }
+  let n = 0;
+  for (const [cid, ids] of gruplar) {
+    const h = getSandik(cid);
+    if (!h) continue;
+    yield* org.travelTo(standSpot(h) ?? h.location, { near: 2 });
+    const k = new UnitContainer(cid);
+    for (const id of ids) {
+      let m = org.count(id);
+      while (m > 0) {
+        const max = safe(() => new ItemStack(id, 1).maxAmount, 64);
+        const st = new ItemStack(id, Math.min(m, max));
+        const rest = k.addItem(st);
+        const kondu = st.amount - (rest?.amount ?? 0);
+        if (!kondu) break;
+        org.take(id, kondu);
+        n += kondu;
+        m -= kondu;
+      }
+    }
+    yield* wait(3);
+  }
+  O.dizin.delete(owner);
+  return n;
+}
+
 // ======================================================================= Organizatör'ün işi (jobs.js çağırır)
 export function* organizatorIsi(org) {
   org.say("Organizatör hazır! Telefondan ya da bana dokunup yazıyla görev verebilirsin.", { force: false });
@@ -431,11 +470,11 @@ export function* organizatorIsi(org) {
         yield* org.travelTo(V.floor(it.location), { near: 1 });
         org.pickupItems(3);
       }
-      yield* org.deposit(() => 0);
+      yield* sandigaKoy(org);
       continue;
     }
     if (org.contents().size) {
-      yield* org.deposit(() => 0);
+      yield* sandigaKoy(org);
     }
     org.setStatus("Hazır, görev bekliyor");
     org.setMove("none");

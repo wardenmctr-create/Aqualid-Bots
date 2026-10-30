@@ -147,7 +147,7 @@ export const esyaAd = (id) => {
  * Bir eşyayı n tane elde etmenin planı. stok: Map(id -> adet) (sandıklar + çanta).
  * Dönen: { al: {id: n}, adimlar: [{tur:"craft"|"erit", tarif|girdi, kez, cikti, adet}], eksik: {id: n}, masa, firin }
  */
-export function planla(id, n, stok) {
+export function planla(id, n, stok, yeni = true) {
   const s = new Map(stok);
   const P = { al: {}, adimlar: [], eksik: {}, masa: false, firin: false };
   const grupSec = (g, need) => {
@@ -170,7 +170,7 @@ export function planla(id, n, stok) {
   const gerek = (id, n, derin) => {
     if (n <= 0) return;
     if (id.startsWith("#")) id = grupSec(id, n);
-    const var_ = s.get(id) ?? 0;
+    const var_ = derin === 0 && yeni ? 0 : s.get(id) ?? 0;   // "10 meşale yap": 10 yeni meşale
     const kullan = Math.min(var_, n);
     if (kullan > 0) {
       s.set(id, var_ - kullan);
@@ -402,7 +402,7 @@ export function* uretIsi(org, hedefId, n, kim) {
     }
     ORG.konus(owner, `${ver} ${esyaAd(hedefId)} hazır, sana getirdim.`, org);
   } else {
-    yield* org.deposit(() => 0);
+    yield* ORG.sandigaKoy(org);
     ORG.konus(owner, `${n} ${esyaAd(hedefId)} yaptım, sandığa koydum.`, org);
   }
   return true;
