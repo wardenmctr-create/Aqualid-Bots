@@ -58,6 +58,7 @@ ROBOTS = [
     ('robot_kilicli_5', 'Kılıçlı Robot · Seviye 5 (Mavi)', 'robot_kilicli_5', 'kilicli', 5, True),
     ('robot_kesif', 'Keşif Robotu (araçlara dönüşür)', 'robot_kesif', 'kesif', 1, False),
     ('robot_insaatci', 'Mimar Robot (yapı kurar, uçar)', 'robot_insaatci', 'insaatci', 1, False),
+    ('robot_toplayici', 'Organizatör Robot (sandıkları yönetir, konuşur, plan yapar)', 'robot_toplayici', 'toplayici', 1, False),
 ]
 
 DEVICES = [
@@ -68,6 +69,7 @@ DEVICES = [
     ('command_rod', 'Komut Çubuğu', 'command_rod', 'rod', 'Komut ver'),
     ('zone_selector', 'Bölge Seçici', 'zone_selector', 'zone', 'Seç'),
     ('tuning_gear', 'Kılıçlı Ayar Dişlisi', 'tuning_gear', 'gear', 'Ayarla'),
+    ('aqualit_telefon', 'Aqualit Telefon (Organizatör ile konuş)', 'aqualit_telefon', 'telefon', 'Konuş'),
 ]
 
 # Keşif'e binince oyuncuya verilen eşyalar (inince geri alınır; yaratıcı menüde yok): id, ad, ikon, tür
@@ -80,9 +82,9 @@ KESIF_ESYA = [
 
 # Kapalı robot (heykel) eşyaları: tür + model -> blok durumu 'aqualit:tur'
 # yeni türler sona eklenir (eski dünyalardaki blok durumları bozulmasın); en çok 16 değer
-STATUE_VARIANTS = ['madenci', 'kurekci', 'ciftci', 'oduncu'] + [f'kilicli_{m}' for m in range(1, 6)] + ['insaatci']
+STATUE_VARIANTS = ['madenci', 'kurekci', 'ciftci', 'oduncu'] + [f'kilicli_{m}' for m in range(1, 6)] + ['insaatci', 'toplayici']
 STATUE_NAMES = {'madenci': 'Kapalı Madenci Robot', 'kurekci': 'Kapalı Kürekçi Robot', 'ciftci': 'Kapalı Çiftçi Robot',
-                'oduncu': 'Kapalı Oduncu Robot', 'insaatci': 'Kapalı Mimar Robot', **{f'kilicli_{m}': f'Kapalı Kılıçlı Robot · Seviye {m}' for m in range(1, 6)}}
+                'oduncu': 'Kapalı Oduncu Robot', 'insaatci': 'Kapalı Mimar Robot', 'toplayici': 'Kapalı Organizatör Robot', **{f'kilicli_{m}': f'Kapalı Kılıçlı Robot · Seviye {m}' for m in range(1, 6)}}
 STATUE_ITEMS = [(f'kapali_{v}', STATUE_NAMES[v], f'kapali_{v}', v) for v in STATUE_VARIANTS]
 REPAIR_KIT = ('tamir_kiti', 'Aqualit Tamir Kiti', 'tamir_kiti')
 
@@ -142,7 +144,7 @@ shaped('aqualit_chest', ['XXX', 'X#X', 'XXX'], {'X': I(K), '#': I('minecraft:che
 for rid, tool in [('robot_madenci', 'aqualit:aqualit_pickaxe'), ('robot_kurekci', 'aqualit:aqualit_shovel'),
                   ('robot_ciftci', 'aqualit:aqualit_hoe'), ('robot_oduncu', 'aqualit:aqualit_axe'),
                   ('robot_kilicli_1', 'aqualit:aqualit_sword'), ('robot_kesif', 'minecraft:compass'),
-                  ('robot_insaatci', 'minecraft:brick_block')]:
+                  ('robot_insaatci', 'minecraft:brick_block'), ('robot_toplayici', 'minecraft:barrel')]:
     shaped(rid, [' B ', 'XSX', ' A '], {'B': I('aqualit:aqualit_block'), 'X': I(K), 'S': I('aqualit:aqualit_chest'),
                                        'A': I(tool)}, 'aqualit:' + rid, unlock=[{'item': 'aqualit:aqualit_chest'}])
 for cid, wood in [('chest_miner', 'minecraft:wooden_pickaxe'), ('chest_digger', 'minecraft:wooden_shovel'),
@@ -151,6 +153,8 @@ for cid, wood in [('chest_miner', 'minecraft:wooden_pickaxe'), ('chest_digger', 
                   ('chest_collector', 'minecraft:barrel')]:
     shapeless(cid, [I('aqualit:aqualit_chest'), I(wood)], 'aqualit:' + cid, unlock=[{'item': 'aqualit:aqualit_chest'}])
 shaped('robot_radio', [' X ', 'XRX', 'XXX'], {'X': I(K), 'R': I('minecraft:redstone')}, 'aqualit:robot_radio')
+shaped('aqualit_telefon', [' X ', 'XGX', 'XRX'], {'X': I(K), 'G': I('minecraft:glass_pane'), 'R': I('minecraft:redstone')},
+       'aqualit:aqualit_telefon')
 shaped('robot_tracker', ['XXX', 'XGX', 'XCX'], {'X': I(K), 'G': I('minecraft:glass_pane'), 'C': I('minecraft:compass')},
        'aqualit:robot_tracker')
 shapeless('task_remote', [I(K), I('minecraft:redstone'), I('minecraft:stone_button')], 'aqualit:task_remote')

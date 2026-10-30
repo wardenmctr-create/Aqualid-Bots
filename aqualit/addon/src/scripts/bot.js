@@ -11,7 +11,7 @@ import { Budget } from "./budget.js";
 
 const ACT2 = new Set(["p_hook", "p_sword", "p_dash", "p_dome", "p_thunder", "water_throw", "water_catch", "water_pour", "kit",
   "fly", "hat_off", "hat_hold", "hat_on", "tutun"]);
-const ACT_FOR_TYPE = { madenci: "mine", kurekci: "dig", ciftci: "hoe", oduncu: "chop", kilicli: "attack", insaatci: "place" };
+const ACT_FOR_TYPE = { madenci: "mine", kurekci: "dig", ciftci: "hoe", oduncu: "chop", kilicli: "attack", insaatci: "place", toplayici: "carry" };
 const WALK = 0.16;
 const RUN = 0.27;
 

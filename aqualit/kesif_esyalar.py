@@ -53,6 +53,27 @@ HIZ = [
 ]
 
 
+# Aqualit Telefon: turkuaz gövde, ekranda konuşma balonu, alt tuşlar
+TELEFON = [
+    "................",
+    ".....yyyyyy.....",
+    "....yMMMMMMy....",
+    "....yMkkkkMy....",
+    "....yMkCCkMy....",
+    "....yMkCLCMy....",
+    "....yMkkCkMy....",
+    "....yMkkkkMy....",
+    "....yMkCCkMy....",
+    "....yMkkkkMy....",
+    "....yMMMMMMy....",
+    "....yMHMMHMy....",
+    "....yMMRRMMy....",
+    "....yDMMMMDy....",
+    ".....yyyyyy.....",
+    "................",
+]
+
+
 # otopilot: kumanda paneli, ekranı kırmızı (kapalı: sen sürüyorsun) ya da yeşil (açık: Keşif gidiyor)
 def otopilot(ekran, isik):
     return [
@@ -108,6 +129,9 @@ def main():
     d2.text((40, 10), 'Otopilot KAPALI (sen sür)', font=f, fill=(255, 110, 100))
     d2.text((330, 10), 'Otopilot AÇIK (kendi gider)', font=f, fill=(120, 255, 140))
     c2.save(os.path.join(HERE, 'onizleme', '67_otopilot.png'))
+    tel = img(TELEFON)
+    tel.save(os.path.join(out, 'aqualit_telefon.png'))
+    tel.resize((256, 256), Image.NEAREST).save(os.path.join(HERE, 'onizleme', '69_aqualit_telefon.png'))
     card.save(p)
     print(p)
 

@@ -149,7 +149,19 @@ def otopilot(acik):
     return f
 
 
-CIHAZLAR = [kumanda, telsiz, takip_ekrani, komut_cubugu, bolge_secici, ayar_dislisi, tamir_kiti, radar, hiz_sayaci,
+def telefon():
+    f = Form('aqualit_telefon', 'Aqualit Telefon')
+    f.bone('el', None, (0, 4, 0))
+    on = panel(5, 8, 'M')
+    for y in range(1, 6):
+        hline(on, y, 'k', 1, 4)
+    dots(on, [(2, 2), (3, 2), (1, 4)], '~')
+    over(on, rows('H H'), 1, 6)
+    _govde(f, (-2.5, 0, -0.5), (2.5, 8, 0.5), front=on, glow='~')
+    return f
+
+
+CIHAZLAR = [telefon, kumanda, telsiz, takip_ekrani, komut_cubugu, bolge_secici, ayar_dislisi, tamir_kiti, radar, hiz_sayaci,
             lambda: otopilot(False), lambda: otopilot(True)]
 
 

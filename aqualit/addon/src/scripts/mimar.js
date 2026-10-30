@@ -3,6 +3,7 @@
 import { world, system, BlockPermutation, ItemStack } from "@minecraft/server";
 import { V, wait, safe, yawOf, clamp } from "./util.js";
 import { YAPILAR, KATEGORI, BLOK_DURUM, ALTERNATIF, BLOK_ESYA } from "./yapi_data.js";
+import { eksikleriIste } from "./organizator.js";
 import { getJSON, setJSON, setProp } from "./store.js";
 import { menu, confirm } from "./ui/forms.js";
 import { idleJob } from "./jobs.js";
@@ -23,6 +24,21 @@ const NATURAL = /^minecraft:(dirt|coarse_dirt|grass_block|podzol|mycelium|mud|ro
 
 export function yapi(id) {
   return BY_ID.get(id);
+}
+/** Yazıyla verilen yapı adına en uygun kütüphane yapısı ("kule", "küçük ev", "buğday çiftliği"). */
+export function yapiAra(ad) {
+  const sade = (t) => String(t ?? "").toLowerCase().replace(/[çğıöşüâî]/g, (c) => ({ "ç": "c", "ğ": "g", "ı": "i", "ö": "o", "ş": "s", "ü": "u", "â": "a", "î": "i" })[c]);
+  const q = sade(ad).trim();
+  if (!q) return [];
+  const ks = q.split(/\s+/).filter((k) => k.length >= 3);
+  const puan = (y) => {
+    const n = sade(y.ad);
+    let p = n === q ? 100 : n.includes(q) ? 60 : 0;
+    for (const k of ks) if (n.includes(k.slice(0, Math.max(3, k.length - 2)))) p += 15;
+    if (sade(KATEGORI[y.kat] ?? "").includes(ks[0] ?? "~")) p += 5;
+    return p;
+  };
+  return YAPILAR.map((y) => [puan(y), y]).filter(([p]) => p > 0).sort((a, b) => b[0] - a[0]).map(([, y]) => y);
 }
 const full = (id) => (id.includes(":") ? id : `minecraft:${id}`);
 /** Yapının malzeme listesi (tam eşya kimlikleriyle); degis: {blok: yeni blok} oyuncunun değiştirdikleri. */
@@ -384,7 +400,10 @@ export function* mimarJob(bot) {
     const left = yield* gather(bot, needOf(Y, T.degis));
     P.mal = true;
     bot.save(true);
-    if (Object.keys(left).length) bot.say(`Malzemenin bir kısmı eksik: ${needText(left)}. Olanlarla başlıyorum, eksikleri sandığıma koyarsan tamamlarım.`);
+    if (Object.keys(left).length) {
+      bot.say(`Malzemenin bir kısmı eksik: ${needText(left)}. Olanlarla başlıyorum; Organizatör'den istedim.`);
+      safe(() => eksikleriIste(bot.owner, left, bot));
+    }
     else bot.say(`${Y.ad} için bütün malzemeyi aldım, yola çıkıyorum!`);
   }
   // 2) yapı yerine uç
@@ -703,7 +722,7 @@ function kutu(y, base, rot) {
  * Yer seçme: panel kapanır; 5 sn boyunca çerçeve baktığın yeri izler (kapı tarafı sana döner).
  * Sonra onay paneli gelir: Onayla / 90° çevir / Yeniden seç / kırmızı İptal.
  */
-async function chooseSite(player, y, free) {
+export async function chooseSite(player, y, free) {
   let base = bakilanYer(player);
   let rot = 0;
   let serbest = true;              // yön kendiliğinden (kapı sana bakar) mı, elle mi çevrildi

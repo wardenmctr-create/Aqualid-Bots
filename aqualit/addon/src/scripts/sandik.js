@@ -287,6 +287,10 @@ export function layout(size, cap) {
 
 // ====================================================================== sandık açıkken (oturum)
 const sessions = new Map(); // birim -> {uid, player, dimId, pos, lay, cap, page, st, noNav}
+/** Bir oyuncu sandığı açmış mı (Organizatör açık sandığa dokunmaz). */
+export function acikMi(uid) {
+  return sessions.has(uid);
+}
 const pending = new Map();  // oyuncu -> bekleyen yerleştirme {kind, pos, dimId, tick, ploc}
 
 function viewOf(s) {

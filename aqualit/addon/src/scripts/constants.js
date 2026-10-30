@@ -2,7 +2,7 @@
 export const ROBOT_ID = "aqualit:robot";
 export const CHEST_ID = "aqualit:robot_chest";
 
-export const TYPES = ["madenci", "kurekci", "ciftci", "oduncu", "kilicli", "insaatci"];
+export const TYPES = ["madenci", "kurekci", "ciftci", "oduncu", "kilicli", "insaatci", "toplayici"];
 export const TYPE_NAME = {
   madenci: "Madenci",
   kurekci: "Kürekçi",
@@ -10,6 +10,7 @@ export const TYPE_NAME = {
   oduncu: "Oduncu",
   kilicli: "Kılıçlı",
   insaatci: "Mimar",
+  toplayici: "Organizatör",
   kesif: "Keşif",
 };
 export const TYPE_TOOL = {
@@ -19,6 +20,7 @@ export const TYPE_TOOL = {
   oduncu: "aqualit:aqualit_axe",
   kilicli: "aqualit:aqualit_sword",
   insaatci: "minecraft:brick_block",
+  toplayici: "minecraft:barrel",
 };
 export const TYPE_ICON = {
   madenci: "textures/items/robot_madenci",
@@ -27,6 +29,7 @@ export const TYPE_ICON = {
   oduncu: "textures/items/robot_oduncu",
   kilicli: "textures/items/robot_kilicli_1",
   insaatci: "textures/items/robot_insaatci",
+  toplayici: "textures/items/robot_toplayici",
   kesif: "textures/items/robot_kesif",
 };
 export function robotIcon(type, model = 1) {

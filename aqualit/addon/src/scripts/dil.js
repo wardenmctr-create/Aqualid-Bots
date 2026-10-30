@@ -736,6 +736,7 @@ function robotSec(ogeler, baglam) {
     if (o.tip === "robot") {
       sonTur = o.deger;
       sec.bos = false;
+      if (/(ler|lar)/.test(String(o.yazilan ?? "").split(" ").pop().slice(3))) sec.cogul = true;   // madenciler, kılıçlılara
       if (!sec.turler.includes(o.deger)) sec.turler.push(o.deger);
       // "4. kılıçlı" : önceki sayı
       const once = ogeler[i - 1];

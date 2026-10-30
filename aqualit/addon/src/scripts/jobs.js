@@ -9,6 +9,7 @@ import { WALK, RUN } from "./bot.js";
 import { readAnswer } from "./messages.js";
 import { mimarJob } from "./mimar.js";
 import { yagmaGorevi } from "./yagma.js";
+import { organizatorIsi } from "./organizator.js";
 
 const M = (s) => "minecraft:" + s;
 
@@ -1385,10 +1386,23 @@ export function* takipIsi(bot) {
   }
 }
 
+/** "Şuraya git": hedefe yürür, varınca bekler (görev biter). */
+export function* gitIsi(bot) {
+  const T = bot.task;
+  bot.setStatus(`${T.ad ?? "Hedef"} yolunda`);
+  const ok = yield* bot.travelTo(T.hedef, { near: 3 });
+  bot.say(ok ? `${T.ad ?? "Hedefe"} vardım.` : "Hedefe ulaşamadım.");
+  bot.setMove("none");
+  T.done = true;
+  bot.saveTask();
+}
+
 export function jobFor(bot) {
+  if (bot.type === "toplayici") return organizatorIsi(bot);
   if (!bot.task || bot.task.done || bot.task.paused) return idleJob(bot);
   if (bot.task.mode === "yagma") return yagmaGorevi(bot);
   if (bot.task.mode === "takip") return takipIsi(bot);
+  if (bot.task.mode === "git") return gitIsi(bot);
   switch (bot.type) {
     case "madenci": return minerJob(bot);
     case "kurekci": return diggerJob(bot);

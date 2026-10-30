@@ -2144,5 +2144,87 @@ if (run("takip")) {
     "cihazların elde 3B modelleri var");
 }
 
+if (run("organizator")) {
+  console.log("== v0.4.0 Organizatör: düzenleme, Nerede?, getir, telefonla görev, zincir, koşul, sohbet");
+  const ORGm = await import("./scripts/organizator.js");
+  const OU = await import("./scripts/org_ui.js");
+  const SK = await import("./scripts/sandik.js");
+  const G1 = GROUND + 1;
+  const O = { x: -1500, z: 900 };
+  ow.biome = () => "minecraft:plains";
+  const koy = (tip, p) => {
+    const once = new Set(myBots().map((b) => b.id));
+    player.teleport({ x: p.x + 0.5, y: G1, z: p.z - 2.5 });
+    give(`aqualit:robot_${tip}`);
+    ticks(12);
+    useOn("x", { x: p.x, y: GROUND, z: p.z }, "Up", { comp: "aqualit:robot_item", p: { type: tip, model: 1 } });
+    ticks(4);
+    return myBots().find((b) => b.type === tip && !once.has(b.id));
+  };
+  const org = koy("toplayici", O);
+  check(!!org && org.name.startsWith("Organizatör"), `Organizatör kondu (${org?.name})`);
+  const sandik = (kind, dx) => SK.placeChestBlock(ow, { x: O.x + dx, y: G1, z: O.z + 4 }, kind, { id: player.id, name: player.name }, { x: O.x + dx + 0.5, y: G1, z: O.z + 8 });
+  const sg = sandik("genel", -4), sm = sandik("madenci", -1), so = sandik("oduncu", 2), sc = sandik("ciftci", 5);
+  check(sg && sm && so && sc, "4 sandık kondu (genel, madenci, oduncu, çiftçi)");
+  const cg = sg.getComponent("minecraft:inventory").container;
+  cg.addItem(new ItemStack("minecraft:iron_ingot", 20));
+  cg.addItem(new ItemStack("minecraft:oak_log", 30));
+  cg.addItem(new ItemStack("minecraft:wheat", 12));
+  cg.addItem(new ItemStack("minecraft:diamond", 3));
+  cg.addItem(new ItemStack("minecraft:torch", 5));
+  sm.getComponent("minecraft:inventory").container.addItem(new ItemStack("minecraft:oak_log", 4));   // yanlış sandıkta
+  const sayC = (h, id) => { const c = h.getComponent("minecraft:inventory").container; let n = 0; for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (it?.typeId === id) n += it.amount; } return n; };
+  ticks(40);
+  // 1) düzenle
+  player.teleport({ x: O.x + 0.5, y: G1, z: O.z - 3.5 });
+  await OU.isle(player, "sandıkları düzenle", true);
+  ticks(20 * 60, () => !org._duzenle && /düzenledim/.test(player.messages.join("|")));
+  ticks(20 * 30);
+  check(sayC(sm, "minecraft:iron_ingot") === 20 && sayC(so, "minecraft:oak_log") === 34 && sayC(sc, "minecraft:wheat") === 12,
+    `sandıklar türe göre düzenlendi (madenci demir ${sayC(sm, "minecraft:iron_ingot")}, oduncu meşe ${sayC(so, "minecraft:oak_log")}, çiftçi buğday ${sayC(sc, "minecraft:wheat")})`);
+  check(sayC(sg, "minecraft:torch") === 5, "kendi sandığı olmayan eşya genel sandıkta kaldı");
+  // 2) nerede
+  player.messages.length = 0;
+  await OU.isle(player, "elmas nerede?", true);
+  check(player.messages.some((m) => /3 Elmas/.test(m)), "\"elmas nerede?\" → 3 elmas bulundu");
+  // 3) bana getir
+  const once = player._inv.size;
+  const pc = () => { let n = 0; for (let i = 0; i < player._inv.size; i++) { const it = player._inv.getItem(i); if (it?.typeId === "minecraft:iron_ingot") n += it.amount; } return n; };
+  player.teleport({ x: O.x + 12.5, y: G1, z: O.z - 6.5 });
+  await OU.isle(player, "bana 5 demir ver", true);
+  ticks(20 * 60, () => pc() >= 5);
+  check(pc() === 5 && sayC(sm, "minecraft:iron_ingot") === 15, `Organizatör 5 demiri sandıktan getirdi (oyuncuda ${pc()})`);
+  // 4) telefonla görev
+  const mad = koy("madenci", { x: O.x - 10, z: O.z - 6 });
+  const odn = koy("oduncu", { x: O.x - 14, z: O.z - 6 });
+  player.teleport({ x: O.x + 0.5, y: G1, z: O.z - 3.5 });
+  await OU.isle(player, "madenci 10 kömür getirsin", true);
+  ticks(5);
+  check(mad.task?.items?.[0]?.key === "komur" && mad.task.items[0].amount === 10 && !mad.task.done, "\"madenci 10 kömür getirsin\" → madenciye görev");
+  // 5) zincir: madenci bitince oduncu
+  mad.task.done = true;
+  await OU.isle(player, "madenci 6 demir getirsin, bitince oduncu 8 meşe kessin", true);
+  ticks(5);
+  check(mad.task?.items?.[0]?.key === "demir" && (!odn.task || odn.task.done), "zincir: önce madenci");
+  mad.task.done = true;
+  ticks(60);
+  check(odn.task?.items?.[0]?.key === "mese" && odn.task.items[0].amount === 8, "zincir: madenci bitince oduncuya geçti");
+  // 6) koşul
+  odn.task.done = true;
+  player.messages.length = 0;
+  await OU.isle(player, "eğer elmas 2'den azsa madenci 4 elmas getirsin", true);
+  ticks(60);
+  check(player.messages.some((m) => /Bekliyorum/.test(m)) && mad.task?.items?.[0]?.key !== "elmas", "koşul tutmadı: bekliyor (3 elmas var)");
+  for (const h of [sg, sm, so, sc]) { const c = h.getComponent("minecraft:inventory").container; for (let i = 0; i < c.size; i++) if (c.getItem(i)?.typeId === "minecraft:diamond") c.setItem(i); }
+  ticks(120);
+  check(mad.task?.items?.[0]?.key === "elmas", "elmas bitince koşul tuttu: madenci elmasa gitti");
+  // 7) sohbet ve durum
+  player.messages.length = 0;
+  await OU.isle(player, "merhaba organizatör", true);
+  check(player.messages.length >= 2, "sohbet cevabı geldi");
+  await OU.isle(player, "durum", true);
+  check(player.messages.some((m) => /robot/.test(m) && /sandık/.test(m)), "durum raporu");
+}
+
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");
 process.exit(fails ? 1 : 0);

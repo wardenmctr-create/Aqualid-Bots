@@ -1,7 +1,7 @@
 """Robot ve robot sandigi: davranis (BP) + istemci (RP) varlik dosyalari, animasyonlar."""
 from sesler_def import ANIM_EFFECTS
 
-TYPES = ['madenci', 'kurekci', 'ciftci', 'oduncu', 'kilicli', 'insaatci']   # yeni türler sona
+TYPES = ['madenci', 'kurekci', 'ciftci', 'oduncu', 'kilicli', 'insaatci', 'toplayici']   # yeni türler sona
 MOVES = ['none', 'walk', 'run', 'climb', 'swim']
 ACTS = ['none', 'mine', 'dig', 'chop', 'hoe', 'place', 'carry', 'sit', 'wave', 'celebrate',
         'attack', 'sleep', 'think', 'look', 'boot']

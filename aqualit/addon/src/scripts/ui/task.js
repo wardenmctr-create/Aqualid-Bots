@@ -13,6 +13,7 @@ import { mimarMenu, yapi } from "../mimar.js";
 import { Yerler } from "../harita.js";
 import { ikon, takipHedefiSec } from "../kesif_ai.js";
 import { YAPI } from "../yapi_bilgi.js";
+import { orgMenu } from "../org_ui.js";
 
 const TOOL_ICON = {
   madenci: "textures/items/aqualit_pickaxe", kurekci: "textures/items/aqualit_shovel",
@@ -56,6 +57,23 @@ export function inventoryText(bot) {
 /** Görev kumandası ile robota dokununca açılan menü. */
 export async function robotMenu(player, bot) {
   if (bot.type === "kilicli") return rodRobot(player, bot);
+  if (bot.type === "toplayici") {
+    const r = await orgMenu(player, bot, [
+      { text: "Çantası", icon: "textures/items/aqualit_chest", v: "inv" },
+      { text: "Eve dön", icon: "textures/items/compass_item", v: "back" },
+      { text: "İsim ver", icon: "textures/items/name_tag", v: "name" },
+      { text: "Robotu topla", icon: robotIcon(bot.type, bot.model), v: "pick" },
+    ]);
+    if (!r?.v) return;
+    if (r.v === "inv") return bagMenu(player, { title: `§l${bot.name} · çanta`, container: () => bot.inv, canEdit: () => V.dist(player.location, bot.loc) <= EDIT_RANGE });
+    if (r.v === "back") return commandReturn(bot, false);
+    if (r.v === "name") return renameRobot(player, bot);
+    if (r.v === "pick") {
+      if (V.dist(player.location, bot.loc) > 12) return player.sendMessage("§cRobotu toplamak için yanına git.");
+      if (await confirm(player, "Robotu topla", `§f${bot.name}§r eşyaya dönüşsün mü?`, "Topla")) pickupRobot(player, bot);
+    }
+    return;
+  }
   const T = bot.task;
   const active = T && !T.done && !T.paused;
   const body = [
