@@ -1,7 +1,7 @@
 # Aqualit Robotları — Claude Code çalışma rehberi
 
-Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.3.1**
-(akıllı Keşif, sefer, yağma, büyük araçlar ve oturma planları, radar, hız sayacı, beni takip et). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
+Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.3.2**
+(birini takip et, Keşif otopilotu, 3B sandık blokları ve elde 3B cihazlar; 0.3.1: akıllı Keşif, sefer, yağma, radar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
 Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 
 ## Kullanıcı (kalıcı istekler — her oturumda uy)
@@ -59,7 +59,8 @@ ortam değişkeniyle başka yer gösterilebilir.
 
 ### Script modülleri (`addon/src/scripts`)
 
-- `main.js` giriş (sürüm başlığı ve giriş mesajı burada). `store.js` kalıcı veri (dinamik özellikler; `Robots`, `Chests` kayıtları).
+- `main.js` **güvenli açılış** (v0.3.1): `kayit.js` eşya bileşenlerini hemen kaydeder (işleyiciler `H` tablosunda,
+  items.js doldurur), asıl kod `ana.js` dinamik yüklenir; hata olursa sohbete yazılır. Sürüm başlığı ve giriş mesajı `ana.js`'te. `store.js` kalıcı veri (dinamik özellikler; `Robots`, `Chests` kayıtları).
 - `brain.js` bütün robotları her tik çalıştırır (round-robin + `budget.js` 10 ms bütçe). `bot.js` robot denetleyicisi
   (hareket, envanter, sandıklar, tarama). `path.js` A* (jeneratör). `jobs.js` iş robotlarının görevleri (jeneratör),
   uzak arama, boş zaman işleri. `kaynak.js` görülen kaynak yerleri.
@@ -74,6 +75,9 @@ ortam değişkeniyle başka yer gösterilebilir.
   `harita.js` keşif haritası + Bilinen yerler, `yapi_bilgi.js` 23 yapı ve her yapıda yapılacak işler, `yagma.js` yağma,
   `sefer.js` Keşif'le ekip seferi, `kesif_radar.js` radar + hız sayacı, `kesif_koltuk.js` oturma planı (**gen/kesif_oyun.py
   üretir**, elle değiştirme). Araç ölçeği `kesif_oyun.VS` (1.4); koltuklar model pikseli cinsinden `SEATS`.
+- **v0.3.2:** `gen/esya3d.py`: sandık eşyaları aynı kimlikli 3B sandık blokları (`replace_block_item`; konunca sandik.js
+  tuzaklı sandığa çevirir), cihazların elde 3B modelleri (attachable). Otopilot ve takip: `kesif_ai.js` (`otopilotBaslat`,
+  `takipEt`), `kesif_radar.js` (`otopilotMenu`), robot takibi `jobs.js takipIsi`. Sim senaryosu: `takip`.
 - `ui/` menüler: `forms.js` (menu/modal/confirm), `task.js` Görev Kumandası, `radio.js` Telsiz, `tracker.js` Takip Ekranı,
   `kilicli_ui.js` Komut Çubuğu/Ayar Dişlisi/Bölge Seçici, `canta.js` çanta ekranı.
 
@@ -84,7 +88,7 @@ ortam değişkeniyle başka yer gösterilebilir.
   `getBlocks(..., {includeTypes})` ile. Watchdog (uzun tik) dünyayı çökertir — v0.2.2'de bu yüzden iki sunucu çöktü.
 - Her yeni özellik için `sim.mjs`'ye senaryo ya da denetim ekle. Yeni bir oyun API'si kullanırsan önce sahte dünyaya
   (`test/mock/node_modules/@minecraft/server/index.js`) ekle, sonra `apicheck.py` ile gerçek tanımda var mı bak.
-- Sürüm numarası üç yerde birlikte değişir: `gen/content.py` (VERSION), `src/scripts/main.js` (başlık + giriş mesajı),
+- Sürüm numarası üç yerde birlikte değişir: `gen/content.py` (VERSION), `src/scripts/ana.js` (başlık + giriş mesajı),
   sürüm notu (`docs/RAPOR_vX.Y.Z.md`).
 - Eski dünyalar bozulmamalı: kimlikler (`aqualit:...`) değişmez; kaldırılan eşya/özellik için geçiş kodu yazılır
   (örnek: `zirh.js` migrateBark/migrateStone, `sandik.js` migrateOld).

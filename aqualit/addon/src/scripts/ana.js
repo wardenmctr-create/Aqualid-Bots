@@ -1,5 +1,5 @@
 // Aqualit Robotları — asıl giriş (main.js güvenli açılışla yükler)
-// Sürüm 0.3.1 (Keşif yapay zekâsı, sefer ve yağma, büyük araçlar ve oturma planları, radar, hız sayacı, beni takip et)
+// Sürüm 0.3.2 (birini takip et, Keşif otopilotu; 0.3.1: Keşif yapay zekâsı, sefer, yağma, radar, hız sayacı)
 import { world, system } from "@minecraft/server";
 import "./brain.js";
 import "./items.js";
@@ -16,7 +16,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
   if (!ev.initialSpawn) return;
   const p = ev.player;
   system.runTimeout(() => {
-    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.3.1 yüklendi. Yeni: akıllı Keşif, sefer, yağma, radar ve beni takip et!"));
+    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.3.2 yüklendi. Yeni: birini takip et ve Keşif otopilotu!"));
     if (!cleaned) {
       cleaned = true;
       fxCleanup(); // önceki oturumdan kalmış güç efekti varlıkları

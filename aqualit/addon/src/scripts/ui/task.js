@@ -11,7 +11,7 @@ import { rodRobot } from "./kilicli_ui.js";
 import { bagMenu, EDIT_RANGE } from "./canta.js";
 import { mimarMenu, yapi } from "../mimar.js";
 import { Yerler } from "../harita.js";
-import { YAPI, ikon } from "../kesif_ai.js";
+import { YAPI, ikon, takipHedefiSec } from "../kesif_ai.js";
 
 const TOOL_ICON = {
   madenci: "textures/items/aqualit_pickaxe", kurekci: "textures/items/aqualit_shovel",
@@ -32,7 +32,7 @@ export function describeTask(bot) {
   if (!T) return "Görev yok";
   if (T.mode === "skyblock") return `Taş makinesinden ${T.items?.[0]?.amount ?? 0} taş`;
   if (T.mode === "yagma") return `Yağma: ${T.ad ?? "seçilen yer"} (${T.r} blok çevre)`;
-  if (T.mode === "takip") return `${T.ad} adlı oyuncuyu takip ediyor`;
+  if (T.mode === "takip") return `${T.ad} takip ediliyor`;
   if (T.type === "insaatci") {
     const y = yapi(T.yapi);
     const pct = y ? Math.min(100, Math.floor(((bot.prog?.done ?? 0) * 100) / Math.max(1, y.blok))) : 0;
@@ -70,6 +70,7 @@ export async function robotMenu(player, bot) {
   btns.push(takipte
     ? { text: "§l§cTakibi bırak§r\n§7Eve döner", icon: "textures/ui/cancel", act: "takip_birak" }
     : { text: "§lBeni takip et§r\n§7Peşinden gelir", icon: "textures/items/lead", act: "takip" });
+  if (!takipte) btns.push({ text: "§lBirini takip et§r\n§7Başka bir robotun, Keşif'in ya da oyuncunun peşinden gider", icon: "textures/items/lead", act: "takip_biri" });
   if (active) btns.push({ text: "Görevi durdur", icon: "textures/items/clock_item", act: "stop" });
   else if (T && !T.done) btns.push({ text: "Görevi sürdür", icon: "textures/items/clock_item", act: "resume" });
   btns.push({ text: "Çantası", icon: "textures/items/aqualit_chest", act: "inv" });
@@ -88,6 +89,14 @@ export async function robotMenu(player, bot) {
       bot.saveTask();
       startTask(bot);
       return player.sendMessage(`§s${bot.name}§r seni takip ediyor.`);
+    case "takip_biri": {
+      const h = await takipHedefiSec(player, bot.id, `${bot.name} · birini takip et`);
+      if (!h || !bot.valid) return;
+      bot.task = { type: bot.type, mode: "takip", kim: h.id, ad: h.ad };
+      bot.saveTask();
+      startTask(bot);
+      return player.sendMessage(`§s${bot.name}§r artık ${h.ad} adlı hedefi takip ediyor.`);
+    }
     case "takip_birak":
       if (bot.task) {
         bot.task.done = true;

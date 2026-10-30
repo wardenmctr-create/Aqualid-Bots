@@ -2054,5 +2054,95 @@ if (run("sefer")) {
   ke._fizik = false;
 }
 
+if (run("takip")) {
+  console.log("== v0.3.2: birini takip et (Keşif Keşif'i, robot robotu), otopilot");
+  const KA = await import("./scripts/kesif_ai.js");
+  const KR = await import("./scripts/kesif_radar.js");
+  const KS = await import("./scripts/kesif.js");
+  const G1 = GROUND + 1;
+  const O = { x: 1200, z: -600 };
+  ow.biome = () => "minecraft:plains";
+  const yeniKesif = (p) => {
+    player.teleport({ x: p.x + 0.5, y: G1, z: p.z - 3.5 });
+    give("aqualit:robot_kesif");
+    ticks(12);
+    useOn("aqualit:robot_kesif", { x: p.x, y: GROUND, z: p.z }, "Up", { comp: "aqualit:robot_item", p: { type: "kesif", model: 1 } });
+    ticks(3);
+    return world.entities.find((e) => e.typeId === "aqualit:kesif" && e.isValid && V3dist(e.location, { x: p.x + 0.5, y: G1, z: p.z + 0.5 }) < 2);
+  };
+  const e1 = yeniKesif(O), e2 = yeniKesif({ x: O.x + 12, z: O.z });
+  check(!!e1 && !!e2, "iki Keşif kondu");
+  e1._fizik = true; e2._fizik = true;
+  const k1 = KA.kesifOf(e1), k2 = KA.kesifOf(e2);
+  // 1) Keşif-2, Keşif-1'i takip eder; Keşif-1 uçak olup ilerler
+  KS.transform(e1, "ucak");
+  ticks(40);
+  KA.basla(k2, KA.takipEt(k2, () => KA.varlikBul(e1.id), k1.name));
+  let enUzak = 0;
+  for (let i = 0; i < 400; i++) {
+    e1.teleport({ x: e1.location.x + 0.5, y: G1 + 6, z: e1.location.z }, { rotation: { x: 0, y: -90 } });
+    ticks(1);
+    if (i > 120) enUzak = Math.max(enUzak, V3dist(e1.location, e2.location));
+  }
+  check(e2._props["aqualit:form"] === "ucak", "takip eden Keşif de uçak oldu");
+  check(enUzak < 14, `takip eden Keşif hemen arkasından geldi (en çok ${enUzak.toFixed(1)} blok)`);
+  k2.job = null;
+  // 2) otopilot: binince kırmızı eşya; açınca yeşil, hedefe kendisi gider, varınca kırmızıya döner
+  player.teleport({ ...e1.location });
+  e1.getComponent("minecraft:rideable").addRider(player);
+  ticks(12);
+  const has = (id) => { for (let i = 0; i < player._inv.size; i++) if (player._inv.getItem(i)?.typeId === id) return true; return false; };
+  check(has(KR.OTO_KAPALI) && has(KR.RADAR) && has(KR.HIZ), "binince otopilot (kırmızı), radar ve hız sayacı geldi");
+  const hedef = { x: e1.location.x + 60, y: G1, z: e1.location.z + 20 };
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => /Koordinat/.test(b.text)) }));
+  UI.answers.push(() => ({ canceled: false, formValues: [String(Math.floor(hedef.x)), "", String(Math.floor(hedef.z))] }));
+  await KR.otopilotMenu(player);
+  ticks(12);
+  check(has(KR.OTO_ACIK) && !has(KR.OTO_KAPALI) && e1.getDynamicProperty("aq:otopilot") === true, "otopilot açıldı: eşya yeşil");
+  ticks(20 * 60, () => !k1.job);
+  ticks(12);
+  check(Math.hypot(e1.location.x - hedef.x, e1.location.z - hedef.z) < 5 && player._ridingOn === e1 && e1._props["aqualit:form"] === "ucak",
+    "otopilot hedefe götürdü, araç olarak kaldı, oyuncu hâlâ binmiş");
+  check(has(KR.OTO_KAPALI) && !has(KR.OTO_ACIK), "varınca otopilot kapandı: eşya kırmızı");
+  e1.getComponent("minecraft:rideable").ejectRider(player);
+  ticks(12);
+  check(!has(KR.OTO_KAPALI) && !has(KR.RADAR), "inince eşyalar geri alındı");
+  // 3) robot robotu takip eder
+  const once = new Set(myBots().map((b) => b.id));
+  player.teleport({ x: O.x + 0.5, y: G1, z: O.z + 20.5 });
+  give("aqualit:robot_madenci"); ticks(12);
+  useOn("x", { x: O.x, y: GROUND, z: O.z + 24 }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } }); ticks(12);
+  give("aqualit:robot_oduncu"); ticks(12);
+  useOn("x", { x: O.x + 4, y: GROUND, z: O.z + 24 }, "Up", { comp: "aqualit:robot_item", p: { type: "oduncu", model: 1 } }); ticks(4);
+  const ma = myBots().find((b) => b.type === "madenci" && !once.has(b.id)), od = myBots().find((b) => b.type === "oduncu" && !once.has(b.id));
+  check(!!ma && !!od, "iki robot kondu");
+  od.task = { type: "oduncu", mode: "takip", kim: ma.id, ad: ma.name };
+  od.saveTask();
+  brain.startTask(od);
+  ma.e.teleport({ x: O.x + 30.5, y: G1, z: O.z + 24.5 });
+  ticks(20 * 30);
+  check(V3dist(od.loc, ma.loc) < 6, `oduncu madenciyi takip etti (${V3dist(od.loc, ma.loc).toFixed(1)} blok)`);
+  // 4) v0.3.2: sandık eşyası 3B blok olarak konur, hemen Aqualit sandığına (tuzaklı sandık) dönüşür
+  const SK = await import("./scripts/sandik.js");
+  const C3 = { x: O.x + 40, y: G1, z: O.z + 40 };
+  player.teleport({ x: C3.x + 0.5, y: G1, z: C3.z + 3.5 });
+  ticks(12);
+  const ev3 = { player, block: ow.getBlock({ x: C3.x, y: C3.y - 1, z: C3.z }), blockFace: "Up", faceLocation: { x: 0.5, y: 1, z: 0.5 },
+    itemStack: new ItemStack("aqualit:chest_miner", 1), isFirstEvent: true, cancel: false };
+  world.beforeEvents.playerInteractWithBlock.fire(ev3);
+  set(C3, "aqualit:chest_miner");
+  world.afterEvents.playerPlaceBlock.fire({ player, block: ow.getBlock(C3), dimension: ow });
+  ticks(4);
+  const u3 = SK.unitIdAt("minecraft:overworld", C3);
+  check(ow._cell(C3).type === "minecraft:trapped_chest" && u3 && SK.loadUnit(u3)?.kind === "madenci",
+    "3B sandık bloğu konunca Madenci sandığına dönüştü");
+  const fs3 = await import("node:fs");
+  const it3 = JSON.parse(fs3.readFileSync("../../out/Aqualit_BP/items/chest_miner.json", "utf8"))["minecraft:item"].components;
+  check(it3["minecraft:block_placer"]?.replace_block_item === true && !it3["minecraft:icon"]
+    && fs3.existsSync("../../out/Aqualit_BP/blocks/chest_miner.json"), "sandık eşyası envanterde/elde 3B blok olarak görünür");
+  check(fs3.existsSync("../../out/Aqualit_RP/attachables/el_task_remote.json") && fs3.existsSync("../../out/Aqualit_RP/attachables/el_kesif_otopilot_acik.json"),
+    "cihazların elde 3B modelleri var");
+}
+
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");
 process.exit(fails ? 1 : 0);

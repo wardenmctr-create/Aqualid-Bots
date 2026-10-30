@@ -1,4 +1,4 @@
-// Aqualit Robotları — giriş (güvenli açılış, v0.3.1)
+// Aqualit Robotları — giriş (güvenli açılış, v0.3.2)
 // Önce eşya bileşenleri kaydolur (kayit.js), sonra asıl kod (ana.js) yüklenir. Asıl kodda hata olursa eşyalar yine
 // çalışır ve hata oyunculara sohbette yazılır (içerik günlüğü açmadan görülsün diye).
 import { world, system } from "@minecraft/server";

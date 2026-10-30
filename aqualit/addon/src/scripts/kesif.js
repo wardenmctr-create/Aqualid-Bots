@@ -9,7 +9,7 @@ import { safe, fire } from "./util.js";
 import * as B from "./blocks.js";
 import * as FX from "./fx.js";
 import { ICONS } from "./ikon_data.js";
-import { anaMenu, kesifKuruldu, kesifToplandi, koltuksuzIceri } from "./kesif_ai.js";
+import { anaMenu, kesifKuruldu, kesifToplandi, koltuksuzIceri, aiMesgul } from "./kesif_ai.js";
 import { hizCarpani } from "./kesif_radar.js";
 
 export const KESIF_ID = "aqualit:kesif";
@@ -227,6 +227,7 @@ export function kaziTopla(v) {
 function drive(v, pl, t) {
   const form = formOf(v);
   if (form === "robot" || busy.has(v.id)) return;
+  if (aiMesgul(v)) return;                      // otopilot / takip / götürme: Keşif kendisi sürüyor
   const dim = v.dimension;
   const mv = safe(() => pl.inputInfo.getMovementVector(), { x: 0, y: 0 }) ?? { x: 0, y: 0 };
   const rot = safe(() => pl.getRotation(), { x: 0, y: 0 });

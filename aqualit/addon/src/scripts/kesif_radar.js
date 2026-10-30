@@ -8,11 +8,13 @@ import { V, safe, clamp } from "./util.js";
 import { menu } from "./ui/forms.js";
 import { Yerler, Harita } from "./harita.js";
 import { KESIF_ID, formOf } from "./kesif.js";
-import { YAPI, ikon, yiginTara } from "./kesif_ai.js";
+import { YAPI, ikon, yiginTara, kesifOf, hedefSec, otopilotBaslat, otopilotDur } from "./kesif_ai.js";
 import { selector } from "./konum.js";
 
 export const RADAR = "aqualit:kesif_radar";
 export const HIZ = "aqualit:kesif_hiz";
+export const OTO_KAPALI = "aqualit:kesif_otopilot_kapali";   // kırmızı ekran: sen sürüyorsun
+export const OTO_ACIK = "aqualit:kesif_otopilot_acik";       // yeşil ekran: Keşif kendisi gidiyor
 const PIN = "textures/ui/aqualit_bas/pin_kesif";
 const TARAMA = 8;                 // oyuncunun çevresinde taranan yığın yarıçapı (yüklü olanlar)
 
@@ -219,9 +221,56 @@ function envanterde(inv, id) {
   for (let i = 0; i < inv.size; i++) if (safe(() => inv.getItem(i)?.typeId) === id) return i;
   return -1;
 }
-function esyalariVer(pl) {
+const otoAcik = (v) => !!safe(() => v.getDynamicProperty("aq:otopilot"), false);
+function esyaYap(id) {
+  const st = new ItemStack(id, 1);
+  safe(() => (st.keepOnDeath = false));
+  safe(() => (st.lockMode = "inventory"));     // envanterden atılamaz (yere düşmesin)
+  return st;
+}
+/** Otopilot eşyasını Keşif'in durumuna göre kırmızı/yeşil yapar. */
+function otopilotEsyasi(pl, v) {
   const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
   if (!inv) return;
+  const want = otoAcik(v) ? OTO_ACIK : OTO_KAPALI;
+  const yanlis = want === OTO_ACIK ? OTO_KAPALI : OTO_ACIK;
+  const i = envanterde(inv, yanlis);
+  if (i >= 0) safe(() => inv.setItem(i, esyaYap(want)));
+  else if (envanterde(inv, want) < 0) safe(() => inv.addItem(esyaYap(want)));
+}
+
+export async function otopilotMenu(pl) {
+  const v = bindigi(pl);
+  const k = v && kesifOf(v);
+  if (!k) return safe(() => pl.sendMessage("§eOtopilot yalnız Keşif'e binince çalışır."));
+  if (otoAcik(v)) {
+    otopilotDur(k);
+    otopilotEsyasi(pl, v);
+    safe(() => pl.onScreenDisplay.setActionBar("§cOtopilot KAPALI §7· artık sen sürüyorsun"));
+    return safe(() => v.dimension.playSound("random.click", v.location, { pitch: 0.7 }));
+  }
+  // hedef: radar açıksa onun hedefi, değilse listeden seç
+  const R = radarlar.get(pl.id);
+  let hedef, ad;
+  if (R?.hedef && !R.kuyruk) {
+    hedef = R.hedef;
+    ad = YAPI[R.tur].ad;
+  } else {
+    const h = await hedefSec(pl, k, "§lOtopilot · nereye?");
+    if (!h || !k.valid) return;
+    hedef = h.p;
+    ad = h.ad;
+  }
+  otopilotBaslat(k, hedef, ad);
+  otopilotEsyasi(pl, v);
+  safe(() => pl.onScreenDisplay.setActionBar(`§aOtopilot AÇIK §7· ${ad} yerine gidiyor, sen sadece bin`));
+  safe(() => v.dimension.playSound("random.click", v.location, { pitch: 1.4 }));
+}
+
+function esyalariVer(pl, v) {
+  const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
+  if (!inv) return;
+  otopilotEsyasi(pl, v);
   for (const id of [RADAR, HIZ]) {
     if (envanterde(inv, id) >= 0) continue;
     const st = new ItemStack(id, 1);
@@ -235,7 +284,7 @@ function esyalariAl(pl) {
   if (!inv) return;
   for (let i = 0; i < inv.size; i++) {
     const t = safe(() => inv.getItem(i)?.typeId);
-    if (t === RADAR || t === HIZ) safe(() => inv.setItem(i));
+    if (t === RADAR || t === HIZ || t === OTO_ACIK || t === OTO_KAPALI) safe(() => inv.setItem(i));
   }
 }
 
@@ -245,7 +294,7 @@ system.runInterval(() => {
     if (t % 10 === 0) {
       const v = bindigi(pl);
       if (v && formOf(v) !== "robot") {
-        esyalariVer(pl);
+        esyalariVer(pl, v);
         verildi.add(pl.id);
       } else if (verildi.has(pl.id)) {
         esyalariAl(pl);

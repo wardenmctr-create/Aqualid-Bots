@@ -22,6 +22,7 @@ import kesif_oyun as KO      # noqa: E402
 import sandik_gen as SG      # noqa: E402
 import yapi_kutuphane as YK  # noqa: E402
 import dron as DR            # noqa: E402
+import esya3d as E3          # noqa: E402
 
 OUT = os.path.join(HERE, 'out')
 GEN = os.path.join(HERE, 'build_gen')
@@ -121,8 +122,12 @@ def items():
     SG.kilicli_icon(GEN)
     SG.nav_icons(GEN)
     for iid, name, icon, kind in C.CHESTS:
-        item(iid, {'minecraft:max_stack_size': 16, 'minecraft:block_placer': {'block': 'minecraft:trapped_chest'},
-                   'minecraft:tags': {'tags': ['aqualit:sandik', f'aqualit:sandik_{kind}']}}, 'items', None, icon)
+        # v0.3.2: eşya = aynı kimlikli 3B sandık bloğu (envanterde/elde oyunun sandığı gibi); konunca sandik.js
+        # tuzaklı sandığa çevirir. Simge yalnız menülerde kullanılır.
+        tex[icon] = icon
+        item(iid, {'minecraft:max_stack_size': 16,
+                   'minecraft:block_placer': {'block': f'aqualit:{iid}', 'replace_block_item': True},
+                   'minecraft:tags': {'tags': ['aqualit:sandik', f'aqualit:sandik_{kind}']}}, 'items', None, None)
     for iid, name, icon in C.SANDIK_MARKERS:
         item(iid, {'minecraft:max_stack_size': 1, 'minecraft:tags': {'tags': ['aqualit:sandik_isaret']}},
              'none', None, icon)
@@ -137,7 +142,7 @@ def items():
         item(iid, comps, 'equipment', None, icon)
     for iid, name, icon, kind in C.KESIF_ESYA:
         item(iid, {'minecraft:max_stack_size': 1, 'aqualit:device': {'kind': kind}, 'minecraft:rarity': 'rare',
-                   'minecraft:glint': kind == 'radar'}, 'none', None, icon)
+                   'minecraft:glint': iid in ('kesif_radar', 'kesif_otopilot_acik')}, 'none', None, icon)
     # kapalı robot eşyaları (heykel) ve tamir kiti
     for iid, name, icon, variant in C.STATUE_ITEMS:
         src = Image.open(os.path.join(DOK, f'robot_{variant}.png'))
@@ -215,6 +220,12 @@ def items():
                                            'texture_data': td})
 
 
+def el_modelleri():
+    """v0.3.2: cihazların elde 3B modelleri (envanterde düz simge kalır)."""
+    anims, _ = E3.cihaz_modelleri(RP, wj)
+    wj(f'{RP}/animations/aqualit_el.animation.json', {'format_version': '1.10.0', 'animations': anims})
+
+
 def blocks():
     td, sounds = {}, {'format_version': '1.21.40'}
     for bid, name, tex, hard, sound, color, tags in C.BLOCKS:
@@ -237,6 +248,7 @@ def blocks():
         td[tex] = {'textures': f'textures/blocks/{tex}'}
         sounds[f'aqualit:{bid}'] = {'sound': sound}
     statue_block(td, sounds)
+    E3.sandik_bloklari(BP, RP, wj, C.CHESTS, td, sounds, None)
     wj(f'{RP}/textures/terrain_texture.json', {'resource_pack_name': 'aqualit', 'texture_name': 'atlas.terrain',
                                               'padding': 8, 'num_mip_levels': 4, 'texture_data': td})
     wj(f'{RP}/blocks.json', sounds)
@@ -526,7 +538,7 @@ def main():
         if os.path.exists(d):
             shutil.rmtree(d)
     os.makedirs(BP); os.makedirs(RP); os.makedirs(GEN)
-    manifests(); items(); blocks(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
+    manifests(); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
     addon = package()
     print('paket:', addon)
 

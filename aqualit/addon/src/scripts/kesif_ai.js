@@ -474,7 +474,7 @@ function* gorevIsi(k) {
 
 // ======================================================================= götürme (otopilot)
 /** Sahibini (ve binen robotları) araçla götürür. Araç: yolun çoğu su ise gemi, değilse uçak. */
-export function* gotur(k, hedef, ad) {
+export function* gotur(k, hedef, ad, opts = {}) {
   const dim = k.dim;
   const l = k.loc;
   const su = yuzey(dim, l.x, l.z)?.water && yuzey(dim, hedef.x, hedef.z)?.water;
@@ -519,6 +519,14 @@ export function* gotur(k, hedef, ad) {
     yield;
   }
   safe(() => k.e.clearVelocity());           // varınca dur (kaymasın)
+  if (opts.kal) {
+    // otopilot: araç olarak kalır, sürücü devralır
+    k.say(`${ad}: vardık! Otopilot kapandı, artık sen sürüyorsun.`, { force: true });
+    k.setStatus("Bekliyor");
+    k.tick(false);
+    alanKapat(k);
+    return;
+  }
   // yer altındaysa (deneme odası, antik şehir) matkapla iner
   const s = yuzey(dim, k.loc.x, k.loc.z);
   if (s && hedef.y < s.y - 6 && yolcuSayisi(k)) {
@@ -742,6 +750,110 @@ world.afterEvents.worldLoad?.subscribe(() => system.runTimeout(() => {
   }
 }, 30));
 
+/** Keşif'in yapay zekâsı bir iş yapıyor mu (o sırada oyuncunun sürüşü devre dışı). */
+export function aiMesgul(e) {
+  return !!kesifler.get(e.id)?.job;
+}
+export function kesifListesi() {
+  return [...kesifler.values()].filter((k) => k.valid);
+}
+
+// ======================================================================= otopilot ve takip (v0.3.2)
+/** Otopilot: sürücüyü hedefe kendisi götürür, varınca araç olarak kalır. */
+export function otopilotBaslat(k, hedef, ad) {
+  safe(() => k.e.setDynamicProperty("aq:otopilot", true));
+  k.job = (function* () {
+    try {
+      yield* gotur(k, hedef, ad, { kal: true });
+    } finally {
+      safe(() => k.e.setDynamicProperty("aq:otopilot", false));
+    }
+  })();
+  k.say(`Otopilot açık: ${ad} yerine gidiyorum (${Math.round(V.hdist(hedef, k.loc))} blok).`, { force: true });
+}
+export function otopilotDur(k) {
+  k.job = null;
+  safe(() => k.e.setDynamicProperty("aq:otopilot", false));
+  safe(() => k.e.clearVelocity());
+  k.setStatus("Bekliyor");
+}
+
+/** Birini takip et: hedefin hemen arkasından gelir (hedef Keşif ise onun aracına dönüşür). */
+export function* takipEt(k, bul, ad) {
+  k.tick(true);
+  k.setStatus(`${ad} takip ediliyor`);
+  let son = 0;
+  for (;;) {
+    const h = bul();
+    if (!h || !safe(() => h.isValid, false)) {
+      k.say(`${ad} kayboldu, takibi bıraktım.`, { force: true });
+      break;
+    }
+    if (h.dimension.id !== k.dim.id) {
+      yield* wait(20);
+      continue;
+    }
+    // araç seçimi: hedef Keşif aracıysa aynısı, değilse uçak
+    let hf = h.typeId === KESIF_ID ? formOf(h) : "ucak";
+    if (hf === "robot") hf = "ucak";
+    if (formOf(k.e) !== hf && system.currentTick - son > 60) {
+      son = system.currentTick;
+      if (!(yield* araca(k, hf)) && formOf(k.e) === "robot") yield* araca(k, "ucak");
+      continue;
+    }
+    const hl = h.location;
+    const yaw = (safe(() => h.getRotation().y, 0) * Math.PI) / 180;
+    const ileri = { x: -Math.sin(yaw), z: Math.cos(yaw) };
+    const uc = formOf(k.e) === "ucak";
+    const zemin = uc ? (yuzey(k.dim, hl.x, hl.z)?.y ?? hl.y) : hl.y;
+    const nokta = { x: hl.x - ileri.x * 7, y: uc ? Math.max(hl.y + 1, zemin + 2) : hl.y, z: hl.z - ileri.z * 7 };
+    const l = k.loc;
+    const d = V.dist(l, nokta);
+    if (d > 80) {
+      safe(() => k.e.teleport(nokta));                // çok geride kaldı: arkasına ışınlanır
+      yield;
+      continue;
+    }
+    const sp = Math.min(1.8, d * 0.2);
+    const n = Math.max(0.001, d);
+    const vel = safe(() => k.e.getVelocity(), { x: 0, y: 0, z: 0 });
+    const tgt = { x: ((nokta.x - l.x) / n) * sp, y: ((nokta.y - l.y) / n) * sp, z: ((nokta.z - l.z) / n) * sp };
+    safe(() => k.e.applyImpulse({ x: tgt.x - vel.x, y: uc || formOf(k.e) === "denizalti" ? tgt.y - vel.y : 0, z: tgt.z - vel.z }));
+    safe(() => k.e.setRotation({ x: 0, y: yawOf(hl.x - l.x, hl.z - l.z) }));
+    if (system.currentTick % 40 === 0) k.updateIndex();
+    yield;
+  }
+  k.setStatus("Bekliyor");
+  k.tick(false);
+}
+
+/** Takip edilecekleri listeler: oyuncular, öteki Keşif'ler, robotlar. Seçilenin {bul, ad}. */
+export async function takipHedefiSec(pl, haric, baslik) {
+  const btns = [];
+  for (const p of world.getAllPlayers()) {
+    if (p.id === haric) continue;
+    btns.push({ text: `§l${p.name}§r\n§7Oyuncu · ${Math.round(V.dist(p.location, pl.location))} blok`, icon: ICON("player_head"), id: p.id, ad: p.name });
+  }
+  for (const k of kesifListesi()) {
+    if (k.e.id === haric || k.owner !== pl.id) continue;
+    btns.push({ text: `§l${k.name}§r\n§7Keşif · ${KAD[formOf(k.e)]} · ${Math.round(V.dist(k.loc, pl.location))} blok`, icon: "textures/items/robot_kesif", id: k.e.id, ad: k.name });
+  }
+  for (const b of bots.values()) {
+    if (b.id === haric || b.owner !== pl.id || !b.valid) continue;
+    btns.push({ text: `§l${b.name}§r\n§7${TYPE_NAME[b.type] ?? "Robot"} · ${Math.round(V.dist(b.loc, pl.location))} blok`, icon: robotIcon(b.type, b.model), id: b.id, ad: b.name });
+  }
+  if (!btns.length) {
+    pl.sendMessage("§eTakip edilecek kimse yok.");
+    return undefined;
+  }
+  const r = await menu(pl, baslik, "Kimi takip etsin?", btns);
+  if (!r) return undefined;
+  return { id: r.id, ad: r.ad, bul: () => varlikBul(r.id) };
+}
+export function varlikBul(id) {
+  return world.getAllPlayers().find((p) => p.id === id) ?? safe(() => world.getEntity(id));
+}
+
 export function basla(k, gen, msg) {
   k.job = gen;
   if (msg) k.say(msg);
@@ -774,6 +886,7 @@ export async function anaMenu(pl, e) {
   btns.push({ text: "§lBeni götür§r\n§7Araç olur, bindirir, kendisi sürer", icon: ICON("elytra"), v: "gotur" });
   btns.push({ text: "§lSefer düzenle§r\n§7Robot ekibini bir yapıya götürür: korur, yağmalar, döner", icon: ICON("trial_key"), v: "sefer" });
   btns.push({ text: "§lRobotları taşı§r\n§7Yakındaki robotları başka yere götürür", icon: robotIcon("madenci", 1), v: "tasi" });
+  btns.push({ text: "§lBirini takip et§r\n§7Başka bir Keşif'in, robotun ya da oyuncunun hemen arkasından gelir", icon: ICON("lead"), v: "takip" });
   const depo = depoSay(e);
   if (depo) btns.push({ text: `§lMatkap deposu§r\n§7${depo} eşya: bana ver`, icon: ICON("chest"), v: "depo" });
   btns.push({ text: "Araç ol (kendin sür)", icon: ICON("rail"), v: "arac" });
@@ -793,6 +906,11 @@ export async function anaMenu(pl, e) {
     case "yerler": return yerlerMenu(pl, k);
     case "gotur": return goturMenu(pl, k);
     case "tasi": return tasiMenu(pl, k);
+    case "takip": {
+      const h = await takipHedefiSec(pl, k.e.id, `${k.name} · birini takip et`);
+      if (!h || !k.valid) return;
+      return basla(k, takipEt(k, h.bul, h.ad), `${h.ad} adlı hedefi takip ediyorum; hemen arkasından geleceğim.`);
+    }
     case "sefer": return seferMenu(pl, k);
     case "arac": return aracMenu(pl, e);
     case "depo": {
@@ -909,7 +1027,7 @@ async function yerlerMenu(pl, k) {
   else if (a.v === "sil") Yerler.sil(k.owner, r.y.id);
 }
 
-async function hedefSec(pl, k, title) {
+export async function hedefSec(pl, k, title) {
   const btns = [];
   for (const y of Yerler.list(k.owner).filter((y) => y.dim === k.dim.id).slice(-12).reverse()) {
     btns.push({ text: `${y.ad}\n§7${Math.round(V.hdist(y.pos, pl.location))} blok`, icon: YAPI[y.tur] ? ikon(y.tur) : ICON("compass"), p: y.pos, ad: y.ad });

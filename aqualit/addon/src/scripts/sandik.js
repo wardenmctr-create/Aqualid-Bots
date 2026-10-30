@@ -1095,6 +1095,25 @@ function confirmPlacement(player, blk) {
 }
 
 world.afterEvents.playerPlaceBlock?.subscribe((ev) => {
+  // v0.3.2: sandık eşyaları gerçek 3B bloktur (envanterde ve elde oyunun sandığı gibi görünsün diye).
+  // Konunca aynı yerde tuzaklı sandığa dönüşür ve Aqualit sandığı olarak kaydolur.
+  const bk = KIND_OF_ITEM[safe(() => ev.block.typeId, "")];
+  if (bk) {
+    const blk = ev.block, pl = ev.player;
+    const front = towards(blk, pl.location);
+    try {
+      blk.setPermutation(BlockPermutation.resolve(CHEST_BLOCK, { "minecraft:cardinal_direction": stateFor(front) }));
+    } catch (e) {
+      return;
+    }
+    const pd = pending.get(pl.id);
+    if (!pd || pd.kind !== bk) {
+      pending.set(pl.id, { kind: bk, dimId: blk.dimension.id, pos: { x: blk.x, y: blk.y, z: blk.z }, tick: system.currentTick,
+        ploc: { ...pl.location }, prot: safe(() => pl.getRotation()) });
+    } else pd.pos = { x: blk.x, y: blk.y, z: blk.z };
+    safe(() => confirmPlacement(pl, blk.dimension.getBlock(blk.location)));
+    return;
+  }
   if (!isChest(ev.block) || !pending.has(ev.player.id)) return;
   safe(() => confirmPlacement(ev.player, ev.block));
 });

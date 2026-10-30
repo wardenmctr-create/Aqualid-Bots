@@ -1356,10 +1356,11 @@ export function* takipIsi(bot) {
   bot.say(`Peşindeyim, ${T.ad}!`);
   for (;;) {
     if (bot.task !== T || T.done || T.paused) return;
-    const pl = world.getAllPlayers().find((p) => p.id === T.kim);
-    if (!pl || safe(() => pl.dimension.id) !== bot.dim.id) {
+    // hedef: oyuncu, robot ya da Keşif (varlık kimliği)
+    const pl = world.getAllPlayers().find((p) => p.id === T.kim) ?? safe(() => world.getEntity(T.kim));
+    if (!pl || !safe(() => pl.isValid, false) || safe(() => pl.dimension.id) !== bot.dim.id) {
       bot.setMove("none");
-      bot.setStatus("Takip ettiği oyuncuyu bekliyor");
+      bot.setStatus(`${T.ad} bekleniyor`);
       yield* wait(40);
       continue;
     }
@@ -1373,7 +1374,7 @@ export function* takipIsi(bot) {
       continue;
     }
     if (d > 4) {
-      bot.setStatus(`${T.ad} adlı oyuncuyu takip ediyor`);
+      bot.setStatus(`${T.ad} takip ediliyor`);
       yield* bot.goTo(V.floor(at), { range: 3, maxNodes: 1500, radius: 48, run: d > 12 });
     } else {
       bot.setMove("none");
