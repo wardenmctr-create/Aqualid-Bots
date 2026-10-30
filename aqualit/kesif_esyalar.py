@@ -74,6 +74,27 @@ TELEFON = [
 ]
 
 
+# Keşif Dönüşüm Kiti: turkuaz alet çantası, üstünde pirinç dişli ve anahtar
+KIT = [
+    "................",
+    "......kkkk......",
+    ".....k....k.....",
+    "..yyyyyyyyyyyy..",
+    ".yMMMMMMMMMMMMy.",
+    ".yMHHHHHHHHHHMy.",
+    ".yMHyYYyHHWHHMy.",
+    ".yMHYkkYHWWWHMy.",
+    ".yMHYkkYHHWHHMy.",
+    ".yMHyYYyHHWHHMy.",
+    ".yMHHHHHHHWHHMy.",
+    ".yMMMMMMMMMMMMy.",
+    ".yDDDDDyyDDDDDy.",
+    ".yDDDDDDDDDDDDy.",
+    "..yyyyyyyyyyyy..",
+    "................",
+]
+
+
 # otopilot: kumanda paneli, ekranı kırmızı (kapalı: sen sürüyorsun) ya da yeşil (açık: Keşif gidiyor)
 def otopilot(ekran, isik):
     return [
@@ -129,6 +150,9 @@ def main():
     d2.text((40, 10), 'Otopilot KAPALI (sen sür)', font=f, fill=(255, 110, 100))
     d2.text((330, 10), 'Otopilot AÇIK (kendi gider)', font=f, fill=(120, 255, 140))
     c2.save(os.path.join(HERE, 'onizleme', '67_otopilot.png'))
+    kit = img(KIT)
+    kit.save(os.path.join(out, 'kesif_kiti.png'))
+    kit.resize((256, 256), Image.NEAREST).save(os.path.join(HERE, 'onizleme', '70_donusum_kiti.png'))
     tel = img(TELEFON)
     tel.save(os.path.join(out, 'aqualit_telefon.png'))
     tel.resize((256, 256), Image.NEAREST).save(os.path.join(HERE, 'onizleme', '69_aqualit_telefon.png'))

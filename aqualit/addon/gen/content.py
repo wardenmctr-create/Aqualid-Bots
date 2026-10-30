@@ -69,6 +69,7 @@ DEVICES = [
     ('command_rod', 'Komut Çubuğu', 'command_rod', 'rod', 'Komut ver'),
     ('zone_selector', 'Bölge Seçici', 'zone_selector', 'zone', 'Seç'),
     ('tuning_gear', 'Kılıçlı Ayar Dişlisi', 'tuning_gear', 'gear', 'Ayarla'),
+    ('kesif_kiti', 'Keşif Dönüşüm Kiti (Keşif\'e basılı tut)', 'kesif_kiti', 'donusum', 'Dönüştür'),
     ('aqualit_telefon', 'Aqualit Telefon (Organizatör ile konuş)', 'aqualit_telefon', 'telefon', 'Konuş'),
 ]
 
@@ -155,6 +156,7 @@ for cid, wood in [('chest_miner', 'minecraft:wooden_pickaxe'), ('chest_digger', 
 shaped('robot_radio', [' X ', 'XRX', 'XXX'], {'X': I(K), 'R': I('minecraft:redstone')}, 'aqualit:robot_radio')
 shaped('aqualit_telefon', [' X ', 'XGX', 'XRX'], {'X': I(K), 'G': I('minecraft:glass_pane'), 'R': I('minecraft:redstone')},
        'aqualit:aqualit_telefon')
+shapeless('kesif_kiti', [I(K), I('minecraft:compass'), I('minecraft:redstone')], 'aqualit:kesif_kiti')
 shaped('robot_tracker', ['XXX', 'XGX', 'XCX'], {'X': I(K), 'G': I('minecraft:glass_pane'), 'C': I('minecraft:compass')},
        'aqualit:robot_tracker')
 shapeless('task_remote', [I(K), I('minecraft:redstone'), I('minecraft:stone_button')], 'aqualit:task_remote')

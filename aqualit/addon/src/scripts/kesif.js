@@ -63,8 +63,40 @@ export function spawnKesif(player, block, face) {
   }
   snd(dim, "aqualit.robot.boot", p, { volume: 0.8 });
   system.run(() => kesifKuruldu(e));
-  safe(() => player.sendMessage("§s§lKeşif hazır!§r §7Ona dokun: menü (yapı/biyom bul, keşfet, beni götür, araç ol). " +
-    "Araçken dokun: bin; eğilip dokun ya da binerken telsizi kullan: menü."));
+  system.run(() => kitVer(player));
+  safe(() => player.sendMessage("§s§lKeşif hazır!§r §7Ona dokun: menü (yapı/biyom bul, keşfet, beni götür). " +
+    "Dönüşüm Kiti'yle basılı tut: araç seç. Araçken dokun: bin; eğilip dokun: menü."));
+}
+
+/** Dönüşüm Kiti: envanterde yoksa verir; envanter doluysa oyuncunun önüne bırakır. */
+export const KIT = "aqualit:kesif_kiti";
+export function kitVer(pl) {
+  const inv = safe(() => pl.getComponent("minecraft:inventory").container);
+  if (!inv) return;
+  for (let i = 0; i < inv.size; i++) if (safe(() => inv.getItem(i)?.typeId) === KIT) return;
+  const rest = safe(() => inv.addItem(new ItemStack(KIT, 1)));
+  if (rest) {
+    const d = safe(() => pl.getViewDirection(), { x: 0, y: 0, z: 1 });
+    const l = pl.location;
+    safe(() => pl.dimension.spawnItem(rest, { x: l.x + d.x * 1.2, y: l.y + 0.5, z: l.z + d.z * 1.2 }));
+    safe(() => pl.sendMessage("§eEnvanterin dolu; Dönüşüm Kiti'ni önüne bıraktım."));
+  } else safe(() => pl.sendMessage("§s§lDönüşüm Kiti§r §7envanterinde: Keşif'e basılı tutunca araç listesi açılır."));
+}
+
+/** Kitle açılan dönüşüm listesi. */
+export async function donusumMenu(pl, e) {
+  if (!safe(() => e.isValid, false)) return;
+  const form = formOf(e);
+  const f = new ActionFormData().title("§lDönüşüm Kiti").body(`Şu an: §l${KAD[form]}§r\n§7Ne olsun?`);
+  const opts = [];
+  for (const k of KFORMS) {
+    if (k === form) continue;
+    f.button(k === "robot" ? "§lRobot§r\n§7Yürür, menü açar" : `§l${KAD[k]}§r`, ICON[k]);
+    opts.push(k);
+  }
+  const r = await f.show(pl);
+  if (r.canceled || r.selection === undefined || !safe(() => e.isValid, false)) return;
+  transform(e, opts[r.selection], pl);
 }
 
 export function collect(e, pl) {
@@ -102,6 +134,7 @@ export function transform(e, to, pl) {
   const riders = ridersOf(e);
   busy.add(e.id);
   safe(() => e.setProperty("aqualit:gecis", true));
+  safe(() => e.triggerEvent("aqualit:gecis_on"));
   snd(dim, "aqualit.kesif.goggles", p);
   snd(dim, to === "robot" ? "aqualit.kesif.untransform" : "aqualit.kesif.transform", p);
   system.runTimeout(() => {
@@ -109,6 +142,7 @@ export function transform(e, to, pl) {
     safe(() => e.triggerEvent(`aqualit:form_${to}`));
     safe(() => e.setProperty("aqualit:form", to));
     safe(() => e.setProperty("aqualit:gecis", false));
+    safe(() => e.triggerEvent("aqualit:gecis_off"));
     safe(() => e.setProperty("aqualit:egim", 0));
     const c = { x: e.location.x, y: e.location.y + 0.8, z: e.location.z };
     FX.parlama(dim, c, 1.6);
@@ -330,6 +364,11 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
     }
     return;
   }
+  if (ev.itemStack?.typeId === KIT) {
+    ev.cancel = true;
+    system.run(() => fire(donusumMenu(pl, e), "dönüşüm kiti"));
+    return;
+  }
   if (form === "robot" || pl.isSneaking) {
     ev.cancel = true;
     system.run(() => fire(anaMenu(pl, e), "keşif menüsü"));
@@ -338,9 +377,10 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
 
 world.beforeEvents.itemUse.subscribe((ev) => {
   const id = safe(() => ev.itemStack?.typeId);
-  if (id !== "aqualit:robot_radio" && id !== "aqualit:task_remote") return;
+  if (id !== "aqualit:robot_radio" && id !== "aqualit:task_remote" && id !== KIT) return;
   const v = ridingKesif(ev.source);
   if (!v) return;
   ev.cancel = true;
+  if (id === KIT) return system.run(() => fire(donusumMenu(ev.source, v), "dönüşüm kiti"));
   system.run(() => fire(anaMenu(ev.source, v), "keşif menüsü"));
 });

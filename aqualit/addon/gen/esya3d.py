@@ -161,7 +161,17 @@ def telefon():
     return f
 
 
-CIHAZLAR = [telefon, kumanda, telsiz, takip_ekrani, komut_cubugu, bolge_secici, ayar_dislisi, tamir_kiti, radar, hiz_sayaci,
+def donusum_kiti():
+    f = Form('kesif_kiti', 'Dönüşüm Kiti')
+    f.bone('el', None, (0, 2.5, 0))
+    on = panel(7, 4, 'M')
+    over(on, rows('yYy W', 'YkY WW', 'yYy W'), 1, 0)
+    _govde(f, (-3.5, 0, -2), (3.5, 4, 2), base='M', front=on)
+    _govde(f, (-1.5, 4, -0.5), (1.5, 5, 0.5), base='k')
+    return f
+
+
+CIHAZLAR = [donusum_kiti, telefon, kumanda, telsiz, takip_ekrani, komut_cubugu, bolge_secici, ayar_dislisi, tamir_kiti, radar, hiz_sayaci,
             lambda: otopilot(False), lambda: otopilot(True)]
 
 

@@ -39,6 +39,7 @@ export function useDevice(player, kind, opts = {}) {
         case "rod": return player.isSneaking ? UI.rodComeHere(player) : fire(() => UI.openRod(player));
         case "zone": return fire(() => UI.zoneMenu(player));
         case "gear": return fire(() => UI.gearFromAir(player));
+        case "donusum": return player.sendMessage("§7Dönüşüm Kiti'ni Keşif'e basılı tutarak kullan (binmişken de kullanabilirsin).");
         case "radar": return fire(() => radarMenu(player));
         case "hiz": return fire(() => hizMenu(player));
         case "otopilot": return fire(() => otopilotMenu(player));

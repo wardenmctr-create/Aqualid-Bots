@@ -1127,7 +1127,7 @@ if (run("kesif")) {
   ticks(3);
   const k = world.entities.find((e) => e.typeId === "aqualit:kesif" && e.isValid);
   check(!!k && k._dp["aq:sahip"] === player.id, "Keşif yerleşti, sahibi oyuncu");
-  check(!player._inv.getItem(player.selectedSlotIndex), "eşya harcandı");
+  check(player._inv.getItem(player.selectedSlotIndex)?.typeId !== "aqualit:robot_kesif", "eşya harcandı");
   let ev = { target: k, player, cancel: false };
   world.beforeEvents.playerInteractWithEntity.fire(ev);
   check(ev.cancel, "robotken dokununca menü açılıyor (binmiyor)");
@@ -2224,6 +2224,72 @@ if (run("organizator")) {
   check(player.messages.length >= 2, "sohbet cevabı geldi");
   await OU.isle(player, "durum", true);
   check(player.messages.some((m) => /robot/.test(m) && /sandık/.test(m)), "durum raporu");
+}
+
+if (run("kit")) {
+  console.log("== v0.3.4 Dönüşüm Kiti: ilk Keşif'te gelir, ikinci kez verilmez, envanter doluysa öne bırakılır; kitle dönüşür");
+  const fs = await import("node:fs");
+  const bp = JSON.parse(fs.readFileSync("../../out/Aqualit_BP/entities/kesif.json", "utf8"))["minecraft:entity"];
+  check(!!bp.components["minecraft:interact"] && bp.components["minecraft:variant"]?.value === 0, "dokunma ve robot hali temel bileşenlerde");
+  const rc = JSON.parse(fs.readFileSync("../../out/Aqualit_RP/render_controllers/aqualit_kesif.render_controllers.json", "utf8"));
+  check(JSON.stringify(rc).includes("q.variant == 1") && !JSON.stringify(rc).includes("q.property"), "görünürlük q.variant ile (özellik karşılaştırması yok)");
+  const G1 = GROUND + 1;
+  const O = { x: 2400, z: 2400 };
+  const kitSay = () => { let n = 0; for (let i = 0; i < player._inv.size; i++) if (player._inv.getItem(i)?.typeId === "aqualit:kesif_kiti") n += player._inv.getItem(i).amount; return n; };
+  for (let i = 0; i < player._inv.size; i++) player._inv.setItem(i);
+  const koyK = (dx) => {
+    player.teleport({ x: O.x + dx + 0.5, y: G1, z: O.z - 3.5 });
+    give("aqualit:robot_kesif", 1, 8);
+    ticks(12);
+    useOn("aqualit:robot_kesif", { x: O.x + dx, y: GROUND, z: O.z }, "Up", { comp: "aqualit:robot_item", p: { type: "kesif", model: 1 } });
+    ticks(4);
+    return world.entities.find((e) => e.typeId === "aqualit:kesif" && e.isValid && Math.abs(e.location.x - (O.x + dx + 0.5)) < 1 && Math.abs(e.location.z - (O.z + 0.5)) < 1);
+  };
+  const e1 = koyK(0);
+  check(kitSay() === 1, "ilk Keşif'i koyunca kit geldi");
+  koyK(6);
+  check(kitSay() === 1, "ikinci Keşif'te kit tekrar verilmedi");
+  for (let i = 0; i < player._inv.size; i++) player._inv.setItem(i, new ItemStack("minecraft:dirt", 64));
+  player.gameMode = "Creative";             // Keşif eşyası harcanmasın: envanter dolu kalsın
+  const yerde0 = world.entities.filter((e) => e.typeId === "minecraft:item" && e._item?.typeId === "aqualit:kesif_kiti").length;
+  player._inv.setItem(8, new ItemStack("aqualit:robot_kesif", 1));
+  player.selectedSlotIndex = 8;
+  ticks(12);
+  useOn("aqualit:robot_kesif", { x: O.x + 12, y: GROUND, z: O.z }, "Up", { comp: "aqualit:robot_item", p: { type: "kesif", model: 1 } });
+  ticks(4);
+  const yerde = world.entities.filter((e) => e.typeId === "minecraft:item" && e._item?.typeId === "aqualit:kesif_kiti").length;
+  check(yerde === yerde0 + 1, "envanter doluyken kit oyuncunun önüne bırakıldı");
+  player.gameMode = "Survival";
+  for (let i = 0; i < player._inv.size; i++) player._inv.setItem(i);
+  // kitle Keşif'e basılı tut: liste -> uçak
+  player.teleport({ x: O.x + 1.5, y: G1, z: O.z + 0.5 });
+  give("aqualit:kesif_kiti");
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => /Uçak/.test(b.text)) }));
+  const ev = { player, target: e1, itemStack: new ItemStack("aqualit:kesif_kiti", 1), cancel: false };
+  world.beforeEvents.playerInteractWithEntity.fire(ev);
+  for (let i = 0; i < 3; i++) { ticks(1); await new Promise((r) => setTimeout(r, 0)); }
+  ticks(40);
+  check(ev.cancel && e1._props["aqualit:form"] === "ucak", "kitle basılı tutunca listeden uçak seçildi, Keşif uçak oldu");
+  // robot çağır: uzaktaki madenci hızlı koşup gelir ve biner
+  const KA = await import("./scripts/kesif_ai.js");
+  const once = new Set(myBots().map((b) => b.id));
+  player.teleport({ x: O.x + 90.5, y: G1, z: O.z - 2.5 });
+  give("aqualit:robot_madenci");
+  ticks(12);
+  useOn("x", { x: O.x + 90, y: GROUND, z: O.z }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
+  ticks(4);
+  const mc = myBots().find((b) => b.type === "madenci" && !once.has(b.id));
+  check(!!mc, "çağrılacak madenci 90 blok uzakta");
+  const k1 = KA.kesifOf(e1);
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes(mc.name)) }));
+  UI.answers.push(() => ({ canceled: false, selection: 0 }));
+  await KA.robotCagirMenu(player, k1);
+  let hizli = false;
+  const sure = ticks(20 * 90, () => {
+    if (mc.e._props["aqualit:move"] === "run") hizli = true;
+    return KA.robotYolcuMu(mc.id);
+  });
+  check(hizli && KA.robotYolcuMu(mc.id), `madenci koşarak geldi ve bindi (${Math.round(sure / 20)} sn)`);
 }
 
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");

@@ -86,13 +86,17 @@ def kesif_bp():
                 [] if f == 'robot' else [{'test': 'is_sneaking', 'subject': 'other'}])},
                 'event': 'aqualit:kesif_menu', 'target': 'self'},
             'interact_text': 'action.interact.aqualit.kesif', 'swing': True}]}
+        g['minecraft:variant'] = {'value': FORMS.index(f)}     # istemci biçimi sayıyla bilir (q.variant)
         groups[f'k_{f}'] = g
     # uzaktayken (yapı ararken, harita çıkarırken) çevresindeki yığınları işletir
     groups['k_tick'] = {'minecraft:tick_world': {'radius': 2, 'never_despawn': True}}
+    groups['k_gecis'] = {'minecraft:mark_variant': {'value': 1}}      # dönüşüm sürüyor (q.mark_variant)
     events = {'minecraft:entity_spawned': {'add': {'component_groups': ['k_robot']}},
               'aqualit:kesif_menu': {},
               'aqualit:tick_on': {'add': {'component_groups': ['k_tick']}},
-              'aqualit:tick_off': {'remove': {'component_groups': ['k_tick']}}}
+              'aqualit:tick_off': {'remove': {'component_groups': ['k_tick']}},
+              'aqualit:gecis_on': {'add': {'component_groups': ['k_gecis']}},
+              'aqualit:gecis_off': {'remove': {'component_groups': ['k_gecis']}}}
     for f in FORMS:
         events[f'aqualit:form_{f}'] = {
             'remove': {'component_groups': [f'k_{o}' for o in FORMS if o != f]},
@@ -119,6 +123,12 @@ def kesif_bp():
             'minecraft:collision_box': {'width': 0.7, 'height': 1.4},
             'minecraft:physics': {'has_gravity': True, 'has_collision': True},
             'minecraft:nameable': {'always_show': False, 'allow_name_tag_renaming': False},
+            # v0.3.4: oyun betikle konan varlıkta başlangıç olayını çalıştırmazsa da dokunma ve robot hali olsun
+            'minecraft:variant': {'value': 0},
+            'minecraft:interact': {'interactions': [{
+                'on_interact': {'filters': {'all_of': [{'test': 'is_family', 'subject': 'other', 'value': 'player'}]},
+                                'event': 'aqualit:kesif_menu', 'target': 'self'},
+                'interact_text': 'action.interact.aqualit.kesif', 'swing': True}]},
         },
         'events': events,
     }}
@@ -135,13 +145,13 @@ def kesif_rp():
         'textures': {'default': 'textures/entity/aqualit_kesif/kesif', 'glow': 'textures/entity/aqualit_kesif/kesif_glow'},
         'geometry': {'default': 'geometry.aqualit.kesif'},
         'animations': anims,
-        'scripts': {'scale': f"{P('form')} == 'robot' ? 0.8 : {VS}", 'animate': ['ctrl', 'kapi_ctrl']},
+        'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}", 'animate': ['ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
     }}}
 
 
 def kesif_render():
-    vis = [{'*': True}] + [{ROOT[f]: f"{P('form')} == '{f}'"} for f in FORMS]
+    vis = [{'*': True}] + [{ROOT[f]: f"q.variant == {i}"} for i, f in enumerate(FORMS)]
     base = {'geometry': 'Geometry.default', 'part_visibility': vis}
     return {'format_version': '1.8.0', 'render_controllers': {
         'controller.render.aqualit.kesif': {**base, 'materials': [{'*': 'Material.default'}], 'textures': ['Texture.default']},
@@ -151,8 +161,8 @@ def kesif_render():
 
 
 def kesif_ctrl():
-    G, F = P('gecis'), P('form')
-    to = lambda skip=None: [{f: f"!{G} && {F} == '{f}'"} for f in FORMS if f != skip]
+    G = 'q.mark_variant == 1'
+    to = lambda skip=None: [{f: f"!({G}) && q.variant == {FORMS.index(f)}"} for f in FORMS if f != skip]
     states = {'default': {'transitions': [{'gecis': G}] + to()}}
     for f in FORMS:
         anims = ['robot_in', 'run_robot'] if f == 'robot' else [f'unfold_{f}', f'run_{f}']

@@ -7,11 +7,11 @@ import { world, system, BlockVolume, ItemStack } from "@minecraft/server";
 import { V, safe, fire, yawOf, clamp, wait } from "./util.js";
 import { Robots, getJSON, setJSON, getProp, setProp } from "./store.js";
 import { sendMessage } from "./messages.js";
-import { menu, modal, confirm } from "./ui/forms.js";
+import { menu, modal, confirm, pickMany } from "./ui/forms.js";
 import { Harita, Yerler } from "./harita.js";
 import { KESIF_ID, KAD, formOf, transform, ridersOf, aracMenu, collect, depoOku, depoYaz, depoSay, kaziTopla } from "./kesif.js";
 import { sendLocation } from "./konum.js";
-import { bots } from "./brain.js";
+import { bots, startJob } from "./brain.js";
 import { TYPE_NAME, robotIcon } from "./constants.js";
 import { ICONS } from "./ikon_data.js";
 import { YAPI } from "./yapi_bilgi.js";
@@ -601,6 +601,61 @@ function disari(k, b, i) {
 }
 
 /** Robotları bindirir: önce koltuklar (kanatlar, üstü dahil), kalanlar içeri girer. En çok 10. Binen sayısı. */
+// ======================================================================= robot çağır (v0.3.4)
+const HIZLI = 0.62;            // uzaktayken koşu hızı (blok/tik; normal yürüme 0.16)
+/** Çağrılan robot Keşif'e gelir: uzaktaysa çok hızlı koşar, 20 bloğa girince normal hızla yürür ve biner. */
+function* kesifeGel(b, k) {
+  b.setStatus(`${k.name} çağırıyor`);
+  for (let deneme = 0; deneme < 40 && b.valid && k.valid; deneme++) {
+    const d = V.dist(b.loc, k.loc);
+    if (d <= 3.5) break;
+    if (d > 300) {
+      // çok uzak (yüklenmemiş olabilir): Keşif'in 40 blok yakınına ışınlanır
+      const a = Math.atan2(b.loc.z - k.loc.z, b.loc.x - k.loc.x);
+      safe(() => b.e.teleport({ x: k.loc.x + Math.cos(a) * 40, y: k.loc.y + 1, z: k.loc.z + Math.sin(a) * 40 }));
+      yield* wait(4);
+      continue;
+    }
+    const hizli = d > 20;
+    b.setMove(hizli ? "run" : "walk");
+    const hedef = d > 20 ? { x: k.loc.x + ((b.loc.x - k.loc.x) / d) * 18, y: k.loc.y, z: k.loc.z + ((b.loc.z - k.loc.z) / d) * 18 } : k.loc;
+    yield* b.travelTo(V.floor(hedef), { near: hizli ? 3 : 2.5, speed: hizli ? HIZLI : WALK_HIZ });
+    yield;
+  }
+  b.setMove("none");
+  if (!k.valid || !b.valid) return;
+  // biner: araç değilse önce uçak olur
+  if (formOf(k.e) === "robot") yield* araca(k, "ucak");
+  const rc = safe(() => k.e.getComponent("minecraft:rideable"));
+  const yalniz = YALNIZ_OYUNCU.includes(formOf(k.e));
+  if (yolcuSayisi(k) >= KAPASITE) return b.say(`${k.name} dolu, binemedim.`);
+  b.setAct("none");
+  if (!yalniz && safe(() => rc.addRider(b.e), false)) yolcu.add(b.id);
+  else {
+    iceriAl(k, b);
+    yolcu.add(b.id);
+  }
+  b.setStatus(`${k.name} içinde`);
+  b.say(`${k.name}'e bindim.`);
+}
+const WALK_HIZ = 0.16;
+
+/** Robot çağır menüsü: elindeki robotlar listelenir, seçilenler gelip biner. */
+export async function robotCagirMenu(pl, k) {
+  const ls = [...bots.values()].filter((b) => b.valid && b.owner === pl.id && b.dim.id === k.dim.id && !robotYolcuMu(b.id) && b.type !== "toplayici");
+  if (!ls.length) return pl.sendMessage("§eÇağrılacak robotun yok (aynı boyutta ve yüklü olmalı).");
+  const bos = KAPASITE - yolcuSayisi(k);
+  if (bos <= 0) return pl.sendMessage(`§e${k.name} dolu (en çok ${KAPASITE} robot).`);
+  const secim = await pickMany(pl, `§l${k.name} · robot çağır`, `En çok ${bos} robot daha binebilir. Uzaktakiler hızlı koşarak gelir.`,
+    ls.sort((a, b) => V.dist(a.loc, k.loc) - V.dist(b.loc, k.loc)).map((b) => ({ key: b.id, name: b.name, note: `${TYPE_NAME[b.type] ?? ""} · ${Math.round(V.dist(b.loc, k.loc))} blok · ${b.status ?? ""}`, icon: robotIcon(b.type, b.model) })));
+  if (!secim?.length || !k.valid) return;
+  const gelen = ls.filter((b) => secim.includes(b.id)).slice(0, bos);
+  for (const b of gelen) {
+    startJob(b, kesifeGel(b, k), "cagri");
+  }
+  k.say(`${gelen.map((b) => b.name).join(", ")} çağrıldı; gelip binecekler.`, { force: true });
+}
+
 export function* robotlariBindir(k, list) {
   yield* araca(k, "ucak");
   const rc = safe(() => k.e.getComponent("minecraft:rideable"));
@@ -884,6 +939,7 @@ export async function anaMenu(pl, e) {
   btns.push({ text: "§lBilinen yerler§r\n§7Bulduklarım: konum, götür, sil", icon: ICON("writable_book"), v: "yerler" });
   btns.push({ text: "§lBeni götür§r\n§7Araç olur, bindirir, kendisi sürer", icon: ICON("elytra"), v: "gotur" });
   btns.push({ text: "§lSefer düzenle§r\n§7Robot ekibini bir yapıya götürür: korur, yağmalar, döner", icon: ICON("trial_key"), v: "sefer" });
+  btns.push({ text: "§lRobot çağır§r\n§7Seçtiğin robotlar koşarak gelip biner", icon: robotIcon("kilicli", 1), v: "cagir" });
   btns.push({ text: "§lRobotları taşı§r\n§7Yakındaki robotları başka yere götürür", icon: robotIcon("madenci", 1), v: "tasi" });
   btns.push({ text: "§lBirini takip et§r\n§7Başka bir Keşif'in, robotun ya da oyuncunun hemen arkasından gelir", icon: ICON("lead"), v: "takip" });
   const depo = depoSay(e);
@@ -905,6 +961,7 @@ export async function anaMenu(pl, e) {
     case "yerler": return yerlerMenu(pl, k);
     case "gotur": return goturMenu(pl, k);
     case "tasi": return tasiMenu(pl, k);
+    case "cagir": return robotCagirMenu(pl, k);
     case "takip": {
       const h = await takipHedefiSec(pl, k.e.id, `${k.name} · birini takip et`);
       if (!h || !k.valid) return;
