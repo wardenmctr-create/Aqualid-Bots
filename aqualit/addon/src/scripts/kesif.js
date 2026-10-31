@@ -9,7 +9,7 @@ import { safe, fire } from "./util.js";
 import * as B from "./blocks.js";
 import * as FX from "./fx.js";
 import { ICONS } from "./ikon_data.js";
-import { anaMenu, kesifKuruldu, kesifToplandi, koltuksuzIceri, aiMesgul } from "./kesif_ai.js";
+import { anaMenu, kesifKuruldu, kesifToplandi, koltuksuzIceri, aiMesgul, aiBirak } from "./kesif_ai.js";
 import { hizCarpani } from "./kesif_radar.js";
 
 export const KESIF_ID = "aqualit:kesif";
@@ -261,9 +261,13 @@ export function kaziTopla(v) {
 function drive(v, pl, t) {
   const form = formOf(v);
   if (form === "robot" || busy.has(v.id)) return;
-  if (aiMesgul(v)) return;                      // otopilot / takip / götürme: Keşif kendisi sürüyor
   const dim = v.dimension;
   const mv = safe(() => pl.inputInfo.getMovementVector(), { x: 0, y: 0 }) ?? { x: 0, y: 0 };
+  if (aiMesgul(v)) {
+    // otopilot / takip / götürme: Keşif kendisi sürüyor; oyuncu yön tuşuna basarsa kontrol oyuncuya geçer
+    if (Math.abs(mv.x) + Math.abs(mv.y) < 0.2) return;
+    aiBirak(v, pl);
+  }
   const rot = safe(() => pl.getRotation(), { x: 0, y: 0 });
   const yr = (rot.y * Math.PI) / 180;
   const fwd = { x: -Math.sin(yr), y: 0, z: Math.cos(yr) };
@@ -314,9 +318,9 @@ function drive(v, pl, t) {
     }
     if (mode === "dikey") tgt = { x: 0, y: 0, z: 0 };
   }
-  const imp = { x: tgt.x - vel.x, y: fly ? tgt.y - vel.y : 0, z: tgt.z - vel.z };
-  safe(() => v.applyImpulse(imp));
-  safe(() => v.setRotation({ x: 0, y: rot.y }));
+  // ileri-geri ve dönüşü oyunun sürüş sistemi yapar (input_ground_controlled); betik yalnız uçak ve denizaltının
+  // yukarı-aşağısını verir, matkap kazar. (v0.3.4'e kadar yatay itki veriliyordu; oyuncu binince oyunda işlemiyordu.)
+  if (fly) safe(() => v.applyImpulse({ x: 0, y: tgt.y - vel.y, z: 0 }));
   const cur = safe(() => v.getProperty("aqualit:egim"), 0) ?? 0;
   if (Math.abs(cur - tilt) > 3) safe(() => v.setProperty("aqualit:egim", Math.round(tilt)));
   const moving = Math.hypot(tgt.x, tgt.y, tgt.z) > 0.03;

@@ -1,5 +1,5 @@
 // Aqualit Robotları — asıl giriş (main.js güvenli açılışla yükler)
-// Sürüm 0.3.3 (0.3.2 düzeltmesi: telefonda kodun yüklenmemesi), 0.3.2: takip, otopilot, 3B eşyalar
+// Sürüm 0.3.5 (Keşif: oyunun sürüş sistemi, mini tarama dronları, otopilot yapı bul; Organizatör önizleme)
 import { world, system } from "@minecraft/server";
 import "./brain.js";
 import "./items.js";
@@ -16,7 +16,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
   if (!ev.initialSpawn) return;
   const p = ev.player;
   system.runTimeout(() => {
-    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.3.3 yüklendi. Robotlar yeniden konabiliyor (0.3.2 hatası düzeldi)."));
+    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.3.5 yüklendi. Keşif: kendin sür, dronlarla tarama, otopilotta yapı bul!"));
     if (!cleaned) {
       cleaned = true;
       fxCleanup(); // önceki oturumdan kalmış güç efekti varlıkları

@@ -39,6 +39,7 @@ SEATS = {
                (3.8, 5, -3.5, 'ic'), (-8, 5, -22.5, 'platform'), (8, 5, -22.5, 'platform'), (-9, 5, -30.5, 'platform'),
                (0, 5, -30.5, 'platform'), (9, 5, -30.5, 'platform')],
 }
+HIZ = {'ucak': 0.62, 'gemi': 0.32, 'denizalti': 0.26, 'arazi': 0.36, 'matkap': 0.1}   # oyuncu sürerken temel hız
 YALNIZ_OYUNCU = {'denizalti'}           # bu araçlara robot binmez (içeri girer)
 KAPI_ACI = -100                         # matkap kapısının açık hali (derece, Y ekseni)
 
@@ -69,6 +70,13 @@ def kesif_bp():
         w, h = BOX[f]
         g = {'minecraft:collision_box': {'width': w, 'height': h},
              'minecraft:physics': {'has_gravity': f not in ('ucak', 'denizalti'), 'has_collision': True}}
+        if f != 'robot':
+            # v0.3.5: oyuncu oyunun kendi sürüş sistemiyle sürer (betikle itki, oyuncu binince oyunda işlemiyordu);
+            # uçak ve denizaltının yukarı-aşağısını betik bakış yönüne göre verir (kesif.js)
+            g['minecraft:input_ground_controlled'] = {}
+            g['minecraft:movement'] = {'value': HIZ[f]}
+            g['minecraft:movement.basic'] = {}
+            g['minecraft:jump.static'] = {}
         if f in SEATS:
             pos = SEATS[f]
             g['minecraft:rideable'] = {
@@ -137,7 +145,7 @@ def kesif_bp():
 # ------------------------------------------------------------------ istemci (RP)
 def kesif_rp():
     anims = {'ctrl': 'controller.animation.aqualit.kesif', 'kapi_ctrl': 'controller.animation.aqualit.kesif.kapi'}
-    for n in ['fold', 'robot_in', 'kapi_ac', 'kapi_kapa'] + [f'run_{f}' for f in FORMS] + [f'unfold_{f}' for f in FORMS if f != 'robot']:
+    for n in ['gizle', 'fold', 'robot_in', 'kapi_ac', 'kapi_kapa'] + [f'run_{f}' for f in FORMS] + [f'unfold_{f}' for f in FORMS if f != 'robot']:
         anims[n] = f'animation.aqualit.kesif.{n}'
     return {'format_version': '1.10.0', 'minecraft:client_entity': {'description': {
         'identifier': KID,
@@ -145,7 +153,7 @@ def kesif_rp():
         'textures': {'default': 'textures/entity/aqualit_kesif/kesif', 'glow': 'textures/entity/aqualit_kesif/kesif_glow'},
         'geometry': {'default': 'geometry.aqualit.kesif'},
         'animations': anims,
-        'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}", 'animate': ['ctrl', 'kapi_ctrl']},
+        'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}", 'animate': ['gizle', 'ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
     }}}
 
@@ -235,6 +243,9 @@ def kesif_anims():
                  'rotation': {'0.0': [0, -360, 0], '0.45': [0, 0, 0]},
                  'position': {'0.0': [0, 6, 0], '0.35': [0, 0, 0], '0.5': [0, 0.6, 0], '0.7': [0, 0, 0]}},
         'k_goggles': {'position': {'0.0': [0, -6, 0], '0.5': [0, -6, 0], '0.7': [0, 0, 0]}}}}
+    # v0.3.5: aktif olmayan halleri sıfır boyuta indirir (oyunda render controller'ın parça gizlemesi uygulanmıyor,
+    # bütün haller üst üste çiziliyordu; animasyonlar ise çalışıyor)
+    A['gizle'] = {'loop': True, 'bones': {ROOT[f]: {'scale': f"q.variant == {i} ? 1 : 0"} for i, f in enumerate(FORMS)}}
     # matkabın arka kapısı (0,4 sn): dışarı, platforma doğru açılır
     A['kapi_ac'] = {'loop': 'hold_on_last_frame', 'animation_length': 0.4, 'bones': {
         'm_door': {'rotation': {'0.0': [0, 0, 0], '0.4': [0, KAPI_ACI, 0]}}}}

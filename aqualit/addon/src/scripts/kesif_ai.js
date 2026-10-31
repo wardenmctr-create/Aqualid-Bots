@@ -18,6 +18,7 @@ import { YAPI } from "./yapi_bilgi.js";
 import { seferMenu } from "./sefer.js";
 import { KOLTUK, YALNIZ_OYUNCU } from "./kesif_koltuk.js";
 import { hizCarpani } from "./kesif_radar.js";
+import { dronTara } from "./kesif_dron.js";
 
 const CRUISE = 14;            // yüzeyin kaç blok üstünden uçar
 const FLY = 0.9;              // tek başına uçuş hızı (blok/tik)
@@ -311,7 +312,8 @@ function* cevredeAra(k, turler, merkez, yaricap, opts = {}) {
 function bildir(k, yer, why) {
   const proxy = { owner: k.owner, rid: k.rid, name: k.name, type: "kesif", model: 1, dim: k.dim, loc: yer.pos,
     say: (t, o) => k.say(t, o) };
-  if (!sendLocation(proxy, why)) k.say(`${why} (${Math.floor(yer.pos.x)}, ${Math.floor(yer.pos.y)}, ${Math.floor(yer.pos.z)})`, { force: true });
+  const xyz = `(${Math.floor(yer.pos.x)}, ${Math.floor(yer.pos.y)}, ${Math.floor(yer.pos.z)})`;
+  if (!sendLocation(proxy, `${why} ${xyz}`)) k.say(`${why} ${xyz}`, { force: true });
 }
 
 export function* yapiBul(k, T) {
@@ -329,9 +331,9 @@ export function* yapiBul(k, T) {
     return bilinen;
   }
   k.say(`${S.ad} arıyorum (en çok ${max} blok).`);
-  // 2) önce buraya yakın çevre
+  // 2) önce buraya yakın çevre: mini dronlar geniş alanı tarar (Keşif yerinde durur)
   k.setStatus(`${S.ad} arıyor`);
-  let f = yield* cevredeAra(k, [T.tur], origin, 96);
+  let f = (yield* dronlarla(k, [T.tur], origin, T.yakinR ?? 384))[0] ?? null;
   // 3) uygun biyomlara git, orada ara
   const ziyaret = [];
   let from = origin;
@@ -359,7 +361,7 @@ export function* yapiBul(k, T) {
     ziyaret.push(hedef);
     k.setStatus(`${S.ad} için ${Math.round(V.hdist(hedef, k.loc))} blok uçuyor`);
     yield* uc(k, hedef, { near: 8 });
-    f = yield* cevredeAra(k, [T.tur], k.loc, S.alti ? 64 : 128);
+    f = (yield* dronlarla(k, [T.tur], k.loc, 320))[0] ?? null;
     // bir sonraki aday daha uzaktan aransın
     const d = V.sub(hedef, origin);
     const n = Math.hypot(d.x, d.z) || 1;
@@ -430,22 +432,24 @@ function* kesfet(k, T) {
       k.say(`Yolda ${YAPI[f.tur].ad.toLowerCase()} gördüm (${yer.pos.x}, ${yer.pos.y}, ${yer.pos.z}).`);
     }
   };
-  const step = 64;
-  let x = 0, z = 0, dx = step, dz = 0, leg = 1, done = 0;
-  k.say(`${R} blok çevreyi keşfe çıkıyorum.`);
-  while (Math.max(Math.abs(x), Math.abs(z)) <= R) {
-    for (let i = 0; i < leg; i++) {
-      x += dx; z += dz;
-      if (Math.max(Math.abs(x), Math.abs(z)) > R) break;
-      yield* uc(k, { x: origin.x + x, y: origin.y, z: origin.z + z }, { near: 3, tara, her });
-      done++;
-      k.setStatus(`Keşfediyor %${Math.min(99, Math.round((done * step * step * 100) / (4 * R * R)))}`);
-    }
-    [dx, dz] = [-dz, dx];
-    if (dz === 0) leg++;
-  }
+  k.say(`${R} blok çevreyi mini dronlarla tarıyorum.`);
+  const yeni = yield* dronlarla(k, turler, origin, R, true);
+  for (const f of yeni) if (!bulunan.some((b) => b.tur === f.tur && V.hdist(b.pos, f.pos) < 48)) bulunan.push(f);
   k.say(`Keşif bitti: ${Harita.boyut(k.owner)} yığınlık harita, ${bulunan.length} yeni yapı.`, { force: true });
   return bulunan;
+}
+
+/** Mini dronlarla tarama (kesif_dron.js): bulunanları Bilinen yerlere yazar. */
+function* dronlarla(k, turler, merkez, yaricap, hepsi = false) {
+  const p = (oran, n) => {
+    k.setStatus(`${n} dron tarıyor %${oran}`);
+    const pl = world.getAllPlayers().find((x) => x.id === k.owner);
+    if (pl && V.dist(pl.location, k.loc) < 64) safe(() => pl.onScreenDisplay.setActionBar(`§s${k.name}§r: ${n} dron tarıyor §f%${oran}`));
+  };
+  return yield* dronTara(k, { merkez, yaricap, turler, tara: yiginTara, hepsi, durum: p, bulunca: (f) => {
+    const yer = Yerler.ekle(k.owner, { tur: f.tur, ad: YAPI[f.tur].ad, pos: f.pos, dim: k.dim.id, kim: k.name });
+    if (hepsi) k.say(`Dronlar ${YAPI[f.tur].ad.toLowerCase()} buldu (${yer.pos.x}, ${yer.pos.y}, ${yer.pos.z}).`);
+  } });
 }
 
 /** Görev dağıtıcı. task: {tur:'yapi'|'biyom'|'kesfet'|'eve', ...} */
@@ -482,6 +486,9 @@ export function* gotur(k, hedef, ad, opts = {}) {
   k.setStatus(`${ad} yerine götürüyor`);
   k.tick(true);
   let bos = 0;
+  // oyuncu binmişken itki oyunda işlemezse (araç ilerlemiyorsa) adım adım ışınlanarak gider, inen yolcuyu geri bindirir
+  let mod = "itki", olcT = 0, olcD = Infinity;
+  const yolcular = ridersOf(k.e);
   for (let t = 0; t < 20 * 60 * 20; t++) {
     if (!yolcuSayisi(k)) {
       if (++bos > 100) {
@@ -505,6 +512,23 @@ export function* gotur(k, hedef, ad, opts = {}) {
       const want = hd < 24 ? (yuzey(dim, hedef.x, hedef.z)?.y ?? hedef.y) + 3 : g + CRUISE;
       vy = clamp((want - p.y) * 0.1, -0.4, 0.5);
       if (!yuklu(dim, ahead)) alanAc(k);
+    }
+    if (mod === "itki" && t - olcT >= 60) {
+      if (olcD - hd < 3 && t > 0) mod = "isin";
+      olcT = t;
+      olcD = hd;
+    }
+    if (mod === "isin") {
+      const step = Math.min(sp * 1.4, hd);
+      safe(() => k.e.teleport({ x: p.x + (dx / hd) * step, y: p.y + (form === "ucak" ? clamp(vy * 2, -0.5, 0.6) : 0), z: p.z + (dz / hd) * step },
+        { rotation: { x: 0, y: yawOf(dx, dz) } }));
+      const simdi = ridersOf(k.e);
+      if (simdi.length < yolcular.length) {
+        const rc = safe(() => k.e.getComponent("minecraft:rideable"));
+        for (const r of yolcular) if (safe(() => r.isValid, false) && !simdi.includes(r)) safe(() => rc.addRider(r));
+      }
+      yield;
+      continue;
     }
     const vel = safe(() => k.e.getVelocity(), { x: 0, y: 0, z: 0 });
     const tgt = { x: (dx / hd) * sp, y: vy, z: (dz / hd) * sp };
@@ -808,22 +832,70 @@ world.afterEvents.worldLoad?.subscribe(() => system.runTimeout(() => {
 export function aiMesgul(e) {
   return !!kesifler.get(e.id)?.job;
 }
+/** Oyuncu yön tuşuna basınca Keşif'in işi (otopilot, takip, arama) bırakılır; kontrol oyuncuya geçer. */
+export function aiBirak(e, pl) {
+  const k = kesifler.get(e.id);
+  if (!k?.job) return;
+  k.job = null;
+  if (k.task && !k.task.done) {
+    k.task.done = true;
+    k.saveTask();
+  }
+  safe(() => e.setDynamicProperty("aq:otopilot", false));
+  k.setStatus("Bekliyor");
+  k.tick(false);
+  alanKapat(k);
+  safe(() => pl?.onScreenDisplay.setActionBar("§eOtopilot/görev bırakıldı §7· artık sen sürüyorsun"));
+}
 export function kesifListesi() {
   return [...kesifler.values()].filter((k) => k.valid);
 }
 
 // ======================================================================= otopilot ve takip (v0.3.2)
+/** Otopilot (yapı): bilinen yer > dronlarla yakın tarama > uygun biyoma gidip tarama; bulunca oraya götürür. */
+export function* otopilotYapiIsi(k, tur) {
+  const S = YAPI[tur];
+  let yer = Yerler.enYakin(k.owner, tur, k.dim.id, k.loc, 6000);
+  if (!yer) {
+    const f = (yield* dronlarla(k, [tur], k.loc, 384))[0];
+    if (f) yer = Yerler.ekle(k.owner, { tur, ad: S.ad, pos: f.pos, dim: k.dim.id, kim: k.name });
+  }
+  const ziyaret = [];
+  for (let deneme = 0; !yer && deneme < 6; deneme++) {
+    let hedef = null, bd = Infinity;
+    for (const b of S.biomes ?? []) {
+      const p = safe(() => k.dim.calculateClosestBiomeFromSeed(k.loc, `minecraft:${b}`, { boundingSize: { x: 6000, y: 64, z: 6000 } }));
+      if (!p || ziyaret.some((z) => V.hdist(z, p) < 300)) continue;
+      const d = V.hdist(p, k.loc);
+      if (d < bd) { bd = d; hedef = p; }
+    }
+    if (!hedef) {
+      const a = deneme * 1.3;
+      hedef = { x: k.loc.x + Math.cos(a) * 600, y: k.loc.y, z: k.loc.z + Math.sin(a) * 600 };
+    }
+    ziyaret.push(hedef);
+    k.say(`${S.ad} için ${Math.round(V.hdist(hedef, k.loc))} blok öteye bakmaya gidiyorum (${Math.floor(hedef.x)}, ${Math.floor(hedef.z)}).`, { force: true });
+    yield* gotur(k, hedef, `${S.ad} arama yeri`, { kal: true });
+    const f = (yield* dronlarla(k, [tur], k.loc, 384))[0];
+    if (f) yer = Yerler.ekle(k.owner, { tur, ad: S.ad, pos: f.pos, dim: k.dim.id, kim: k.name });
+  }
+  if (!yer) return k.say(`${S.ad} bulamadım. Biraz daha uzağa gidip yeniden dene.`, { force: true });
+  bildir(k, yer, `${S.ad} buldum!`);
+  yield* gotur(k, yer.pos, S.ad, { kal: true });
+}
+
 /** Otopilot: sürücüyü hedefe kendisi götürür, varınca araç olarak kalır. */
 export function otopilotBaslat(k, hedef, ad) {
   safe(() => k.e.setDynamicProperty("aq:otopilot", true));
   k.job = (function* () {
     try {
-      yield* gotur(k, hedef, ad, { kal: true });
+      if (hedef?.yapi) yield* otopilotYapiIsi(k, hedef.yapi);
+      else yield* gotur(k, hedef, ad, { kal: true });
     } finally {
       safe(() => k.e.setDynamicProperty("aq:otopilot", false));
     }
   })();
-  k.say(`Otopilot açık: ${ad} yerine gidiyorum (${Math.round(V.hdist(hedef, k.loc))} blok).`, { force: true });
+  k.say(hedef?.yapi ? `Otopilot açık: ${ad} arıyorum.` : `Otopilot açık: ${ad} yerine gidiyorum (${Math.round(V.hdist(hedef, k.loc))} blok, ${Math.floor(hedef.x)}, ${Math.floor(hedef.z)}).`, { force: true });
 }
 export function otopilotDur(k) {
   k.job = null;
@@ -1085,6 +1157,9 @@ async function yerlerMenu(pl, k) {
 
 export async function hedefSec(pl, k, title) {
   const btns = [];
+  const son = Yerler.list(k.owner).filter((y) => y.dim === k.dim.id && YAPI[y.tur]).slice(-1)[0];
+  if (son) btns.push({ text: `§lEn son bulunan yapı§r\n§7${son.ad} · ${Math.round(V.hdist(son.pos, pl.location))} blok (${Math.floor(son.pos.x)}, ${Math.floor(son.pos.z)})`, icon: ikon(son.tur), p: son.pos, ad: son.ad });
+  btns.push({ text: "§lYapı bul§r\n§7Listeden seç: yakındaysa gider, yoksa dronlarla arar", icon: ICON("filled_map"), v: "yapi" });
   for (const y of Yerler.list(k.owner).filter((y) => y.dim === k.dim.id).slice(-12).reverse()) {
     btns.push({ text: `${y.ad}\n§7${Math.round(V.hdist(y.pos, pl.location))} blok`, icon: YAPI[y.tur] ? ikon(y.tur) : ICON("compass"), p: y.pos, ad: y.ad });
   }
@@ -1097,6 +1172,13 @@ export async function hedefSec(pl, k, title) {
   btns.push({ text: "Koordinat yaz", icon: ICON("writable_book"), v: "xyz" });
   const r = await menu(pl, title, "Nereye?", btns);
   if (!r) return undefined;
+  if (r.v === "yapi") {
+    const turler = Object.keys(YAPI).filter((t) => YAPI[t].dims.includes(k.dim.id));
+    const y = await menu(pl, "§lHangi yapı?", "Yakında biliyorsam hemen giderim; bilmiyorsam dronlarla arar, bulunca giderim.",
+      turler.map((t) => ({ text: `§l${YAPI[t].ad}§r\n§7${YAPI[t].deger.slice(0, 40)}`, icon: ikon(t), t })));
+    if (!y) return undefined;
+    return { yapi: y.t, ad: YAPI[y.t].ad };
+  }
   if (r.v === "xyz") {
     const v = await modal(pl, "Koordinat", [
       { type: "text", label: "X", value: String(Math.floor(pl.location.x)) },
@@ -1115,6 +1197,7 @@ export async function hedefSec(pl, k, title) {
 async function goturMenu(pl, k) {
   const h = await hedefSec(pl, k, "Keşif · beni götür");
   if (!h) return;
+  if (h.yapi) return gorevVer(k, { is: "yapi", tur: h.yapi, bekle: true, max: 3000 }, `${h.ad} arıyorum; bulunca orada bekleyeceğim.`);
   return bindirVeGotur(pl, k, h.p, h.ad);
 }
 

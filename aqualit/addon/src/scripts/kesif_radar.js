@@ -40,6 +40,15 @@ function bindigi(pl) {
   return v && safe(() => v.typeId, "") === KESIF_ID ? v : null;
 }
 
+/** Oyunun sürüş sistemi hız etkisine uyar: Hızlı = hız III, Ekstra = VIII, Max = XV, Yavaş = yavaşlık III. */
+export function hizUygula(v, k) {
+  safe(() => v.removeEffect("speed"));
+  safe(() => v.removeEffect("slowness"));
+  const sv = { 1.5: 2, 2.5: 7, 4: 14 }[k];
+  if (sv !== undefined) safe(() => v.addEffect("speed", 20 * 60 * 60 * 24, { amplifier: sv, showParticles: false }));
+  if (k === 0.5) safe(() => v.addEffect("slowness", 20 * 60 * 60 * 24, { amplifier: 2, showParticles: false }));
+}
+
 export async function hizMenu(pl) {
   const v = bindigi(pl);
   if (!v) return safe(() => pl.sendMessage("§eHız sayacı yalnız Keşif'e binince çalışır."));
@@ -50,6 +59,7 @@ export async function hizMenu(pl) {
       icon: `textures/items/kesif_hiz` })));
   if (!r || !safe(() => v.isValid, false)) return;
   safe(() => v.setDynamicProperty("aq:hiz", r.v));
+  hizUygula(v, r.v);
   const h = HIZLAR.find((x) => x.k === r.v);
   const uyari = r.v > 1.5 && formOf(v) !== "ucak" ? " §e(Yalnız uçakta tavsiye edilir.)" : "";
   safe(() => pl.onScreenDisplay.setActionBar(`§bHız: §f${h.ad} §7(×${h.k})${uyari}`));
@@ -108,7 +118,7 @@ function hedefKoy(pl, R, pos, tahmini) {
   const S = YAPI[R.tur];
   safe(() => pl.sendMessage(tahmini
     ? `§bRadar§r: Yakında ${S.ad} görünmüyor; en yakın uygun biyom ${d} blok ${yon(pl.location, R.hedef)}. Simgeyi takip et, yaklaşınca radar yapının tam yerini arar.`
-    : `§bRadar§r: En yakın ${S.ad} ${d} blok ${yon(pl.location, R.hedef)}. Konum çubuğundaki simgeyi takip et.`));
+    : `§bRadar§r: En yakın ${S.ad} ${d} blok ${yon(pl.location, R.hedef)} §f(${R.hedef.x}, ${R.hedef.y}, ${R.hedef.z})§r. Konum çubuğundaki simgeyi takip et.`));
 }
 
 /** Yapı seçilince: önce bilinen yerler, sonra çevredeki yüklü yığınlar (radar taraması), yoksa biyom tahmini. */
@@ -259,7 +269,7 @@ export async function otopilotMenu(pl) {
   } else {
     const h = await hedefSec(pl, k, "§lOtopilot · nereye?");
     if (!h || !k.valid) return;
-    hedef = h.p;
+    hedef = h.yapi ? { yapi: h.yapi } : h.p;
     ad = h.ad;
   }
   otopilotBaslat(k, hedef, ad);
