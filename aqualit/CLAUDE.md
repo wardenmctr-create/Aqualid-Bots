@@ -1,7 +1,7 @@
 # Aqualit Robotları — Claude Code çalışma rehberi
 
-Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.3.2**
-(birini takip et, Keşif otopilotu, 3B sandık blokları ve elde 3B cihazlar; 0.3.1: akıllı Keşif, sefer, yağma, radar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
+Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.3.6**
+(Keşif düzeltmeleri, uçan binek sistemi, arazi Tırmanma Modu; 0.3.5: mini tarama dronları; 0.3.2: takip, otopilot, 3B eşyalar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
 Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 
 ## Kullanıcı (kalıcı istekler — her oturumda uy)
@@ -78,6 +78,12 @@ ortam değişkeniyle başka yer gösterilebilir.
 - **v0.3.2:** `gen/esya3d.py`: sandık eşyaları aynı kimlikli 3B sandık blokları (`replace_block_item`; konunca sandik.js
   tuzaklı sandığa çevirir), cihazların elde 3B modelleri (attachable). Otopilot ve takip: `kesif_ai.js` (`otopilotBaslat`,
   `takipEt`), `kesif_radar.js` (`otopilotMenu`), robot takibi `jobs.js takipIsi`. Sim senaryosu: `takip`.
+- **v0.3.5–0.3.6:** `kesif_dron.js` (+ `gen/kesif_dron.py`) mini tarama dronları. Sürüş oyunun binek sistemiyle:
+  yer araçları `input_ground_controlled` + `variable_max_auto_step`, uçak/denizaltı `input_air_controlled` (betikle itki
+  binilen araçta işlemiyor). Bileşen grubu kaldırmak bileşen değerini sıfırlamaz: karşıt grubu ekle (`k_gecis`/`k_gecis0`,
+  `k_arazi_yer`/`k_tirman`, `k_denizalti_su`/`_kara`). Render controller parça gizlemesi oyunda işlemedi; gizleme `gizle`
+  animasyonunda ölçek 0. Arazi Tırmanma Modu: `kesif_radar.js tirmanMenu`, `kesif.js tirman`.
+- `dil.js` Türkçe dil anlama, `organizator.js`, `org_ui.js`, `org_uretim.js` Organizatör (v0.4.0'da sürüyor).
 - `ui/` menüler: `forms.js` (menu/modal/confirm), `task.js` Görev Kumandası, `radio.js` Telsiz, `tracker.js` Takip Ekranı,
   `kilicli_ui.js` Komut Çubuğu/Ayar Dişlisi/Bölge Seçici, `canta.js` çanta ekranı.
 

@@ -40,7 +40,12 @@ SEATS = {
                (0, 5, -30.5, 'platform'), (9, 5, -30.5, 'platform')],
 }
 HIZ = {'ucak': 0.62, 'gemi': 0.32, 'denizalti': 0.26, 'arazi': 0.36, 'matkap': 0.1}   # oyuncu sürerken temel hız
-YALNIZ_OYUNCU = {'denizalti'}           # bu araçlara robot binmez (içeri girer)
+UCAN = {'ucak', 'denizalti'}           # v0.3.6: uçan binek sistemiyle sürülenler
+YALNIZ_OYUNCU = {'denizalti'}
+# v0.3.6: sürüş modu grupları (ilk = varsayılan): arazi yerde / duvara tırmanırken, denizaltı suda / karada
+MODLAR = {'arazi': ('k_arazi_yer', 'k_tirman'), 'denizalti': ('k_denizalti_su', 'k_denizalti_kara')}
+HAREKET_BILESEN = {'physics', 'input_ground_controlled', 'input_air_controlled', 'movement', 'movement.basic',
+                   'jump.static', 'variable_max_auto_step', 'flying_speed', 'can_fly'}           # bu araçlara robot binmez (içeri girer)
 KAPI_ACI = -100                         # matkap kapısının açık hali (derece, Y ekseni)
 
 
@@ -70,13 +75,30 @@ def kesif_bp():
         w, h = BOX[f]
         g = {'minecraft:collision_box': {'width': w, 'height': h},
              'minecraft:physics': {'has_gravity': f not in ('ucak', 'denizalti'), 'has_collision': True}}
-        if f != 'robot':
-            # v0.3.5: oyuncu oyunun kendi sürüş sistemiyle sürer (betikle itki, oyuncu binince oyunda işlemiyordu);
-            # uçak ve denizaltının yukarı-aşağısını betik bakış yönüne göre verir (kesif.js)
+        if f in UCAN:
+            # v0.3.6: uçak ve denizaltı oyunun uçan binek sistemiyle (Mutlu Ghast gibi) sürülür: baktığın yöne gider,
+            # yukarı bakıp ileri basınca yükselir, aşağı bakınca alçalır/dalar
+            g['minecraft:input_air_controlled'] = {'strafe_speed_modifier': 0.6, 'backwards_movement_modifier': 0.5}
+            g['minecraft:flying_speed'] = {'value': HIZ[f]}
+            g['minecraft:movement'] = {'value': HIZ[f]}
+            g['minecraft:can_fly'] = {}
+        elif f != 'robot':
+            # v0.3.5: oyuncu oyunun kendi sürüş sistemiyle sürer (betikle itki, oyuncu binince oyunda işlemiyordu)
             g['minecraft:input_ground_controlled'] = {}
             g['minecraft:movement'] = {'value': HIZ[f]}
             g['minecraft:movement.basic'] = {}
             g['minecraft:jump.static'] = {}
+            # v0.3.6: bir blok yükseğe kendiliğinden çıkar
+            g['minecraft:variable_max_auto_step'] = {'base_value': 1.0625, 'controlled_value': 1.0625,
+                                                     'jump_prevented_value': 1.0625}
+        else:
+            # v0.3.6: robot hali öteki Aqualit robotları gibi etrafına ve oyuncuya bakar (yürümez; betik taşır)
+            g['minecraft:movement'] = {'value': 0.25}
+            g['minecraft:movement.basic'] = {}
+            g['minecraft:jump.static'] = {}
+            g['minecraft:navigation.walk'] = {'avoid_water': False}
+            g['minecraft:behavior.look_at_player'] = {'priority': 8, 'look_distance': 8, 'probability': 0.04}
+            g['minecraft:behavior.random_look_around'] = {'priority': 9}
         if f in SEATS:
             pos = SEATS[f]
             g['minecraft:rideable'] = {
@@ -95,27 +117,57 @@ def kesif_bp():
                 'event': 'aqualit:kesif_menu', 'target': 'self'},
             'interact_text': 'action.interact.aqualit.kesif', 'swing': True}]}
         g['minecraft:variant'] = {'value': FORMS.index(f)}     # istemci biçimi sayıyla bilir (q.variant)
+        if f in MODLAR:
+            # v0.3.6: sürüş bileşenleri ayrı gruba (arazi: yer/tırmanma, denizaltı: su/kara); mod değişince binenler inmez
+            hareket = {k: g.pop(k) for k in list(g) if k.split(':')[1] in HAREKET_BILESEN}
+            groups[MODLAR[f][0]] = hareket
         groups[f'k_{f}'] = g
     # uzaktayken (yapı ararken, harita çıkarırken) çevresindeki yığınları işletir
     groups['k_tick'] = {'minecraft:tick_world': {'radius': 2, 'never_despawn': True}}
     groups['k_gecis'] = {'minecraft:mark_variant': {'value': 1}}      # dönüşüm sürüyor (q.mark_variant)
+    # v0.3.6: grubu kaldırmak işareti sıfırlamıyordu; araç dönüşüm animasyonunun son karesinde (0,22 boy, 180° dönük)
+    # kalıyordu: "her hal küçük, araca tersten biniyorum". İşaret artık ayrı grupla açıkça 0'a çekilir.
+    groups['k_gecis0'] = {'minecraft:mark_variant': {'value': 0}}
+    # tutucular: istemci q.skin_id ile de bilir (özellik okunmazsa diye)
+    groups['k_tutucu1'] = {'minecraft:skin_id': {'value': 1}}
+    groups['k_tutucu0'] = {'minecraft:skin_id': {'value': 0}}
+    # v0.3.6: arazi aracı tırmanma modu: duvara dayanınca yerçekimsiz, baktığı/sürdüğü yöne (yukarı) gider
+    groups['k_tirman'] = {'minecraft:physics': {'has_gravity': False, 'has_collision': True},
+                          'minecraft:input_air_controlled': {'strafe_speed_modifier': 0.3, 'backwards_movement_modifier': 0.6},
+                          'minecraft:flying_speed': {'value': 0.16}, 'minecraft:movement': {'value': 0.16},
+                          'minecraft:can_fly': {}}
+    # denizaltı suyun dışında: düşer, karada çok yavaş sürünür
+    groups['k_denizalti_kara'] = {'minecraft:physics': {'has_gravity': True, 'has_collision': True},
+                                  'minecraft:input_ground_controlled': {}, 'minecraft:movement': {'value': 0.06},
+                                  'minecraft:movement.basic': {}}
     events = {'minecraft:entity_spawned': {'add': {'component_groups': ['k_robot']}},
               'aqualit:kesif_menu': {},
               'aqualit:tick_on': {'add': {'component_groups': ['k_tick']}},
               'aqualit:tick_off': {'remove': {'component_groups': ['k_tick']}},
-              'aqualit:gecis_on': {'add': {'component_groups': ['k_gecis']}},
-              'aqualit:gecis_off': {'remove': {'component_groups': ['k_gecis']}}}
+              'aqualit:gecis_on': {'remove': {'component_groups': ['k_gecis0']}, 'add': {'component_groups': ['k_gecis']}},
+              'aqualit:gecis_off': {'remove': {'component_groups': ['k_gecis']}, 'add': {'component_groups': ['k_gecis0']}},
+              'aqualit:tirman_on': {'remove': {'component_groups': ['k_arazi_yer']}, 'add': {'component_groups': ['k_tirman']}},
+              'aqualit:tirman_off': {'remove': {'component_groups': ['k_tirman']}, 'add': {'component_groups': ['k_arazi_yer']}},
+              'aqualit:tutucu_on': {'remove': {'component_groups': ['k_tutucu0']}, 'add': {'component_groups': ['k_tutucu1']},
+                                    'set_property': {'aqualit:tutucu': True}},
+              'aqualit:tutucu_off': {'remove': {'component_groups': ['k_tutucu1']}, 'add': {'component_groups': ['k_tutucu0']},
+                                     'set_property': {'aqualit:tutucu': False}},
+              'aqualit:dz_su': {'remove': {'component_groups': ['k_denizalti_kara']}, 'add': {'component_groups': ['k_denizalti_su']}},
+              'aqualit:dz_kara': {'remove': {'component_groups': ['k_denizalti_su']}, 'add': {'component_groups': ['k_denizalti_kara']}}}
     for f in FORMS:
         events[f'aqualit:form_{f}'] = {
-            'remove': {'component_groups': [f'k_{o}' for o in FORMS if o != f]},
-            'add': {'component_groups': [f'k_{f}']},
+            'remove': {'component_groups': [f'k_{o}' for o in FORMS if o != f] +
+                       [x for o, m in MODLAR.items() for x in m if o != f or x != m[0]]},
+            'add': {'component_groups': [f'k_{f}'] + ([MODLAR[f][0]] if f in MODLAR else [])},
             'set_property': {'aqualit:form': f}}
-    return {'format_version': '1.21.0', 'minecraft:entity': {
+    return {'format_version': '1.26.0', 'minecraft:entity': {
         'description': {'identifier': KID, 'is_spawnable': False, 'is_summonable': True,
                         'properties': {
                             'aqualit:form': {'type': 'enum', 'values': FORMS, 'default': 'robot', 'client_sync': True},
                             'aqualit:gecis': {'type': 'bool', 'default': False, 'client_sync': True},
-                            'aqualit:egim': {'type': 'float', 'range': [-60, 60], 'default': 0, 'client_sync': True},
+                            'aqualit:egim': {'type': 'float', 'range': [-90, 90], 'default': 0, 'client_sync': True},
+                            # v0.3.6: arazi aracının tırmanma tutucuları açık
+                            'aqualit:tutucu': {'type': 'bool', 'default': False, 'client_sync': True},
                             'aqualit:kapi': {'type': 'bool', 'default': False, 'client_sync': True},  # matkap kapısı açık
                         }},
         'component_groups': groups,
@@ -145,7 +197,8 @@ def kesif_bp():
 # ------------------------------------------------------------------ istemci (RP)
 def kesif_rp():
     anims = {'ctrl': 'controller.animation.aqualit.kesif', 'kapi_ctrl': 'controller.animation.aqualit.kesif.kapi'}
-    for n in ['gizle', 'fold', 'robot_in', 'kapi_ac', 'kapi_kapa'] + [f'run_{f}' for f in FORMS] + [f'unfold_{f}' for f in FORMS if f != 'robot']:
+    anims['look_at_target'] = 'animation.common.look_at_target'
+    for n in ['gizle', 'tutucu', 'fold', 'robot_in', 'kapi_ac', 'kapi_kapa', 'idle_robot', 'walk_robot'] + [f'run_{f}' for f in FORMS] + [f'unfold_{f}' for f in FORMS if f != 'robot']:
         anims[n] = f'animation.aqualit.kesif.{n}'
     return {'format_version': '1.10.0', 'minecraft:client_entity': {'description': {
         'identifier': KID,
@@ -153,7 +206,7 @@ def kesif_rp():
         'textures': {'default': 'textures/entity/aqualit_kesif/kesif', 'glow': 'textures/entity/aqualit_kesif/kesif_glow'},
         'geometry': {'default': 'geometry.aqualit.kesif'},
         'animations': anims,
-        'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}", 'animate': ['gizle', 'ctrl', 'kapi_ctrl']},
+        'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}", 'animate': ['gizle', 'tutucu', 'ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
     }}}
 
@@ -169,11 +222,12 @@ def kesif_render():
 
 
 def kesif_ctrl():
-    G = 'q.mark_variant == 1'
+    G = f"q.mark_variant == 1 && {P('gecis')}"
     to = lambda skip=None: [{f: f"!({G}) && q.variant == {FORMS.index(f)}"} for f in FORMS if f != skip]
     states = {'default': {'transitions': [{'gecis': G}] + to()}}
     for f in FORMS:
-        anims = ['robot_in', 'run_robot'] if f == 'robot' else [f'unfold_{f}', f'run_{f}']
+        anims = ['robot_in', 'run_robot', 'idle_robot', 'look_at_target', {'walk_robot': 'q.ground_speed > 0.4'}] \
+            if f == 'robot' else [f'unfold_{f}', f'run_{f}']
         states[f] = {'animations': anims, 'transitions': [{'gecis': G}] + to(f), 'blend_transition': 0.08}
     states['gecis'] = {'animations': ['fold'], 'transitions': to()}
     K = P('kapi')
@@ -246,6 +300,9 @@ def kesif_anims():
     # v0.3.5: aktif olmayan halleri sıfır boyuta indirir (oyunda render controller'ın parça gizlemesi uygulanmıyor,
     # bütün haller üst üste çiziliyordu; animasyonlar ise çalışıyor)
     A['gizle'] = {'loop': True, 'bones': {ROOT[f]: {'scale': f"q.variant == {i} ? 1 : 0"} for i, f in enumerate(FORMS)}}
+    # v0.3.6: arazi aracının tırmanma tutucuları (Tırmanma Modu açıkken görünür)
+    TUT = f"(q.skin_id == 1 || {P('tutucu')}) ? 1 : 0"
+    A['tutucu'] = {'loop': True, 'bones': {f'a_tut_{w}': {'scale': TUT} for w in ('fl', 'fr', 'bl', 'br')}}
     # matkabın arka kapısı (0,4 sn): dışarı, platforma doğru açılır
     A['kapi_ac'] = {'loop': 'hold_on_last_frame', 'animation_length': 0.4, 'bones': {
         'm_door': {'rotation': {'0.0': [0, 0, 0], '0.4': [0, KAPI_ACI, 0]}}}}
@@ -259,6 +316,19 @@ def kesif_anims():
         'root': {'position': [0, 'math.sin(q.life_time * 200) * 0.35', 0]}, 'k_radar': {'rotation': radar},
         'k_scarf_tail': {'rotation': ['math.sin(q.life_time * 300) * 8', 0, 'math.sin(q.life_time * 200) * 6']},
         'k_flame': {'scale': [1, 1, '0.8 + math.abs(math.sin(q.life_time * 900)) * 0.4']}}}
+    # v0.3.6: robot hali öteki Aqualit robotları gibi nefes alır, kollarını sallar, yürürken bacaklarını oynatır
+    A['idle_robot'] = {'loop': True, 'animation_length': 4.0, 'bones': {
+        'body': {'position': [0, 'math.sin(q.anim_time * 90) * 0.2', 0]},
+        'head': {'rotation': [0, 0, 'math.sin(q.anim_time * 90 + 30) * 2']},
+        'right_arm': {'rotation': ['math.sin(q.anim_time * 90) * 3', 0, '3 + math.sin(q.anim_time * 90) * 2']},
+        'left_arm': {'rotation': ['-math.sin(q.anim_time * 90) * 3', 0, '-3 - math.sin(q.anim_time * 90) * 2']},
+        'k_scarf_tail': {'rotation': ['math.sin(q.anim_time * 180) * 6', 0, 0]}}}
+    A['walk_robot'] = {'loop': True, 'animation_length': 0.6, 'bones': {
+        'right_leg': {'rotation': ['math.cos(q.anim_time * 600) * 35', 0, 0]},
+        'left_leg': {'rotation': ['-math.cos(q.anim_time * 600) * 35', 0, 0]},
+        'right_arm': {'rotation': ['-math.cos(q.anim_time * 600) * 28', 0, 0]},
+        'left_arm': {'rotation': ['math.cos(q.anim_time * 600) * 28', 0, 0]},
+        'body': {'position': [0, 'math.abs(math.sin(q.anim_time * 600)) * 0.6', 0]}}}
     A['run_ucak'] = {'loop': True, 'bones': {
         'u_root': {'rotation': [P('egim'), 0, 0]}, 'u_prop': {'rotation': spin(1440)},
         'u_flame': {'scale': [1, 1, '0.8 + math.abs(math.sin(q.life_time * 900)) * 0.5']},
@@ -270,9 +340,11 @@ def kesif_anims():
         'd_root': {'rotation': [P('egim'), 0, 0]}, 'd_prop': {'rotation': spin(900)}, 'd_radar': {'rotation': radar},
         'd_flag': {'rotation': wave}}}
     A['run_arazi'] = {'loop': True, 'bones': {
+        'a_root': {'rotation': [P('egim'), 0, 0]},
         **{f'a_wheel_{w}': {'rotation': wheel} for w in ('fl', 'fr', 'bl', 'br')},
         'a_radar': {'rotation': radar}, 'a_flag': {'rotation': wave}}}
     A['run_matkap'] = {'loop': True, 'bones': {
+        'm_root': {'rotation': [P('egim'), 0, 0]},
         'm_drill': {'rotation': spin(1440)}, 'm_radar': {'rotation': radar},
         **{f'm_rw_{s}{i}': {'rotation': wheel} for s in 'lr' for i in range(3)}}}
     for f in FORMS:
@@ -325,5 +397,6 @@ def build(RP, BP, wj):
     used = set()
     for a in kesif_anims()['animations'].values():
         used |= set(a['bones'])
+    used.discard('look_at_target')
     missing = used - bones
     assert not missing, f'animasyonda olmayan kemikler: {missing}'

@@ -16,6 +16,8 @@ export const RADAR = "aqualit:kesif_radar";
 export const HIZ = "aqualit:kesif_hiz";
 export const OTO_KAPALI = "aqualit:kesif_otopilot_kapali";   // kırmızı ekran: sen sürüyorsun
 export const OTO_ACIK = "aqualit:kesif_otopilot_acik";       // yeşil ekran: Keşif kendisi gidiyor
+export const TIR_KAPALI = "aqualit:kesif_tirman_kapali";     // v0.3.6: arazi aracı tırmanma modu (gri tutucular)
+export const TIR_ACIK = "aqualit:kesif_tirman_acik";         // mavi parlayan tutucular: düz duvara tırmanır
 const PIN = "textures/ui/aqualit_bas/pin_kesif";
 const TARAMA = 8;                 // oyuncunun çevresinde taranan yığın yarıçapı (yüklü olanlar)
 
@@ -278,10 +280,48 @@ export async function otopilotMenu(pl) {
   safe(() => v.dimension.playSound("random.click", v.location, { pitch: 1.4 }));
 }
 
+export const tutucuAcik = (v) => !!safe(() => v.getDynamicProperty("aq:tutucu"), false);
+/** Tırmanma tutucularını açar/kapatır (model + kesif.js tırmanma). */
+export function tutucuAyarla(v, acik) {
+  safe(() => v.setDynamicProperty("aq:tutucu", acik ? true : undefined));
+  safe(() => v.triggerEvent(acik ? "aqualit:tutucu_on" : "aqualit:tutucu_off"));
+  safe(() => v.setProperty("aqualit:tutucu", !!acik));
+}
+/** Tırmanma Modu eşyası yalnız arazi aracındayken; durumuna göre gri/mavi. */
+function tirmanEsyasi(pl, v) {
+  const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
+  if (!inv) return;
+  if (formOf(v) !== "arazi") {
+    for (const id of [TIR_ACIK, TIR_KAPALI]) {
+      const i = envanterde(inv, id);
+      if (i >= 0) safe(() => inv.setItem(i));
+    }
+    return;
+  }
+  const want = tutucuAcik(v) ? TIR_ACIK : TIR_KAPALI;
+  const yanlis = want === TIR_ACIK ? TIR_KAPALI : TIR_ACIK;
+  const i = envanterde(inv, yanlis);
+  if (i >= 0) safe(() => inv.setItem(i, esyaYap(want)));
+  else if (envanterde(inv, want) < 0) safe(() => inv.addItem(esyaYap(want)));
+}
+export function tirmanMenu(pl) {
+  const v = bindigi(pl);
+  if (!v || formOf(v) !== "arazi") return safe(() => pl.sendMessage("§eTırmanma Modu yalnız arazi aracına binince çalışır."));
+  const acik = !tutucuAcik(v);
+  tutucuAyarla(v, acik);
+  tirmanEsyasi(pl, v);
+  const dim = v.dimension, p = v.location;
+  safe(() => dim.playSound(acik ? "aqualit.kesif.goggles" : "random.click", p, { pitch: acik ? 1.3 : 0.7 }));
+  if (acik) for (let i = 0; i < 6; i++) safe(() => dim.spawnParticle("minecraft:blue_flame_particle", { x: p.x + (Math.random() - 0.5) * 2.4, y: p.y + 0.4, z: p.z + (Math.random() - 0.5) * 2.4 }));
+  safe(() => pl.onScreenDisplay.setActionBar(acik ? "§bTırmanma Modu AÇIK §7· duvara doğru sür, araç yukarı tırmanır"
+    : "§7Tırmanma Modu KAPALI §8· tutucular içeri girdi"));
+}
+
 function esyalariVer(pl, v) {
   const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
   if (!inv) return;
   otopilotEsyasi(pl, v);
+  tirmanEsyasi(pl, v);
   for (const id of [RADAR, HIZ]) {
     if (envanterde(inv, id) >= 0) continue;
     const st = new ItemStack(id, 1);
@@ -295,7 +335,7 @@ function esyalariAl(pl) {
   if (!inv) return;
   for (let i = 0; i < inv.size; i++) {
     const t = safe(() => inv.getItem(i)?.typeId);
-    if (t === RADAR || t === HIZ || t === OTO_ACIK || t === OTO_KAPALI) safe(() => inv.setItem(i));
+    if (t === RADAR || t === HIZ || t === OTO_ACIK || t === OTO_KAPALI || t === TIR_ACIK || t === TIR_KAPALI) safe(() => inv.setItem(i));
   }
 }
 

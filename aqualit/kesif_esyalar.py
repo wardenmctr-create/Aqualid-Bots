@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 P = {
-    '.': None,
+    '.': None, '^': (60, 150, 255), '~': (170, 230, 255),
     'k': (20, 24, 28), 'K': (40, 46, 52),
     'y': (176, 132, 32), 'Y': (236, 196, 80), 'W': (255, 244, 190),
     'g': (18, 70, 66), 'c': (40, 170, 150), 'C': (100, 240, 210), 'L': (190, 255, 240),
@@ -117,6 +117,29 @@ def otopilot(ekran, isik):
     ]
 
 
+def tirman(acik):
+    """Tırmanma Modu: tekerlek ve sırtında çapraz tutucular (açık: mavi parlak, kapalı: gri)."""
+    c, C = ('^', '~') if acik else ('s', 'S')
+    return [
+        "................",
+        f".....{C}kkkk{C}.....",
+        f"...{C}kkKKKKkk{C}...",
+        f"..kk{c}KKKKKK{c}kk..",
+        f"..kK{C}{c}KKKK{c}{C}Kk..",
+        ".kKKK{0}sSSs{0}KKKk.".format(c),
+        ".kKKKsSyySsKKKk.",
+        f".{C}KKKSyWWySKKK{C}.",
+        f".{C}KKKSyWWySKKK{C}.",
+        ".kKKKsSyySsKKKk.",
+        ".kKKK{0}sSSs{0}KKKk.".format(c),
+        f"..kK{C}{c}KKKK{c}{C}Kk..",
+        f"..kk{c}KKKKKK{c}kk..",
+        f"...{C}kkKKKKkk{C}...",
+        f".....{C}kkkk{C}.....",
+        "................",
+    ]
+
+
 def img(rows):
     im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
     for y, r in enumerate(rows):
@@ -150,6 +173,16 @@ def main():
     d2.text((40, 10), 'Otopilot KAPALI (sen sür)', font=f, fill=(255, 110, 100))
     d2.text((330, 10), 'Otopilot AÇIK (kendi gider)', font=f, fill=(120, 255, 140))
     c2.save(os.path.join(HERE, 'onizleme', '67_otopilot.png'))
+    tk, ta = img(tirman(False)), img(tirman(True))
+    tk.save(os.path.join(out, 'kesif_tirman_kapali.png'))
+    ta.save(os.path.join(out, 'kesif_tirman_acik.png'))
+    c3 = Image.new('RGB', (560, 300), (24, 28, 32))
+    c3.paste(tk.resize((224, 224), Image.NEAREST), (24, 40), tk.resize((224, 224), Image.NEAREST))
+    c3.paste(ta.resize((224, 224), Image.NEAREST), (312, 40), ta.resize((224, 224), Image.NEAREST))
+    d3 = ImageDraw.Draw(c3)
+    d3.text((40, 10), 'Tırmanma Modu KAPALI', font=f, fill=(200, 200, 200))
+    d3.text((340, 10), 'Tırmanma Modu AÇIK', font=f, fill=(120, 200, 255))
+    c3.save(os.path.join(HERE, 'onizleme', '72_tirmanma_modu.png'))
     kit = img(KIT)
     kit.save(os.path.join(out, 'kesif_kiti.png'))
     kit.resize((256, 256), Image.NEAREST).save(os.path.join(HERE, 'onizleme', '70_donusum_kiti.png'))

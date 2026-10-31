@@ -1,6 +1,6 @@
 // Aqualit Robotları — özel eşya bileşenleri, alet davranışları, cevher düşüşleri
 import { world, system, ItemStack, BlockPermutation, GameMode } from "@minecraft/server";
-import { radarMenu, hizMenu, otopilotMenu } from "./kesif_radar.js";
+import { radarMenu, hizMenu, otopilotMenu, tirmanMenu } from "./kesif_radar.js";
 import { telefonAc } from "./org_ui.js";
 import { H } from "./kayit.js";
 import { spawnKesif } from "./kesif.js";
@@ -43,6 +43,7 @@ export function useDevice(player, kind, opts = {}) {
         case "radar": return fire(() => radarMenu(player));
         case "hiz": return fire(() => hizMenu(player));
         case "otopilot": return fire(() => otopilotMenu(player));
+        case "tirman": return fire(() => tirmanMenu(player));
         case "telefon": return fire(() => telefonAc(player));
       }
     } catch (e) {

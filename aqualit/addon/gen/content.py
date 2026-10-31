@@ -1,7 +1,7 @@
 """Aqualit Robotlari: esya, blok, tarif ve dil tanimlari (tek kaynak)."""
 
 NS = 'aqualit'
-VERSION = [0, 3, 5]
+VERSION = [0, 3, 6]
 
 # ---------------------------------------------------------------- esyalar
 MATERIALS = [
@@ -79,6 +79,9 @@ KESIF_ESYA = [
     ('kesif_hiz', 'Keşif Hız Sayacı', 'kesif_hiz', 'hiz'),
     ('kesif_otopilot_kapali', 'Otopilot: KAPALI (sen sürüyorsun)', 'kesif_otopilot_kapali', 'otopilot'),
     ('kesif_otopilot_acik', 'Otopilot: AÇIK (Keşif kendisi gidiyor)', 'kesif_otopilot_acik', 'otopilot'),
+    # v0.3.6: yalnız arazi aracına binince gelir; basılı tutunca tekerleklere tutucular çıkar, düz duvara tırmanır
+    ('kesif_tirman_kapali', 'Tırmanma Modu: KAPALI (basılı tut)', 'kesif_tirman_kapali', 'tirman'),
+    ('kesif_tirman_acik', 'Tırmanma Modu: AÇIK (duvara sür)', 'kesif_tirman_acik', 'tirman'),
 ]
 
 # Kapalı robot (heykel) eşyaları: tür + model -> blok durumu 'aqualit:tur'

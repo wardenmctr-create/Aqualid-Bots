@@ -10,7 +10,7 @@ import * as B from "./blocks.js";
 import * as FX from "./fx.js";
 import { ICONS } from "./ikon_data.js";
 import { anaMenu, kesifKuruldu, kesifToplandi, koltuksuzIceri, aiMesgul, aiBirak } from "./kesif_ai.js";
-import { hizCarpani } from "./kesif_radar.js";
+import { hizCarpani, tutucuAcik, tutucuAyarla } from "./kesif_radar.js";
 
 export const KESIF_ID = "aqualit:kesif";
 export const KFORMS = ["robot", "ucak", "gemi", "denizalti", "arazi", "matkap"];
@@ -133,6 +133,8 @@ export function transform(e, to, pl) {
   }
   const riders = ridersOf(e);
   busy.add(e.id);
+  kesifDurumSil(e);
+  if (from === "arazi") tutucuAyarla(e, false);
   safe(() => e.setProperty("aqualit:gecis", true));
   safe(() => e.triggerEvent("aqualit:gecis_on"));
   snd(dim, "aqualit.kesif.goggles", p);
@@ -258,6 +260,111 @@ export function kaziTopla(v) {
   }, 4);
 }
 
+// ------------------------------------------------------------------ v0.3.6: eğim, tırmanma, denizaltı modu
+const DURUM = new Map();     // Keşif kimliği -> { y, s, h, tir, hedefY, sure, bos, dz }
+function durum(v) {
+  let d = DURUM.get(v.id);
+  if (!d) DURUM.set(v.id, (d = { y: v.location.y, x: v.location.x, z: v.location.z, s: 0, h: 0, tir: false, sure: 0, bos: 0, dz: null }));
+  return d;
+}
+export function kesifDurumSil(v) {
+  const d = DURUM.get(v.id);
+  if (d?.tir) safe(() => v.triggerEvent("aqualit:tirman_off"));
+  DURUM.delete(v.id);
+}
+
+/** İnip çıkarken burun açısı (derece; eksi = burun yukarı). Yükseklik değişimi / yatay yol, yumuşatılmış. */
+export function egimHesap(v) {
+  const d = durum(v), p = v.location;
+  const dy = p.y - d.y, dh = Math.hypot(p.x - d.x, p.z - d.z);
+  d.x = p.x; d.y = p.y; d.z = p.z;
+  if (Math.abs(dy) > 3 || dh > 3) { d.s = 0; d.h = 0; return 0; }   // ışınlandı
+  d.s = d.s * 0.75 + dy * 0.25;
+  d.h = d.h * 0.75 + dh * 0.25;
+  if (d.h < 0.02 && Math.abs(d.s) < 0.02) return 0;
+  const a = (-Math.atan2(d.s, Math.max(d.h, 0.08)) * 180) / Math.PI;
+  return Math.max(-35, Math.min(35, a));
+}
+
+function katiMi(dim, x, y, z) {
+  return blocked(dim, safe(() => dim.getBlock({ x, y, z })));
+}
+
+/**
+ * Arazi aracı tırmanma modu (v0.3.6): Tırmanma Modu eşyasıyla tekerleklere mavi tutucular çıkınca, düz duvara doğru
+ * sürülürse araç yerçekimsiz olur, burnu dikilir ve duvara yapışıp yukarı tırmanır; üste varınca yere döner.
+ * Tutucular kapalıyken yalnız 1 bloğu oyunun otomatik basamak çıkması aşar.
+ */
+const TIRMAN_ACI = -80;
+export function tirman(v, pl, mv, t) {
+  const d = durum(v), dim = v.dimension, p = v.location;
+  const ileri = (mv?.y ?? 0) > 0.3;
+  if (!tutucuAcik(v)) {
+    if (d.tir) { d.tir = false; safe(() => v.triggerEvent("aqualit:tirman_off")); }
+    return 0;
+  }
+  const yaw = safe(() => v.getRotation().y, 0);
+  const yr = (yaw * Math.PI) / 180;
+  const h = { x: -Math.sin(yr), z: Math.cos(yr) };
+  const ax = Math.floor(p.x + h.x * 1.8), az = Math.floor(p.z + h.z * 1.8);
+  const y0 = Math.floor(p.y + 0.1);
+  if (!d.tir) {
+    if (!ileri || t % 2) return 0;
+    // 1 bloğu oyun kendisi çıkar; 2+ blok duvara dayanınca tırman
+    if (!(katiMi(dim, ax, y0, az) && katiMi(dim, ax, y0 + 1, az))) return 0;
+    // duvarın üstü: 64 bloğa kadar ara (bulunamazsa tavana kadar tırmanır)
+    let ust = 64;
+    for (let k = 2; k <= 64; k++) {
+      if (!katiMi(dim, ax, y0 + k, az) && !katiMi(dim, ax, y0 + k + 1, az)) { ust = k; break; }
+    }
+    d.tir = true; d.hedefY = y0 + ust; d.basY = p.y; d.sure = 0; d.bos = 0;
+    safe(() => v.triggerEvent("aqualit:tirman_on"));
+    snd(dim, "aqualit.kesif.rover", p, { volume: 0.8 });
+    if (!d.ipucu) {
+      d.ipucu = true;
+      safe(() => pl.onScreenDisplay.setActionBar("§bTutucular duvara yapıştı · ileri bas (yukarı bakarsan daha hızlı)"));
+    }
+    return TIRMAN_ACI;
+  }
+  d.sure++;
+  d.bos = ileri ? 0 : d.bos + 1;
+  // ileri basılıyken yukarı it (oyun binilen araçta itkiyi almazsa yukarı bakarak sürülür)
+  const geri = (mv?.y ?? 0) < -0.3;
+  if (geri) {
+    // geri: duvardan yavaşça aşağı iner
+    const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 });
+    safe(() => v.applyImpulse({ x: 0, y: -0.15 - vel.y, z: 0 }));
+  } else if (ileri) {
+    const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 });
+    const yukari = p.y < d.hedefY + 0.2;
+    safe(() => v.applyImpulse({ x: h.x * (yukari ? 0.02 : 0.12), y: (yukari ? 0.2 : 0.02) - vel.y, z: h.z * (yukari ? 0.02 : 0.12) }));
+  }
+  if (t % 10 === 0) safe(() => dim.spawnParticle("minecraft:basic_crit_particle", { x: p.x + h.x * 1.4, y: p.y + 0.3, z: p.z + h.z * 1.4 }));
+  // üste çıktı (altı dolu, önü açık), duvar bitti ya da geri basıp yere indi: yerçekimi geri gelir
+  const altDolu = katiMi(dim, Math.floor(p.x), Math.floor(p.y - 0.2), Math.floor(p.z));
+  const ustte = p.y >= d.hedefY - 0.1 && altDolu;
+  const duvarYok = !katiMi(dim, ax, y0, az) && !katiMi(dim, ax, y0 - 1, az);
+  // (basmayı bırakınca tutucular duvarda tutar, düşmez)
+  const indi = altDolu && geri && p.y <= (d.basY ?? p.y) + 0.3;
+  if (ustte || indi || p.y > d.hedefY + 3 || d.sure > 6000 || (duvarYok && altDolu && d.sure > 10)) {
+    d.tir = false;
+    safe(() => v.triggerEvent("aqualit:tirman_off"));
+    return 0;
+  }
+  // tavana dayandı: tırmanamaz, bekler (geri basınca iner)
+  return TIRMAN_ACI;
+}
+
+/** Denizaltı suyun içindeyse uçan binek gibi (dalar, çıkar), dışındaysa düşer ve yavaş sürünür. */
+function dzMod(v) {
+  const d = durum(v);
+  const su = safe(() => v.isInWater, false) || waterAt(v.dimension, v.location, 0.5);
+  const m = su ? "su" : "kara";
+  if (d.dz === m) return;
+  d.dz = m;
+  safe(() => v.triggerEvent(su ? "aqualit:dz_su" : "aqualit:dz_kara"));
+}
+
 function drive(v, pl, t) {
   const form = formOf(v);
   if (form === "robot" || busy.has(v.id)) return;
@@ -286,6 +393,7 @@ function drive(v, pl, t) {
     tilt = Math.max(-45, Math.min(45, rot.x)) * thr;
   } else if (form === "denizalti") {
     fly = true;
+    dzMod(v);
     if (safe(() => v.isInWater, false)) {
       const look = safe(() => pl.getViewDirection(), fwd);
       tgt = { x: look.x * sp * f, y: look.y * sp * f, z: look.z * sp * f };
@@ -301,14 +409,8 @@ function drive(v, pl, t) {
     const water = safe(() => v.isInWater, false) || waterAt(dim, v.location, -0.3);
     if (!water) tgt = { x: tgt.x * 0.08, y: 0, z: tgt.z * 0.08 };
   } else if (form === "arazi") {
-    if (f > 0.1 && t % 6 === 0 && safe(() => v.isOnGround, false)) {
-      const p = v.location;
-      const ax = Math.floor(p.x + fwd.x * 1.5), az = Math.floor(p.z + fwd.z * 1.5), y = Math.floor(p.y + 0.1);
-      const b1 = safe(() => dim.getBlock({ x: ax, y, z: az }));
-      const b2 = safe(() => dim.getBlock({ x: ax, y: y + 1, z: az }));
-      const b3 = safe(() => dim.getBlock({ x: ax, y: y + 2, z: az }));
-      if (blocked(dim, b1) && !blocked(dim, b2) && !blocked(dim, b3)) safe(() => v.applyImpulse({ x: 0, y: 0.45, z: 0 }));
-    }
+    // bir blok: oyunun otomatik basamak çıkması (variable_max_auto_step); 2-6 blok dik duvar: tırmanma modu
+    tilt = tirman(v, pl, mv, t);
   } else if (form === "matkap") {
     const mode = safe(() => v.getDynamicProperty("aq:kaz"), "yatay") ?? "yatay";
     if (f > 0.1 && t % 4 === 0) {
@@ -320,7 +422,12 @@ function drive(v, pl, t) {
   }
   // ileri-geri ve dönüşü oyunun sürüş sistemi yapar (input_ground_controlled); betik yalnız uçak ve denizaltının
   // yukarı-aşağısını verir, matkap kazar. (v0.3.4'e kadar yatay itki veriliyordu; oyuncu binince oyunda işlemiyordu.)
-  if (fly) safe(() => v.applyImpulse({ x: 0, y: tgt.y - vel.y, z: 0 }));
+  // v0.3.6: uçak ve denizaltının yukarı-aşağısını da oyunun uçan binek sistemi yapar (input_air_controlled; Mutlu Ghast
+  // gibi baktığın yöne). Betikle dikey itki oyuncu binince oyunda işlemiyordu (uçak birkaç blokta kalıyordu).
+  if (form === "arazi" || form === "matkap") {
+    const e2 = egimHesap(v);
+    if (form === "matkap" || !durum(v).tir) tilt = e2;
+  }
   const cur = safe(() => v.getProperty("aqualit:egim"), 0) ?? 0;
   if (Math.abs(cur - tilt) > 3) safe(() => v.setProperty("aqualit:egim", Math.round(tilt)));
   const moving = Math.hypot(tgt.x, tgt.y, tgt.z) > 0.03;
@@ -335,12 +442,17 @@ system.runInterval(() => {
     if (!v) {
       if (was) {
         last.delete(pl.id);
+        // indi: tırmanırken bırakılan araç yerçekimine döner
+        if (was.v && safe(() => was.v.isValid, false) && DURUM.get(was.v.id)?.tir) {
+          DURUM.get(was.v.id).tir = false;
+          safe(() => was.v.triggerEvent("aqualit:tirman_off"));
+        }
         if (was.form === "ucak" && !safe(() => pl.isOnGround, true)) safe(() => pl.addEffect("slow_falling", 200, { showParticles: false }));
       }
       continue;
     }
     const form = formOf(v);
-    last.set(pl.id, { form, tick: t });
+    last.set(pl.id, { form, tick: t, v });
     const owner = ownerOf(v);
     const riders = ridersOf(v);
     if (owner && owner !== pl.id) {

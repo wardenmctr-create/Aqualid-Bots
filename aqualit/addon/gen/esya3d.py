@@ -149,6 +149,18 @@ def otopilot(acik):
     return f
 
 
+def tirman(acik):
+    """Tırmanma Modu: küçük tekerlek, sırtında çapraz tutucular (açık: mavi parlak)."""
+    f = Form('kesif_tirman_acik' if acik else 'kesif_tirman_kapali', 'Tırmanma Modu')
+    f.bone('el', None, (0, 3, 0))
+    c, C = ('<', '~') if acik else ('*', '+')
+    on = fill(6, 6, 'k')
+    over(on, rows(f'{C}    {C}', f' {c}  {c} ', '  yy  ', '  yy  ', f' {c}  {c} ', f'{C}    {C}'), 0, 0)
+    _govde(f, (-3, 0, -1), (3, 6, 1), base='k', front=on, glow='<~' if acik else '')
+    _govde(f, (-1, 1, -1.5), (1, 5, 1.5), base=c, glow='<~' if acik else '')
+    return f
+
+
 def telefon():
     f = Form('aqualit_telefon', 'Aqualit Telefon')
     f.bone('el', None, (0, 4, 0))
@@ -172,7 +184,7 @@ def donusum_kiti():
 
 
 CIHAZLAR = [donusum_kiti, telefon, kumanda, telsiz, takip_ekrani, komut_cubugu, bolge_secici, ayar_dislisi, tamir_kiti, radar, hiz_sayaci,
-            lambda: otopilot(False), lambda: otopilot(True)]
+            lambda: otopilot(False), lambda: otopilot(True), lambda: tirman(False), lambda: tirman(True)]
 
 
 # ======================================================================= dosyalar

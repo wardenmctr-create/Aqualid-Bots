@@ -1140,27 +1140,47 @@ if (run("kesif")) {
   check(ow.sounds.includes("aqualit.kesif.transform") && ow.sounds.includes("aqualit.kesif.lock") && ow.sounds.includes("aqualit.kesif.plane"),
     "dönüşüm, kilit ve motor sesleri çaldı");
   k.getComponent("minecraft:rideable").addRider(player);
-  player._rot = { x: 0, y: 0 }; player._mv = { x: 0, y: 1 };
+  // v0.3.6: ileri/geri, dönüş ve uçağın yükselip alçalması oyunun binek sistemiyle (input_air_controlled); betik eğim verir
+  player._rot = { x: -30, y: 90 }; player._mv = { x: 0, y: 1 };
   ticks(2);
-  check(Math.abs(k._vel.z - 1.1) < 0.01 && Math.abs(k._vel.x) < 0.01, `uçak ileri gidiyor (hız ${k._vel.z.toFixed(2)})`);
-  player._rot = { x: -30, y: 90 };
-  ticks(2);
-  check(k._vel.y > 0.4 && k._vel.x < -0.8 && k._props["aqualit:egim"] < -20, "yukarı bakınca tırmanıyor, burnu kalkıyor, batıya dönüyor");
+  check(k._props["aqualit:egim"] < -20, "uçakta yukarı bakıp gaz verince burnu kalkıyor");
   player._mv = { x: 0, y: 0 }; k.isOnGround = false;
   ticks(2);
-  check(Math.abs(k._vel.y + 0.08) < 0.01, "gaz yokken süzülerek alçalıyor");
   k.getComponent("minecraft:rideable").ejectRider(player); player.isOnGround = false;
   ticks(2);
   check(!!player._effects.slow_falling, "havada uçaktan inince yavaş düşüş verildi");
   player.isOnGround = true; k.isOnGround = true;
-  // arazi aracı
+  // arazi aracı: Tırmanma Modu eşyası, tutucular, düz duvara tırmanma
+  const KR = await import("./scripts/kesif_radar.js");
   check(KS.transform(k, "arazi", player), "arazi aracına dönüşme");
   ticks(30);
+  k._rot = { x: 0, y: 0 };
   k.getComponent("minecraft:rideable").addRider(player);
-  player._rot = { x: 0, y: 0 }; player._mv = { x: 0, y: 1 }; k._vel = { x: 0, y: 0, z: 0 };
-  ticks(2);
-  check(Math.abs(k._vel.z - 0.55) < 0.01 && k._vel.y === 0, "arazi aracı ileri gidiyor, yerçekimi korunuyor");
+  ticks(12);
+  const envde = (id) => { for (let i = 0; i < player._inv.size; i++) if (player._inv.getItem(i)?.typeId === id) return true; return false; };
+  check(envde("aqualit:kesif_tirman_kapali"), "arazi aracına binince Tırmanma Modu eşyası geldi");
+  KR.tirmanMenu(player);
+  check(k._props["aqualit:tutucu"] === true && k._events.includes("aqualit:tutucu_on") && envde("aqualit:kesif_tirman_acik"),
+    "basılı tutunca tutucular çıktı, eşya maviye döndü");
+  {
+    const p0 = k.location, wx = Math.floor(p0.x), wz = Math.floor(p0.z) + 2, wy = Math.floor(p0.y + 0.1);
+    for (let h = 0; h < 8; h++) for (let l = -2; l <= 2; l++) set({ x: wx + l, y: wy + h, z: wz }, "minecraft:stone");
+    player._rot = { x: 0, y: 0 }; player._mv = { x: 0, y: 1 };
+    ticks(4);
+    check(k._events.includes("aqualit:tirman_on") && k._props["aqualit:egim"] <= -60, "düz duvara sürünce yapıştı, burnu dikildi");
+    k.teleport({ x: p0.x, y: wy + 8.05, z: wz + 0.6 });
+    ticks(4);
+    check(k._events.includes("aqualit:tirman_off") && k._props["aqualit:egim"] > -60, "duvarın üstüne varınca yere döndü");
+    KR.tirmanMenu(player);
+    check(k._props["aqualit:tutucu"] === false && envde("aqualit:kesif_tirman_kapali"), "tekrar basınca tutucular kapandı");
+    for (let h = 0; h < 8; h++) for (let l = -2; l <= 2; l++) set({ x: wx + l, y: wy + h, z: wz }, "minecraft:air");
+    k.teleport({ x: p0.x, y: p0.y, z: p0.z });
+  }
+  k.getComponent("minecraft:rideable").ejectRider(player);
+  ticks(12);
+  check(!envde("aqualit:kesif_tirman_kapali") && !envde("aqualit:kesif_tirman_acik"), "inince Tırmanma Modu eşyası geri alındı");
   // matkap: düz ileri kazar
+  k._vel = { x: 0, y: 0, z: 0 };
   k.getComponent("minecraft:rideable").ejectRider(player);
   KS.transform(k, "matkap", player); ticks(30);
   const kl = k.location;
