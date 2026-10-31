@@ -541,7 +541,7 @@ def arazi():
         add_box(f, bone, 'a_tire2_' + nm, (x0, 2, z - 6), (x0 + 6, 10, z + 6), base='k',
                 front=tread(6, 8, 'v'), back=tread(6, 8, 'v'), left=cross_side, right=mirror_h(cross_side),
                 top=tread(6, 12, 'v'), bottom=tread(6, 12, 'v'))
-    # v0.3.6: tırmanma tutucuları: tekerleklerin sırtında aynı yöne çapraz (////) duran, kabarık, mavi parlayan 3B çubuklar
+    # v0.3.6: tırmanma tutucuları: tekerleklerin sırtında düz (||||) duran, kabarık, mavi parlayan 3B çubuklar
     # (her tekerleğin üst, alt, ön ve arka yüzünde üçer paralel çubuk; Tırmanma Modu açılınca görünür, kesif_oyun.py 'tutucu')
     for nm, x, z in (('fl', -13, 14), ('fr', 13, 14), ('bl', -13, -14), ('br', 13, -14)):
         bone = 'a_tut_' + nm
@@ -549,14 +549,14 @@ def arazi():
         uc = rows('~')
         yuzler = (('u', (x, 12.5, z), 'Y'), ('a', (x, -0.5, z), 'Y'), ('o', (x, 6, z + 6.5), 'Z'), ('b', (x, 6, z - 6.5), 'Z'))
         for yz, (cx, cy, cz), eksen in yuzler:
-            # //// : hepsi aynı yöne eğik, yuvarlanma yönünde yan yana üç paralel çubuk (zincir dişi gibi)
+            # |||| : lastiğin enine düz, yuvarlanma yönünde yan yana üç çubuk; boyu lastik kalınlığından (6) biraz kısa (5)
             for k, ofs in enumerate((-2.6, 0, 2.6)):
                 bn = f'a_tut_{nm}_{yz}{k}'
                 px, py, pz = (cx, cy, cz + ofs) if eksen == 'Y' else (cx, cy + ofs, cz)
-                f.bone(bn, bone, (px, py, pz), (0, 35, 0) if eksen == 'Y' else (0, 0, 35))
-                aa, bb = (px - 3.5, py - 0.5, pz - 0.5), (px + 3.5, py + 0.5, pz + 0.5)
+                f.bone(bn, bone, (px, py, pz))
+                aa, bb = (px - 2.5, py - 0.5, pz - 0.5), (px + 2.5, py + 0.5, pz + 0.5)
                 add_box(f, bn, bn, aa, bb, base='<', glow='<~',
-                        front=rows('~<<<<<~'), back=rows('~<<<<<~'), top=rows('~<<<<<~'), bottom=rows('~<<<<<~'),
+                        front=rows('~<<<~'), back=rows('~<<<~'), top=rows('~<<<~'), bottom=rows('~<<<~'),
                         left=uc, right=rows('~'))
     # gövde
     bs = stripe_panel(36, 8, 'M', stripe=[2], stripe_c='y', seams=(11, 23))
