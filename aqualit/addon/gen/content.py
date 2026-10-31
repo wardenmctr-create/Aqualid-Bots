@@ -1,7 +1,7 @@
 """Aqualit Robotlari: esya, blok, tarif ve dil tanimlari (tek kaynak)."""
 
 NS = 'aqualit'
-VERSION = [0, 3, 6]
+VERSION = [0, 3, 7]
 
 # ---------------------------------------------------------------- esyalar
 MATERIALS = [

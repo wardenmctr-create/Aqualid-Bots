@@ -51,8 +51,16 @@ export function spawnKesif(player, block, face) {
   const p = { x: block.x + o[0] + 0.5, y: block.y + o[1], z: block.z + o[2] + 0.5 };
   const dim = player.dimension;
   const yaw = safe(() => player.getRotation().y, 0) + 180;
-  const e = safe(() => dim.spawnEntity(KESIF_ID, p, { initialRotation: yaw }));
-  if (!e) return safe(() => player.sendMessage("§cKeşif buraya konamadı."));
+  let e, hata;
+  try {
+    e = dim.spawnEntity(KESIF_ID, p, { initialRotation: yaw });
+  } catch (err) {
+    hata = String(err?.message ?? err).slice(0, 160);
+  }
+  if (!e) {
+    // v0.3.7: sebebi de yaz (v0.3.6'da varlık oyunda yüklenmediği için hiçbir yere konamıyordu)
+    return safe(() => player.sendMessage(`§cKeşif buraya konamadı.${hata ? ` §7(${hata})` : ""}`));
+  }
   safe(() => e.setDynamicProperty("aq:sahip", player.id));
   safe(() => e.setDynamicProperty("aq:sahip_ad", player.name));
   if (safe(() => player.getGameMode(), "Survival") !== "Creative") {
@@ -424,6 +432,8 @@ function drive(v, pl, t) {
   // yukarı-aşağısını verir, matkap kazar. (v0.3.4'e kadar yatay itki veriliyordu; oyuncu binince oyunda işlemiyordu.)
   // v0.3.6: uçak ve denizaltının yukarı-aşağısını da oyunun uçan binek sistemi yapar (input_air_controlled; Mutlu Ghast
   // gibi baktığın yöne). Betikle dikey itki oyuncu binince oyunda işlemiyordu (uçak birkaç blokta kalıyordu).
+  // yedek: uçan binek sistemi bu biçimde çalışmazsa betik bakış yönüne göre dikey hız verir (v0.3.5 gibi)
+  if (fly && (form === "ucak" || safe(() => v.isInWater, false))) safe(() => v.applyImpulse({ x: 0, y: tgt.y - vel.y, z: 0 }));
   if (form === "arazi" || form === "matkap") {
     const e2 = egimHesap(v);
     if (form === "matkap" || !durum(v).tir) tilt = e2;

@@ -160,7 +160,9 @@ def kesif_bp():
                        [x for o, m in MODLAR.items() for x in m if o != f or x != m[0]]},
             'add': {'component_groups': [f'k_{f}'] + ([MODLAR[f][0]] if f in MODLAR else [])},
             'set_property': {'aqualit:form': f}}
-    return {'format_version': '1.26.0', 'minecraft:entity': {
+    # v0.3.7: biçim yine 1.21.0 (v0.3.5'te oyunda çalışan). v0.3.6'da 1.26.0 yapılınca oyun Keşif'i hiç oluşturamadı
+    # ("Keşif buraya konamadı"); eski biçim tanımadığı bileşeni yok sayar, varlığı düşürmez.
+    return {'format_version': '1.21.0', 'minecraft:entity': {
         'description': {'identifier': KID, 'is_spawnable': False, 'is_summonable': True,
                         'properties': {
                             'aqualit:form': {'type': 'enum', 'values': FORMS, 'default': 'robot', 'client_sync': True},

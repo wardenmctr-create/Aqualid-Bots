@@ -53,7 +53,7 @@ def manifests():
     v = C.VERSION
     wj(f'{BP}/manifest.json', {
         'format_version': 2,
-        'header': {'name': 'Aqualit Robotları (Davranış)', 'description': 'Aqualit cevheri ve sevimli iş robotları',
+        'header': {'name': f'Aqualit Robotları (Davranış) {C.VERSION[1]}.{C.VERSION[2]}', 'description': 'Aqualit cevheri ve sevimli iş robotları',
                    'uuid': U('bp'), 'version': v, 'min_engine_version': [1, 26, 50]},
         'modules': [
             {'type': 'data', 'uuid': U('bp-data'), 'version': v},
@@ -68,7 +68,7 @@ def manifests():
     })
     wj(f'{RP}/manifest.json', {
         'format_version': 2,
-        'header': {'name': 'Aqualit Robotları (Kaynak)', 'description': 'Aqualit robotlarının dokuları ve modelleri',
+        'header': {'name': f'Aqualit Robotları (Kaynak) {C.VERSION[1]}.{C.VERSION[2]}', 'description': 'Aqualit robotlarının dokuları ve modelleri',
                    'uuid': U('rp'), 'version': v, 'min_engine_version': [1, 26, 50]},
         'modules': [{'type': 'resources', 'uuid': U('rp-res'), 'version': v}],
         'metadata': {'authors': ['Aqualit Robotları']},
