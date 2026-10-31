@@ -16,7 +16,7 @@
 ## Yeni: Tırmanma Modu (arazi aracı)
 
 - Yalnız **arazi aracına binince** envantere gelir (inince, ya da araç başka şeye dönüşünce geri alınır).
-- **Basılı tut:** tekerleklerin sırtında (üst, alt, ön, arka yüzde) çapraz (X) duran, kabarık, mavi parlayan 3B çubuklar çıkar; eşya maviye döner. Bir daha basılı tut: kapanır.
+- **Basılı tut:** tekerleklerin sırtında (üst, alt, ön, arka yüzde) aynı yöne eğik (////), yan yana üçer kabarık, mavi parlayan 3B çubuk çıkar; eşya maviye döner. Bir daha basılı tut: kapanır.
 - Tutucular açıkken **düz duvara doğru sür**: araç duvara yapışır, burnu dikilir (80°), yukarı tırmanır. Üste varınca yerçekimi geri gelir.
   Basmayı bırakınca duvarda tutunur, düşmez; **geri** basınca aşağı iner.
 - Duvarın üstü 64 bloğa kadar aranır; yoksa tavana kadar tırmanır.
