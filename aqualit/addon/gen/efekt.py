@@ -236,6 +236,19 @@ def particles():
             'facing_camera_mode': 'rotate_xyz', 'uv': {**tex, 'uv': [48, 0], 'uv_size': [16, 16]}},
         'minecraft:particle_appearance_tinting': fade,
     }
+    # v0.3.8: Mimar'ın yer seçme çerçevesi: uzun ömürlü, kalın, parlak çizgi parçası (turkuaz; ön kenar turuncu)
+    for ad, renk in (('cerceve', [0.25, 1.0, 0.9]), ('cerceve_on', [1.0, 0.6, 0.15])):
+        P[ad] = {**once,
+            'minecraft:emitter_shape_point': {'offset': [0, 0, 0], 'direction': yon},
+            'minecraft:particle_initial_speed': 0.02,
+            'minecraft:particle_motion_dynamic': {},
+            'minecraft:particle_lifetime_expression': {'max_lifetime': 0.8},
+            'minecraft:particle_appearance_billboard': {
+                'size': ['variable.uzun * 0.5', 0.08],
+                'facing_camera_mode': 'lookat_direction', 'direction': along,
+                'uv': {**tex, 'uv': [48, 0], 'uv_size': [16, 16]}},
+            'minecraft:particle_appearance_tinting': {'color': renk + ['math.min(1, (1 - variable.particle_age / variable.particle_lifetime) * 4)']},
+        }
     out = {}
     for k, comps in P.items():
         out[k] = {'format_version': '1.10.0', 'particle_effect': {
@@ -251,4 +264,5 @@ PARTICLE_VARS = {
     'enerji_halka': ['boy'],
     'parlama': ['boy'],
     'kivilcim': [], 'kubbe_parilti': [], 'golge_duman': [],
+    'cerceve': ['yon', 'uzun'], 'cerceve_on': ['yon', 'uzun'],
 }

@@ -5,11 +5,12 @@ import { V, wait, safe, yawOf, clamp } from "./util.js";
 import { YAPILAR, KATEGORI, BLOK_DURUM, ALTERNATIF, BLOK_ESYA } from "./yapi_data.js";
 import { eksikleriIste, sandigaKoy } from "./organizator.js";
 import { getJSON, setJSON, setProp } from "./store.js";
-import { menu, confirm } from "./ui/forms.js";
+import { menu, modal, confirm } from "./ui/forms.js";
 import { idleJob } from "./jobs.js";
 import { isCreative } from "./place.js";
 import { Budget } from "./budget.js";
 import { ICONS } from "./ikon_data.js";
+import * as FX from "./fx.js";
 
 export const DRON_ID = "aqualit:dron";
 const BY_ID = new Map(YAPILAR.map((y) => [y.id, y]));
@@ -39,19 +40,57 @@ export function yapi(id) {
   return BY_ID.get(id);
 }
 /** Yazıyla verilen yapı adına en uygun kütüphane yapısı ("kule", "küçük ev", "buğday çiftliği"). */
+// v0.3.8: yazım hatasını ve anlatımı anlayan yapı araması
+const ESANLAM = {
+  ev: ["ev", "evi", "kulube", "kulubesi", "konak", "konagi", "kosk", "koksu", "villa", "yuva", "apartman", "apartmani", "baraka", "kir"],
+  kale: ["kale", "kalesi", "sato", "satosu", "hisar", "hisari", "burc"], kule: ["kule", "kulesi", "fener", "feneri", "gozetleme"],
+  tapinak: ["tapinak", "tapinagi", "mabet", "kilise", "katedral", "cami", "piramit"], gemi: ["gemi", "gemisi", "tekne", "kayik", "korsan"],
+  ciftlik: ["ciftlik", "ciftligi", "tarla", "tarlasi", "farm", "agil", "agili", "ambar", "ahir"],
+  kucuk: ["kucuk", "minik", "ufak", "kucucuk", "basit"], buyuk: ["buyuk", "dev", "mega", "kocaman", "genis", "devasa"],
+  koy: ["koy", "kasaba", "kuyu", "kuyusu", "pazar", "dukkan", "dukkani", "demirci", "kutuphane"],
+  japon: ["japon", "japonya", "pagoda", "asya"], ortacag: ["ortacag", "sovalye", "viking"], modern: ["modern", "sehir", "banliyo", "eko"],
+  susleme: ["anit", "heykel", "cesme", "bahce", "bahcesi", "susleme"], buyulu: ["buyulu", "cadi", "masal", "fantastik", "buyu"],
+};
+const ES_KOK = new Map();
+for (const [k, l] of Object.entries(ESANLAM)) for (const w of l) ES_KOK.set(w, k);
+const sadeYaz = (t) => String(t ?? "").replace(/İ/g, "i").toLowerCase().replace(/[çğıöşüâî]/g, (c) => ({ "ç": "c", "ğ": "g", "ı": "i", "ö": "o", "ş": "s", "ü": "u", "â": "a", "î": "i" })[c] ?? c)
+  .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+function mesafe(a, b) {
+  if (a === b) return 0;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+/** İki kelime ne kadar benzer (0..1): aynı, ön ek, eş anlam ya da az harf farkı. */
+function kelimeBenzer(k, w) {
+  if (k === w) return 1;
+  if (w.startsWith(k) && k.length >= 3) return 0.9;
+  const kk = ES_KOK.get(k) ?? ES_KOK.get(k.slice(0, -1)), wk = ES_KOK.get(w);
+  if (kk && kk === wk) return 0.75;
+  if (kk && wk) return 0;            // ayrı anlam kümeleri (küçük ≠ büyük)
+  const tol = k.length <= 4 ? 1 : k.length <= 7 ? 2 : 3;
+  const d = Math.min(mesafe(k, w), w.length > k.length ? mesafe(k, w.slice(0, k.length)) + 0.5 : 99);
+  return d <= tol ? 0.7 - d * 0.1 : 0;
+}
 export function yapiAra(ad) {
-  const sade = (t) => String(t ?? "").toLowerCase().replace(/[çğıöşüâî]/g, (c) => ({ "ç": "c", "ğ": "g", "ı": "i", "ö": "o", "ş": "s", "ü": "u", "â": "a", "î": "i" })[c]);
-  const q = sade(ad).trim();
+  const q = sadeYaz(ad);
   if (!q) return [];
-  const ks = q.split(/\s+/).filter((k) => k.length >= 3);
+  const ks = q.split(" ").filter((k) => k.length >= 2);
   const puan = (y) => {
-    const n = sade(y.ad);
+    const n = sadeYaz(y.ad);
+    const ws = (n + " " + sadeYaz(KATEGORI[y.kat] ?? "")).split(" ");
     let p = n === q ? 100 : n.includes(q) ? 60 : 0;
-    for (const k of ks) if (n.includes(k.slice(0, Math.max(3, k.length - 2)))) p += 15;
-    if (sade(KATEGORI[y.kat] ?? "").includes(ks[0] ?? "~")) p += 5;
+    for (const k of ks) {
+      const sifat = ["kucuk", "buyuk"].includes(ES_KOK.get(k));   // boyut sözcükleri daha az ağır basar
+      p += (sifat ? 10 : 20) * Math.max(0, ...ws.map((w) => kelimeBenzer(k, w)));
+    }
     return p;
   };
-  return YAPILAR.map((y) => [puan(y), y]).filter(([p]) => p > 0).sort((a, b) => b[0] - a[0]).map(([, y]) => y);
+  return YAPILAR.map((y) => [puan(y), y]).filter(([p]) => p >= 12).sort((a, b) => b[0] - a[0] || a[1].blok - b[1].blok).map(([, y]) => y);
 }
 const full = (id) => (id.includes(":") ? id : `minecraft:${id}`);
 /** Yapının malzeme listesi (tam eşya kimlikleriyle); degis: {blok: yeni blok} oyuncunun değiştirdikleri. */
@@ -656,13 +695,14 @@ export function* mimarJob(bot) {
 export async function mimarMenu(player, bot, startTask) {
   for (;;) {
     const kats = Object.entries(KATEGORI).filter(([k]) => YAPILAR.some((y) => y.kat === k));
-    const r = await menu(player, "§lMimar · Yapı Kütüphanesi", `§7${YAPILAR.length} yapı. Bir kategori seç.`,
-      kats.map(([k, name]) => {
-        const first = YAPILAR.find((y) => y.kat === k);
-        return { text: `§l${name}§r\n§7${YAPILAR.filter((y) => y.kat === k).length} yapı`, icon: ICON(first.id), k };
-      }));
+    const r = await menu(player, "§lMimar · Yapı Kütüphanesi", `§7${YAPILAR.length} yapı. Ara ya da bir kategori seç.`,
+      [{ text: "§lYapı ara§r\n§7Yaz: ör. \"küçük japon evi\", \"kale\" (yanlış yazsan da anlar)", icon: "textures/items/spyglass", k: "ara" },
+        ...kats.map(([k, name]) => {
+          const first = YAPILAR.find((y) => y.kat === k);
+          return { text: `§l${name}§r\n§7${YAPILAR.filter((y) => y.kat === k).length} yapı`, icon: ICON(first.id), k };
+        })]);
     if (!r) return;
-    const picked = await listMenu(player, r.k);
+    const picked = r.k === "ara" ? await araMenu(player) : await listMenu(player, r.k);
     if (picked === "back") continue;
     if (!picked) return;
     const degis = {};
@@ -680,6 +720,20 @@ export async function mimarMenu(player, bot, startTask) {
     startTask(bot, plan);
     return;
   }
+}
+
+async function araMenu(player) {
+  const v = await modal(player, "Yapı ara", [{ type: "text", label: "Ne yapmak istiyorsun?", placeholder: "ör. küçük ahşap ev, kale, japon" }], "Ara");
+  if (!v) return "back";
+  const sonuc = yapiAra(v[0]).slice(0, 15);
+  if (!sonuc.length) {
+    await menu(player, "§lYapı ara", `§7"${v[0]}" için yapı bulamadım. Başka kelimelerle dene.`, [{ text: "§8◀ Geri", v: "back" }]);
+    return "back";
+  }
+  const btns = [{ text: "§8◀ Geri", v: "back" }];
+  for (const y of sonuc) btns.push({ text: `§l${y.ad}§r\n§7${KATEGORI[y.kat] ?? ""} · ${y.blok} blok`, icon: ICON(y.id), v: y });
+  const r = await menu(player, `§l"${v[0]}"`, `§7${sonuc.length} yapı buldum (en uygun en üstte).`, btns);
+  return r?.v;
 }
 
 async function listMenu(player, kat) {
@@ -848,25 +902,31 @@ export async function chooseSite(player, y, free) {
   }
 }
 
-/** Yapı kutusunun kenarlarına parçacık (telefon için seyrek), durdurma işlevi döndürür. */
+/** Yapı kutusunun 12 kenarını kalın, parlak, kesintisiz çizgiyle gösterir (v0.3.8; eskiden seyrek, kısa ömürlü toz
+ * tanecikleriydi, 3-4 saniyede bir zor görünüyordu). Kapı tarafının alt kenarı turuncu. Durdurma işlevi döndürür. */
 function outline(dim, at, size, rot) {
-  const pts = [];
-  const step = Math.max(1, Math.ceil((size.x + size.y + size.z) * 4 / 160));
   const X = [at.x, at.x + size.x], Y = [at.y, at.y + size.y], Z = [at.z, at.z + size.z];
-  for (const y of Y) for (const z of Z) for (let x = X[0]; x <= X[1]; x += step) pts.push({ x, y, z });
-  for (const y of Y) for (const x of X) for (let z = Z[0]; z <= Z[1]; z += step) pts.push({ x, y, z });
-  for (const x of X) for (const z of Z) for (let y = Y[0]; y <= Y[1]; y += step) pts.push({ x, y, z });
-  // kapı tarafı: ön kenarda sık işaret
+  const kenar = [];
+  const parca = (a, b, on) => {
+    const L = V.dist(a, b);
+    const n = Math.max(1, Math.ceil(L / 6));
+    for (let i = 0; i < n; i++) kenar.push([V.add(a, V.mul(V.sub(b, a), i / n)), V.add(a, V.mul(V.sub(b, a), (i + 1) / n)), on]);
+  };
+  for (const y of Y) for (const z of Z) parca({ x: X[0], y, z }, { x: X[1], y, z });
+  for (const y of Y) for (const x of X) parca({ x, y, z: Z[0] }, { x, y, z: Z[1] });
+  for (const x of X) for (const z of Z) parca({ x, y: Y[0], z }, { x, y: Y[1], z });
+  // kapı tarafı: ön alt kenar turuncu (biraz yukarıda, üst üste binmesin)
   const fz = [Z[1], X[0], Z[0], X[1]][rot];
-  const front = [];
-  if (rot % 2 === 0) for (let x = X[0]; x <= X[1]; x += 0.5) front.push({ x, y: at.y + 0.2, z: fz });
-  else for (let z = Z[0]; z <= Z[1]; z += 0.5) front.push({ x: fz, y: at.y + 0.2, z });
+  const yy = at.y + 0.15;
+  if (rot % 2 === 0) parca({ x: X[0], y: yy, z: fz }, { x: X[1], y: yy, z: fz }, true);
+  else parca({ x: fz, y: yy, z: Z[0] }, { x: fz, y: yy, z: Z[1] }, true);
   let n = 0;
+  const ciz = () => { for (const [a, b, on] of kenar) FX.cizgi(dim, a, b, on); };
+  ciz();
   const h = system.runInterval(() => {
     n++;
-    for (const p of pts) safe(() => dim.spawnParticle("minecraft:villager_happy", p));
-    for (const p of front) safe(() => dim.spawnParticle("minecraft:basic_flame_particle", p));
-    if (n > 60) system.clearRun(h);
+    ciz();
+    if (n > 90) system.clearRun(h);
   }, 10);
   return () => safe(() => system.clearRun(h));
 }

@@ -195,3 +195,12 @@ export function flashAndShake(dim, p, r = 24, shake = 0.22) {
     safe(() => pl.camera.addShake({ intensity: shake * (0.4 + 0.6 * k), duration: 0.45, type: "Positional" }));
   }
 }
+
+
+/** v0.3.8: kalın, parlak düz çizgi (Mimar'ın yer seçme çerçevesi). on: turuncu (kapı tarafı). */
+export function cizgi(dim, a, b, on = false) {
+  const d = V.sub(b, a);
+  const L = V.len(d);
+  if (L < 0.01) return;
+  safe(() => dim.spawnParticle(on ? "aqualit:cerceve_on" : "aqualit:cerceve", V.mul(V.add(a, b), 0.5), vars({ yon: V.mul(d, 1 / L), uzun: L })));
+}
