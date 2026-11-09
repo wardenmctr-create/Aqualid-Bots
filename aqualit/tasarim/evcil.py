@@ -188,11 +188,11 @@ def kilicli(f):
 
 def organizator(f, cam=True):
     # dik duran ince tablet (ekranı öne bakar); cam ekranın ardında Mimar dronundaki gibi gözler; üstte iki pervane
-    on = [list(r) for r in ('kkkkkkkk', 'kkWkkWkk', 'kkWkkWkk', 'kkkkkkkk', 'kkkkkkkk', 'kkkkkkkk')]
-    kutu(f, 'g', 'tablet', (-4, 3, -1), (4, 9, 1), base='1', front=on, glow='WLP',
-         top=fill(8, 2, '3'), back=fill(8, 6, '2'))
+    on = [list(r) for r in ('kkkkkkkk', 'kkWkkWkk', 'kkWkkWkk', 'kkkkkkkk', 'kkkkkkkk')]   # alttan 1 piksel kısa
+    kutu(f, 'g', 'tablet', (-4, 4, -1), (4, 9, 1), base='1', front=on, glow='WLP',
+         top=fill(8, 2, '3'), back=fill(8, 5, '2'))
     if cam:
-        kutu(f, 'g', 'cam', (-3, 4, 1), (3, 8, 2), base='<', front=rows('~9~<<<', '<<<<<<', '<<<<<<', '^^^^^^'))
+        kutu(f, 'g', 'cam', (-3, 5, 1), (3, 8, 2), base='<', front=rows('~9~<<<', '<<<<<<', '^^^^^^'))
     for ad, sx in (('l', -1), ('r', 1)):
         kutu(f, 'g', 'direk_' + ad, (sx * 3.5 - 0.5, 9, -0.5), (sx * 3.5 + 0.5, 10, 0.5), base='%')
         pervane(f, 'g', 'p_' + ad, (sx * 3.5, 10.5, 0), 3, 10.5)
