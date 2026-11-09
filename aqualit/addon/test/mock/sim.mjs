@@ -1160,7 +1160,7 @@ if (run("kesif")) {
   const envde = (id) => { for (let i = 0; i < player._inv.size; i++) if (player._inv.getItem(i)?.typeId === id) return true; return false; };
   check(envde("aqualit:kesif_tirman_kapali"), "arazi aracına binince Tırmanma Modu eşyası geldi");
   KR.tirmanMenu(player);
-  check(k._props["aqualit:tutucu"] === true && k._events.includes("aqualit:tutucu_on") && envde("aqualit:kesif_tirman_acik"),
+  check(k._props["aqualit:tutucu"] === true && k._events.includes("aqualit:skin_1") && envde("aqualit:kesif_tirman_acik"),
     "basılı tutunca tutucular çıktı, eşya maviye döndü");
   {
     const p0 = k.location, wx = Math.floor(p0.x), wz = Math.floor(p0.z) + 2, wy = Math.floor(p0.y + 0.1);
@@ -1216,6 +1216,53 @@ if (run("kesif")) {
   KS.transform(k, "robot", player); ticks(30);
   check(k._props["aqualit:form"] === "robot" && !player._ridingOn, "robota dönünce yolcular indi");
   guest.remove();
+}
+
+// ---------------------------------------------------------------- v0.3.8 Keşif temaları ve boyut yetenekleri
+if (run("tema")) {
+  console.log("== Keşif temaları: Nether/End kaplaması, lavda gemi, End boşluğundan kurtarma, yapışkan tutunma");
+  const KS = await import("./scripts/kesif.js");
+  const KR = await import("./scripts/kesif_radar.js");
+  const nd = world.getDimension("nether"), ed = world.getDimension("the_end");
+  // Nether: tema ve lavda gemi
+  const kn = nd.spawnEntity("aqualit:kesif", { x: 10.5, y: 70, z: 10.5 });
+  kn._dp["aq:sahip"] = player.id;
+  KS.temaUygula(kn);
+  check(kn._dp["aq:tema"] === 1 && kn._events.includes("aqualit:skin_2"), "Nether'e girince Nether temasına kaplandı");
+  KR.tutucuAyarla(kn, true);
+  check(kn._events.includes("aqualit:skin_3"), "tema + tutucu birlikte (deri 3)");
+  for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = -1; dy <= 1; dy++) nd._set?.({ x: 10 + dx, y: 70 + dy, z: 10 + dz }, "minecraft:lava");
+  const lavKoy = (p, t) => { const b = nd.getBlock(p); if (b) b.setType(t); };
+  for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = -1; dy <= 1; dy++) lavKoy({ x: 10 + dx, y: 70 + dy, z: 10 + dz }, "minecraft:lava");
+  check(KS.transform(kn, "gemi", player), "Nether'de lavın üstünde gemiye dönüşebildi");
+  // End: tema ve boşluktan kurtarma
+  const ke = ed.spawnEntity("aqualit:kesif", { x: 0.5, y: 60, z: 0.5 });
+  ke._dp["aq:sahip"] = player.id;
+  ke.isOnGround = true;
+  ticks(25);
+  check(ke._dp["aq:tema"] === 2 && ke._events.includes("aqualit:skin_4"), "End'e girince End temasına kaplandı");
+  ke.isOnGround = false;
+  ke.teleport({ x: 30.5, y: -40, z: 30.5 });
+  ticks(25);
+  check(ke.location.y > 0, `End boşluğuna düşünce son güvenli yere döndü (y ${ke.location.y.toFixed(1)})`);
+  // yapışkan tutunma: uçurum kenarından çıkınca yanındaki yüzeye yapışır (havada kalmaz)
+  const ko = ow.spawnEntity("aqualit:kesif", { x: 400.5, y: GROUND + 1, z: 400.5 });
+  ko._dp["aq:sahip"] = player.id;
+  ko._props["aqualit:form"] = "arazi";
+  KR.tutucuAyarla(ko, true);
+  for (let y = GROUND - 6; y <= GROUND; y++) for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) set({ x: 400 + dx, y, z: 400 + dz }, "minecraft:air");
+  set({ x: 402, y: GROUND - 1, z: 400 }, "minecraft:stone");
+  set({ x: 402, y: GROUND, z: 400 }, "minecraft:stone");
+  const pl2 = { getRotation: () => ({ x: 0, y: 0 }), onScreenDisplay: { setActionBar() {} } };
+  KS.tirman(ko, pl2, { x: 0, y: 0 }, 2);
+  check(ko._events.includes("aqualit:tirman_on"), "kenardan çıkınca yanındaki duvara yapıştı (havada kalmadı)");
+  for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) set({ x: 400 + dx, y: GROUND, z: 400 + dz }, "minecraft:stone");
+  set({ x: 402, y: GROUND + 1, z: 400 }, "minecraft:air");
+  set({ x: 402, y: GROUND + 2, z: 400 }, "minecraft:air");
+  ko.teleport({ x: 400.5, y: GROUND + 1, z: 400.5 });
+  KS.tirman(ko, pl2, { x: 0, y: 0 }, 4);
+  check(ko._events.filter((e) => e === "aqualit:tirman_off").length >= 1, "düz yere inince tutunma bıraktı, yerçekimi döndü");
+  for (const e of [kn, ke, ko]) e.remove();
 }
 
 // ---------------------------------------------------------------- v0.3.8 Keşif Haritası

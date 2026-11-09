@@ -284,7 +284,9 @@ export const tutucuAcik = (v) => !!safe(() => v.getDynamicProperty("aq:tutucu"),
 /** Tırmanma tutucularını açar/kapatır (model + kesif.js tırmanma). */
 export function tutucuAyarla(v, acik) {
   safe(() => v.setDynamicProperty("aq:tutucu", acik ? true : undefined));
-  safe(() => v.triggerEvent(acik ? "aqualit:tutucu_on" : "aqualit:tutucu_off"));
+  // v0.3.8: deri numarası = tema * 2 + tutucu (q.skin_id)
+  const tema = safe(() => v.getDynamicProperty("aq:tema"), 0) ?? 0;
+  safe(() => v.triggerEvent(`aqualit:skin_${tema * 2 + (acik ? 1 : 0)}`));
   safe(() => v.setProperty("aqualit:tutucu", !!acik));
 }
 /** Tırmanma Modu eşyası Keşif'e binince gelir (v0.3.8: her hâlde); yalnız arazi aracında çalışır. Durumuna göre gri/mavi. */

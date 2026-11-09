@@ -28,7 +28,7 @@ python3 test/apicheck.py             # "0 sorun" olmalı (gerçek @minecraft/ser
 cd test/mock && rm -rf scripts && cp -r ../../src/scripts scripts && node sim.mjs          # bütün senaryolar
 node sim.mjs sandik                  # tek senaryo (madenci, kurekci, oduncu, ciftci, skyblock, kilicli, ui, heykel,
                                      # eritme, zirh, guc, cokme, takim, uzak, canta, bos, konum, efekt, kesif, sandik, mimar,
-                                     # kesifai, sefer)
+                                     # kesifai, sefer, takip, kit, organizator, harita, tema; virgülle birden çok: kesif,tema)
 ```
 
 Gerekenler: Python 3.10+ (Pillow, numpy, scipy, nbtlib), Node.js 18+, ffmpeg (önizleme ve ses). Bütün senaryolar ~10 dk sürer.
@@ -83,6 +83,11 @@ ortam değişkeniyle başka yer gösterilebilir.
   binilen araçta işlemiyor). Bileşen grubu kaldırmak bileşen değerini sıfırlamaz: karşıt grubu ekle (`k_gecis`/`k_gecis0`,
   `k_arazi_yer`/`k_tirman`, `k_denizalti_su`/`_kara`). Render controller parça gizlemesi oyunda işlemedi; gizleme `gizle`
   animasyonunda ölçek 0. Arazi Tırmanma Modu: `kesif_radar.js tirmanMenu`, `kesif.js tirman`.
+- **v0.3.8:** `kesif_harita.js` Keşif Haritası (glif kareleri: `gen/harita_glif.py` → RP `font/glyph_E1/E2.png` +
+  `harita_glif.js`), oyuncu yürüdükçe harita dolar (`harita.js` bölgeleri bellekte, 5 sn'de bir yazılır), dron ordusu
+  (`dronTara` + `atla`). Keşif temaları: `gen/kesif_tema.py` (malzeme dokusu, süs kemikleri tn_/te_), `q.skin_id = tema*2 +
+  tutucu` (`aqualit:skin_N` olayları); `kesif.js temaUygula`, lav sisi (`fog push aqualit:lav_berrak`), End boşluk kurtarma,
+  yapışkan tırmanma (`tirman`, `cevreYuzey`).
 - `dil.js` Türkçe dil anlama, `organizator.js`, `org_ui.js`, `org_uretim.js` Organizatör (v0.4.0'da sürüyor).
 - `ui/` menüler: `forms.js` (menu/modal/confirm), `task.js` Görev Kumandası, `radio.js` Telsiz, `tracker.js` Takip Ekranı,
   `kilicli_ui.js` Komut Çubuğu/Ayar Dişlisi/Bölge Seçici, `canta.js` çanta ekranı.

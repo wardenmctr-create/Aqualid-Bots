@@ -123,8 +123,77 @@ export function collect(e, pl) {
 // ------------------------------------------------------------------ dönüşüm
 function waterAt(dim, p, dy = 0) {
   const b = safe(() => dim.getBlock({ x: Math.floor(p.x), y: Math.floor(p.y + dy), z: Math.floor(p.z) }));
-  return !!b && /water/.test(safe(() => b.typeId, ""));
+  // v0.3.8: Nether'de lav da su gibi sayılır (gemi ve denizaltı lavda yüzer)
+  const t = safe(() => b?.typeId, "") ?? "";
+  return /water/.test(t) || (/lava/.test(t) && dim.id.includes("nether"));
 }
+function lavMi(dim, p, dy = 0) {
+  return /lava/.test(safe(() => dim.getBlock({ x: Math.floor(p.x), y: Math.floor(p.y + dy), z: Math.floor(p.z) })?.typeId, "") ?? "");
+}
+
+// ------------------------------------------------------------------ v0.3.8: Nether / End teması ve yetenekleri
+const temaNo = (dimId) => (dimId.includes("nether") ? 1 : dimId.includes("end") ? 2 : 0);
+/** Keşif'i bulunduğu boyutun temasına kaplar (deri = tema * 2 + tutucu). */
+export function temaUygula(e) {
+  const t = temaNo(safe(() => e.dimension.id, "") ?? "");
+  const eski = safe(() => e.getDynamicProperty("aq:tema"), 0) ?? 0;
+  if (eski === t && safe(() => e.getDynamicProperty("aq:tema_ok"), false)) return false;
+  safe(() => e.setDynamicProperty("aq:tema", t));
+  safe(() => e.setDynamicProperty("aq:tema_ok", true));
+  const tut = safe(() => e.getDynamicProperty("aq:tutucu"), false) ? 1 : 0;
+  safe(() => e.triggerEvent(`aqualit:skin_${t * 2 + tut}`));
+  if (eski !== t) {
+    const c = { x: e.location.x, y: e.location.y + 1, z: e.location.z };
+    safe(() => FX.parlama(e.dimension, c, 1.4));
+  }
+  return true;
+}
+const guvenli = new Map();       // Keşif -> son güvenli yer (End boşluğu için)
+const lavSis = new Set();        // lav sisi açık oyuncular
+system.runInterval(() => {
+  for (const id of ["overworld", "nether", "the_end"]) {
+    const dim = safe(() => world.getDimension(id));
+    if (!dim) continue;
+    for (const e of safe(() => dim.getEntities({ type: KESIF_ID }), []) ?? []) {
+      temaUygula(e);
+      if (id === "the_end") {
+        // End: boşluğa düşerse son güvenli yere döner (binenlerle birlikte)
+        const l = e.location;
+        if (l.y > 8 && safe(() => e.isOnGround, false)) guvenli.set(e.id, { ...l });
+        else if (l.y < -20) {
+          const g = guvenli.get(e.id) ?? { x: 0, y: 70, z: 0 };
+          const riders = ridersOf(e);
+          safe(() => e.teleport({ x: g.x, y: g.y + 2, z: g.z }));
+          for (const r of riders) {
+            safe(() => r.teleport({ x: g.x, y: g.y + 3, z: g.z }));
+            system.runTimeout(() => safe(() => e.getComponent("minecraft:rideable")?.addRider(r)), 2);
+          }
+          safe(() => FX.parlama(dim, { x: g.x, y: g.y + 2, z: g.z }, 1.8));
+          for (const r of riders) safe(() => r.sendMessage?.("§dKeşif boşluktan kurtuldu, son güvenli yere döndü."));
+        }
+      }
+    }
+  }
+  // binenler: Nether'de ateşe dayanıklılık; denizaltıyla lavdayken lav sisi kalkar (lav büyük ölçüde saydam görünür)
+  for (const pl of world.getAllPlayers()) {
+    const v = ridingKesif(pl);
+    const neth = safe(() => pl.dimension.id, "").includes("nether");
+    if (v && neth) {
+      for (const r of [pl, ...ridersOf(v)]) {
+        const fr = safe(() => r.getEffect("fire_resistance")?.duration, 0) ?? 0;
+        if (fr < 200) safe(() => r.addEffect("fire_resistance", 400, { showParticles: false }));
+      }
+    }
+    const lavda = !!v && formOf(v) === "denizalti" && (lavMi(pl.dimension, pl.location, 1.6) || lavMi(pl.dimension, v.location, 0.8));
+    if (lavda && !lavSis.has(pl.id)) {
+      lavSis.add(pl.id);
+      safe(() => pl.runCommand("fog @s push aqualit:lav_berrak aq_lav"));
+    } else if (!lavda && lavSis.has(pl.id)) {
+      lavSis.delete(pl.id);
+      safe(() => pl.runCommand("fog @s remove aq_lav"));
+    }
+  }
+}, 20);
 
 export function transform(e, to, pl) {
   if (!safe(() => e.isValid, false) || busy.has(e.id)) return false;
@@ -132,11 +201,11 @@ export function transform(e, to, pl) {
   if (from === to || !KFORMS.includes(to)) return false;
   const dim = e.dimension, p = e.location;
   if (to === "denizalti" && !(waterAt(dim, p, 0.2) || waterAt(dim, p, 1))) {
-    safe(() => pl?.sendMessage("§eDenizaltı olmak için Keşif suyun içinde olmalı."));
+    safe(() => pl?.sendMessage("§eDenizaltı olmak için Keşif suyun (Nether'de lavın) içinde olmalı."));
     return false;
   }
   if (to === "gemi" && !(waterAt(dim, p, 0) || waterAt(dim, p, -0.5) || waterAt(dim, p, 0.5))) {
-    safe(() => pl?.sendMessage("§eGemi olmak için Keşif suyun üstünde olmalı."));
+    safe(() => pl?.sendMessage("§eGemi olmak için Keşif suyun (Nether'de lavın) üstünde olmalı."));
     return false;
   }
   const riders = ridersOf(e);
@@ -306,7 +375,7 @@ function katiMi(dim, x, y, z) {
 const TIRMAN_ACI = -80;
 export function tirman(v, pl, mv, t) {
   const d = durum(v), dim = v.dimension, p = v.location;
-  const ileri = (mv?.y ?? 0) > 0.3;
+  const ileri = (mv?.y ?? 0) > 0.3, geri = (mv?.y ?? 0) < -0.3;
   if (!tutucuAcik(v)) {
     if (d.tir) { d.tir = false; safe(() => v.triggerEvent("aqualit:tirman_off")); }
     return 0;
@@ -316,51 +385,73 @@ export function tirman(v, pl, mv, t) {
   const h = { x: -Math.sin(yr), z: Math.cos(yr) };
   const ax = Math.floor(p.x + h.x * 1.8), az = Math.floor(p.z + h.z * 1.8);
   const y0 = Math.floor(p.y + 0.1);
+  const cv = cevreYuzey(dim, p);
+  const dy = p.y - (d.oy ?? p.y);
+  d.oy = p.y;
   if (!d.tir) {
-    if (!ileri || t % 2) return 0;
-    // 1 bloğu oyun kendisi çıkar; 2+ blok duvara dayanınca tırman
-    if (!(katiMi(dim, ax, y0, az) && katiMi(dim, ax, y0 + 1, az))) return 0;
-    // duvarın üstü: 64 bloğa kadar ara (bulunamazsa tavana kadar tırmanır)
-    let ust = 64;
-    for (let k = 2; k <= 64; k++) {
-      if (!katiMi(dim, ax, y0 + k, az) && !katiMi(dim, ax, y0 + k + 1, az)) { ust = k; break; }
-    }
-    d.tir = true; d.hedefY = y0 + ust; d.basY = p.y; d.sure = 0; d.bos = 0;
+    // yerde: önde 2+ blok duvar varsa ve ileri basılıyorsa duvara yapış; ya da kenardan çıkıp altı boşaldıysa
+    // (uçurum, duvarın üst kenarı) yanındaki yüzeye yapışıp onu takip et — araç hiç havada kalmaz
+    const duvarOnde = ileri && katiMi(dim, ax, y0, az) && katiMi(dim, ax, y0 + 1, az);
+    const kenardan = !cv.alt && cv.yakin;
+    if (!duvarOnde && !kenardan) return 0;
+    d.tir = true; d.sure = 0; d.basY = p.y;
     safe(() => v.triggerEvent("aqualit:tirman_on"));
     snd(dim, "aqualit.kesif.rover", p, { volume: 0.8 });
     if (!d.ipucu) {
       d.ipucu = true;
-      safe(() => pl.onScreenDisplay.setActionBar("§bTutucular duvara yapıştı · ileri bas (yukarı bakarsan daha hızlı)"));
+      safe(() => pl.onScreenDisplay.setActionBar("§bTutucular yapıştı · baktığın yöne sür: yukarı, yana, aşağı"));
     }
     return TIRMAN_ACI;
   }
   d.sure++;
-  d.bos = ileri ? 0 : d.bos + 1;
-  // ileri basılıyken yukarı it (oyun binilen araçta itkiyi almazsa yukarı bakarak sürülür)
-  const geri = (mv?.y ?? 0) < -0.3;
-  if (geri) {
-    // geri: duvardan yavaşça aşağı iner
-    const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 });
-    safe(() => v.applyImpulse({ x: 0, y: -0.15 - vel.y, z: 0 }));
-  } else if (ileri) {
-    const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 });
-    const yukari = p.y < d.hedefY + 0.2;
-    safe(() => v.applyImpulse({ x: h.x * (yukari ? 0.02 : 0.12), y: (yukari ? 0.2 : 0.02) - vel.y, z: h.z * (yukari ? 0.02 : 0.12) }));
-  }
-  if (t % 10 === 0) safe(() => dim.spawnParticle("minecraft:basic_crit_particle", { x: p.x + h.x * 1.4, y: p.y + 0.3, z: p.z + h.z * 1.4 }));
-  // üste çıktı (altı dolu, önü açık), duvar bitti ya da geri basıp yere indi: yerçekimi geri gelir
-  const altDolu = katiMi(dim, Math.floor(p.x), Math.floor(p.y - 0.2), Math.floor(p.z));
-  const ustte = p.y >= d.hedefY - 0.1 && altDolu;
-  const duvarYok = !katiMi(dim, ax, y0, az) && !katiMi(dim, ax, y0 - 1, az);
-  // (basmayı bırakınca tutucular duvarda tutar, düşmez)
-  const indi = altDolu && geri && p.y <= (d.basY ?? p.y) + 0.3;
-  if (ustte || indi || p.y > d.hedefY + 3 || d.sure > 6000 || (duvarYok && altDolu && d.sure > 10)) {
+  // duvarda: oyunun uçan binek sistemi baktığın yöne götürür (yukarı, yana, aşağı). Betik yalnız yüzeye bastırır
+  // (tutunma) ve bakışla yardım eder; hiç havada kalmaz.
+  const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 });
+  const bakis = safe(() => pl.getRotation().x, 0);
+  let iy = 0;
+  if (ileri && bakis < -25) iy = 0.18;                  // yukarı bakıp ileri: tırman
+  else if ((ileri && bakis > 25) || geri) iy = -0.15;   // aşağı bakıp ileri ya da geri: in
+  const yapis = cv.yon ? { x: cv.yon.x * 0.06, z: cv.yon.z * 0.06 } : { x: 0, z: 0 };
+  safe(() => v.applyImpulse({ x: yapis.x, y: (iy || 0) - (iy ? vel.y : vel.y * 0.5), z: yapis.z }));
+  if (t % 10 === 0 && cv.yon) safe(() => dim.spawnParticle("minecraft:basic_crit_particle", { x: p.x + cv.yon.x * 1.3, y: p.y + 0.4, z: p.z + cv.yon.z * 1.3 }));
+  // yere döndü: altı dolu ve yanında duvar yok (ya da duvarın üstüne çıktı) -> yerçekimi geri gelir
+  const ustune = cv.alt && !cv.govdeDuvar;
+  const indi = cv.alt && geri && p.y <= (d.basY ?? p.y) + 0.3;
+  const kopuk = !cv.alt && !cv.yakin && d.sure > 10;         // hiçbir yüzeye 3 blok yakın değil: gerçekten havada
+  if (ustune || indi || kopuk || d.sure > 12000) {
     d.tir = false;
     safe(() => v.triggerEvent("aqualit:tirman_off"));
     return 0;
   }
-  // tavana dayandı: tırmanamaz, bekler (geri basınca iner)
-  return TIRMAN_ACI;
+  // burun: yukarı çıkarken dik yukarı, inerken aşağı
+  return dy < -0.02 ? 60 : TIRMAN_ACI;
+}
+
+/** Aracın çevresindeki yüzeyler: alt (altında blok), yon (en yakın yandaki duvarın yönü), yakin (3 blok içinde yüzey). */
+function cevreYuzey(dim, p) {
+  const alt = katiMi(dim, Math.floor(p.x), Math.floor(p.y - 0.3), Math.floor(p.z));
+  let yon = null, en = 99;
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const r of [1.3, 1.9]) {
+      const x = Math.floor(p.x + dx * r), z = Math.floor(p.z + dz * r);
+      if (katiMi(dim, x, Math.floor(p.y + 0.3), z) || katiMi(dim, x, Math.floor(p.y + 1.1), z)) {   // gövde hizasında duvar
+        if (r < en) { en = r; yon = { x: dx, z: dz }; }
+        break;
+      }
+    }
+  }
+  let yakin = !!yon || alt;
+  const govdeDuvar = !!yon;
+  if (!yakin) {
+    // uçurum kenarı: 3 blok aşağıda ya da yanda yüzey var mı
+    for (let k = 1; k <= 3 && !yakin; k++) {
+      if (katiMi(dim, Math.floor(p.x), Math.floor(p.y - k), Math.floor(p.z))) yakin = true;
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (katiMi(dim, Math.floor(p.x + dx * 2), Math.floor(p.y - k), Math.floor(p.z + dz * 2))) { yakin = true; yon = yon ?? { x: dx, z: dz }; }
+      }
+    }
+  }
+  return { alt, yon, yakin, govdeDuvar };
 }
 
 /** Denizaltı suyun içindeyse uçan binek gibi (dalar, çıkar), dışındaysa düşer ve yavaş sürünür. */

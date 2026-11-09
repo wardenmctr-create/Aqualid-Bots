@@ -441,6 +441,10 @@ def build(RP, BP, wj):
         t2.save(f'{d}/kesif_{tema}.png')
         g2.save(f'{d}/kesif_{tema}_glow.png')
     wj(f'{RP}/models/entity/aqualit_kesif.geo.json', geo)
+    # v0.3.8: denizaltıyla lavdayken lav sisi kalkar (lav büyük ölçüde saydam: altını görürsün); betik `fog push` yapar
+    lav = {'fog_start': 0.0, 'fog_end': 40.0, 'fog_color': '#5a1c08', 'render_distance_type': 'fixed'}
+    wj(f'{RP}/fogs/aqualit_lav_berrak.json', {'format_version': '1.16.100', 'minecraft:fog_settings': {
+        'description': {'identifier': 'aqualit:lav_berrak'}, 'distance': {'lava': lav, 'lava_resistance': lav}}})
     wj(f'{BP}/entities/kesif.json', kesif_bp())
     wj(f'{RP}/entity/aqualit_kesif.entity.json', kesif_rp())
     wj(f'{RP}/render_controllers/aqualit_kesif.render_controllers.json', kesif_render())
