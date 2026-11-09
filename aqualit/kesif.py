@@ -337,8 +337,12 @@ def glow_of(part, face, g):
     return m
 
 
+SON_UV = {}
+
+
 def build(forms=None, W=256, ident='geometry.aqualit.kesif'):
     forms = forms or list(all_forms().values())
+    SON_UV.clear()
     items = []
     for fm in forms:
         for i, p in enumerate(fm.parts):
@@ -362,6 +366,7 @@ def build(forms=None, W=256, ident='geometry.aqualit.kesif'):
         for i, p in enumerate(fm.parts):
             u, v = pos[(fm.key, i)]
             w, h, d = isize(p.box)
+            SON_UV[p.box.name] = (p.bone, u, v, 2 * (w + d), d + h)       # tema maskesi için (kesif_tema)
             bmap[p.bone].setdefault('cubes', []).append({'origin': to_file(p.box.a, p.box.b), 'size': [w, h, d],
                                                          'uv': [u, v]})
             regions = [('top', u + d, v), ('bottom', u + d + w, v), ('left', u, v + d),

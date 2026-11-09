@@ -433,10 +433,11 @@ def build(RP, BP, wj):
     tex.save(f'{d}/kesif.png')
     glow.save(f'{d}/kesif_glow.png')
     # v0.3.8: Nether ve End temaları (boyuta girince betik q.skin_id ile seçer)
+    mk = KT.koru_maskesi(tex.width, tex.height)       # tekerlekler ve paletler temadan etkilenmez
     for tema in ('nether', 'end'):
-        t2, g2 = KT.renk_donustur(tex, tema), KT.renk_donustur(glow, tema)
+        t2, g2 = KT.renk_donustur(tex, tema, mk, isik=glow), KT.renk_donustur(glow, tema, mk, glow=True)
         if tema == 'nether':
-            t2, g2 = KT.magma_catlak(t2, g2)
+            t2, g2 = KT.magma_catlak(t2, g2, mk)
         t2.save(f'{d}/kesif_{tema}.png')
         g2.save(f'{d}/kesif_{tema}_glow.png')
     wj(f'{RP}/models/entity/aqualit_kesif.geo.json', geo)

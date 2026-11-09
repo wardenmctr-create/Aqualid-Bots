@@ -17,7 +17,7 @@ if __name__ == '__main__':
             f, root = tema_formu(key)
             geo, tex, glow = K.build(forms=[f], W=512)
             mk = robot_maskesi(geo, tex.width, tex.height)
-            tex2 = renk_donustur(tex, tema, mk)
+            tex2 = renk_donustur(tex, tema, mk, isik=glow)
             glow2 = renk_donustur(glow, tema, mk, glow=True)
             if tema == 'nether':
                 tex2, glow2 = magma_catlak(tex2, glow2, mk)
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     d = ImageDraw.Draw(c)
     f1 = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 22)
     f2 = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 16)
-    d.text((20, 12), 'Keşif · Normal / Nether / End (boyuta girince otomatik; robot hâli her yerde aynı)', font=f1, fill=(64, 224, 208))
+    d.text((20, 12), 'Keşif · Normal / Nether / End (boyuta girince otomatik; ekranlar siyah, gözler renkli)', font=f1, fill=(64, 224, 208))
     for r, (tema, satir) in enumerate(zip(['Normal', 'Nether', 'End'], satirlar)):
         y = 50 + r * 240
         d.text((20, y), tema, font=f2, fill=[(64, 224, 208), (255, 120, 60), (200, 140, 255)][r])

@@ -97,55 +97,59 @@ def _malzeme(tema, sinif, x, y, v):
     return None
 
 
-def robot_maskesi(geo, W, H):
-    """Atlasın robot hâline ait dikdörtgenleri: tema bu bölgelere dokunmaz (robot her yerde aynı)."""
-    from PIL import Image as _I
+KORU = ('a_wheel_', 'a_tire', 'a_tut_', 'm_rw_', 'm_track_', 'm_caster_', 'u_gear_', 'u_wheel', 'u_strut', 'u_tailwheel')
+METAL = ('u_cowl',)            # pervane arkası: temada tuğla değil koyu metal (kara taş / obsidyen)
+
+
+def koru_maskesi(W, H):
+    """Temanın dokunmayacağı parçalar: arazi ve matkap tekerlekleri, paletler, tırmanma tutucuları (son K.build'den)."""
+    from PIL import Image as _I, ImageDraw as _D
     m = _I.new('L', (W, H), 0)
-    bones = geo['minecraft:geometry'][0]['bones']
-    par = {b['name']: b.get('parent') for b in bones}
-    def robotun(n):
-        while n:
-            if n == 'root':
-                return True
-            n = par.get(n)
-        return False
-    from PIL import ImageDraw as _D
     d = _D.Draw(m)
-    for b in bones:
-        if not robotun(b['name']) or b['name'].startswith(('tn_', 'te_')):
-            continue
-        for cb in b.get('cubes', []):
-            uv = cb.get('uv')
-            if isinstance(uv, dict):
-                for f in uv.values():
-                    (u, v), (w, h) = f['uv'], f['uv_size']
-                    d.rectangle([min(u, u + w), min(v, v + h), max(u, u + w) - 1, max(v, v + h) - 1], fill=255)
-            elif isinstance(uv, list):
-                sx, sy, sz = cb['size']
-                d.rectangle([uv[0], uv[1], uv[0] + 2 * (sx + sz) - 1, uv[1] + sz + sy - 1], fill=255)
+    for ad, (kemik, u, v, w, h) in K.SON_UV.items():
+        if ad.startswith(KORU) or kemik.startswith(KORU):
+            d.rectangle([u, v, u + w - 1, v + h - 1], fill=255)
+        elif ad.startswith(METAL):
+            d.rectangle([u, v, u + w - 1, v + h - 1], fill=128)
     return m
 
 
-def renk_donustur(tex, tema, maske=None, glow=False):
+def robot_maskesi(geo, W, H):
+    """(eski ad) koru_maskesi."""
+    return koru_maskesi(W, H)
+
+
+GOZ = {'nether': (255, 150, 50), 'end': (230, 130, 255)}
+EKRAN = (18, 22, 26)          # robot paletindeki 'k': ekranlar her temada siyah kalır
+
+
+def renk_donustur(tex, tema, maske=None, glow=False, isik=None):
     """Dokuyu temanın malzemelerine çevirir (Nether tuğlası, kuvars, kara taş... / purpur, End taşı, obsidyen).
-    maske: dokunulmayacak bölgeler (robot hâli). glow: ışık dokusu (yalnız renk tonu değişir)."""
+    Ekranlar (siyah) değişmez; ışıklı beyaz/açık pikseller (gözler, lambalar) temanın göz rengini alır.
+    maske: dokunulmayacak bölgeler (tekerlekler). glow: ışık dokusu. isik: ışık dokusu (doku çevrilirken gözleri bulmak için)."""
     if tema == 'normal':
         return tex.copy()
     out = tex.copy()
     px = out.load()
     mk = maske.load() if maske else None
+    ip = isik.load() if isik else None
     for y in range(out.height):
         for x in range(out.width):
             r, g, b, a = px[x, y]
-            if not a or (mk and mk[x, y]):
+            if not a or (mk and mk[x, y] == 255):
+                continue
+            if (r, g, b) == EKRAN:
                 continue
             sinif = _sinif(r, g, b)
-            v = max(r, g, b) / 255
-            if glow:
-                if sinif in ('govde', 'cam', 'acik'):
-                    px[x, y] = ((255, 150, 50) if tema == 'nether' else (230, 130, 255)) + (a,)
+            if mk and mk[x, y] == 128 and sinif in ('govde', 'acik', 'diger'):
+                sinif = 'koyu'
+            parlak = glow or (ip and ip[x, y][3] > 0)
+            if parlak and sinif in ('acik', 'govde', 'cam'):
+                px[x, y] = GOZ[tema] + (a,)
                 continue
-            yeni = _malzeme(tema, sinif, x, y, v)
+            if glow:
+                continue
+            yeni = _malzeme(tema, sinif, x, y, max(r, g, b) / 255)
             if yeni:
                 px[x, y] = yeni + (a,)
     return out
