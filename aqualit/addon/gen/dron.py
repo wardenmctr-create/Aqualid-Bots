@@ -35,8 +35,7 @@ def parts():
     put(face, ['WkkW', 'WkkW'], 1, 1)   # iki göz, arası koyu vizör
     face[3][2] = 'k'                    # gülen ağız
     face[3][3] = 'k'
-    face[3][1] = 'R'                    # yanaklar
-    face[3][4] = 'R'
+    # (v0.4: kırmızı yanaklar kaldırıldı; yalnız Kılıçlı'nın imzası)
     side = plate(6, 5, 'M', top='H', bottom='D', left='L', right='D')
     side[2][2] = 'L'
     side[2][3] = 'L'
