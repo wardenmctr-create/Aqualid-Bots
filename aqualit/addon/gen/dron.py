@@ -31,8 +31,8 @@ BONE = {'govde': 'body', 'baret_kenar': 'hat', 'baret_tepe': 'hat', 'direk': 'ha
 
 
 def parts():
-    # v0.4: çerçevesiz tam ekran yüz: dik ışıklı gözler (üstte parlama), küçük ışıklı gülüş; kırmızı yanak yok
-    face = [list(r) for r in ('kkkkkk', 'kLkkLk', 'kWkkWk', 'kWkkWk', 'kkLLkk')]
+    # v0.4: çerçevesiz tam ekran yüz: 2 piksellik dik ışıklı gözler; ağız ve kırmızı yanak yok
+    face = [list(r) for r in ('kkkkkk', 'kWkkWk', 'kWkkWk', 'kkkkkk', 'kkkkkk')]
     side = plate(6, 5, 'M', top='H', bottom='D', left='L', right='D')
     side[2][2] = 'L'
     side[2][3] = 'L'

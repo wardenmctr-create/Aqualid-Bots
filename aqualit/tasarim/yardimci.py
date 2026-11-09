@@ -15,9 +15,8 @@ def yardimci(cam=True):
     f.bone('govde', 'root', (0, 10, 0))
     # gövde
     on = fill(14, 8, 'k')                 # çerçevesiz tam ekran
-    over(on, rows('LL', 'WW', 'WW'), 4, 2)
-    over(on, rows('LL', 'WW', 'WW'), 8, 2)
-    over(on, rows('LLLL'), 5, 6)
+    over(on, rows('WW', 'WW'), 4, 3)      # 2x2 ışıklı gözler, ağız yok
+    over(on, rows('WW', 'WW'), 8, 3)
     yan = fill(14, 8, '1')
     hline(yan, 0, '3') if False else None
     for x in range(14):

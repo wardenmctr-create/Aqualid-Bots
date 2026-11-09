@@ -111,10 +111,10 @@ UC_ACI = -40
 
 # v0.4: dron yüzleri: çerçevesiz, baştan başa koyu ekran
 YUZ6 = ['kkkkkk',
-        'kLkkLk',
         'kWkkWk',
         'kWkkWk',
-        'kkLLkk']          # dik ışıklı gözler (üstte parlama), küçük ışıklı gülüş
+        'kkkkkk',
+        'kkkkkk']          # 2 piksellik dik ışıklı gözler, ağız yok
 YUZ6_SERT = ['kkkkkk',
              'Wkkkkw'.replace('w', 'W'),
              'kWkkWk',

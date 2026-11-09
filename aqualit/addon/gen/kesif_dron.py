@@ -24,7 +24,7 @@ def model():
     f.bone('root', None, (0, 4.5, 0.5))
     f.bone('govde', 'root', (0, 4.5, 0.5))
     # gövde: 5x5x5 küp; önde ekran, ekranda iki dikey göz (1x2 piksel, ışıklı)
-    ekran = rows('kkkkk', 'kLkLk', 'kWkWk', 'kWkWk', 'kkLkk')   # v0.4: çerçevesiz tam ekran
+    ekran = rows('kkkkk', 'kWkWk', 'kWkWk', 'kkkkk', 'kkkkk')   # v0.4: çerçevesiz tam ekran
     yan = panel(5, 5, 'M')
     hline(yan, 2, 'y', 0, 5)
     add_box(f, 'govde', 'g_govde', (-2.5, 3, -2), (2.5, 8, 3), base='M', glow='WL',

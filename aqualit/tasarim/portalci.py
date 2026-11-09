@@ -33,7 +33,6 @@ def model_portalci(cam=True, t=0.0):
     on = fill(12, 9, 'k')                 # çerçevesiz tam ekran, robot gözleri
     over(on, rows('LWL', 'WWW', 'WWW', 'LWL'), 2, 2)
     over(on, rows('LWL', 'WWW', 'WWW', 'LWL'), 7, 2)
-    over(on, rows('LL'), 5, 7)
     yan = fill(10, 9, 'M')
     for x in range(10):
         yan[0][x] = 'H'; yan[8][x] = 'D'

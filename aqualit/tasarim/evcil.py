@@ -147,10 +147,12 @@ def oduncu(f):
                 r.append('y')
             elif d > 4.4:
                 r.append('%')
-            elif (xx == zz or xx + zz == 10) and d > 2.4:
-                r.append('&')                # kesik çizgileri
+            elif d > 3.4:
+                r.append('+' if (xx * 3 + zz) % 5 == 0 else '*')   # dış halka (testere ağzı)
+            elif xx == 5 or zz == 5:
+                r.append('&')                # göbeği halkaya bağlayan 4 çubuk
             else:
-                r.append('+' if (xx * 3 + zz) % 5 == 0 else '*')
+                r.append(' ')                # içi boş
         disk.append(r)
     kutu(f, 'p_testere', 'disk', (-5.5, 10, -5.5), (5.5, 11, 5.5), base='*', top=disk, bottom=[r[:] for r in disk],
          front=[[' ', ' ', '%'] + ['*'] * 5 + ['%', ' ', ' ']], back=[[' ', ' ', '%'] + ['*'] * 5 + ['%', ' ', ' ']],
@@ -165,7 +167,10 @@ def oduncu(f):
 def kilicli(f):
     # kırmızı pelerin, kararlı bakış; tepede üç kılıçtan pervane (kabzalar göbekte, aralarında 120°)
     govde6(f, sert=True)
-    kutu(f, 'g', 'pelerin', (-3, 2, -4), (3, 8, -3), base='r', back=over(fill(6, 6, 'r'), rows('RRRRRR'), 0, 0))
+    # uzun pelerin: gövdenin altına kadar iner, ucu kırmızı şeritli
+    kutu(f, 'g', 'pelerin', (-3, -1, -4), (3, 8, -3), base='r', back=over(fill(6, 9, 'r'), rows('RRRRRR'), 0, 0),
+         front=fill(6, 9, 'q'))
+    kutu(f, 'g', 'pelerin_uc', (-3, -2, -4.5 + 0.5), (3, -1, -3), base='R')
     kutu(f, 'g', 'mil', (-0.5, 8, -0.5), (0.5, 10, 0.5), base='y')
     f.bone('p_kilic', 'g', (0, 10.5, 0))
     kutu(f, 'p_kilic', 'k_gobek', (-1, 10, -1), (1, 11, 1), base='y', top=rows('yQ', 'Qy'))
@@ -179,7 +184,7 @@ def kilicli(f):
 
 def organizator(f, cam=True):
     # dik duran ince tablet (ekranı öne bakar); cam ekranın ardında Mimar dronundaki gibi gözler; üstte iki pervane
-    on = [list(r) for r in ('kkkkkkkk', 'kkLkkLkk', 'kkWkkWkk', 'kkWkkWkk', 'kkkLLkkk', 'kkkkkkkk')]
+    on = [list(r) for r in ('kkkkkkkk', 'kkWkkWkk', 'kkWkkWkk', 'kkkkkkkk', 'kkkkkkkk', 'kkkkkkkk')]
     kutu(f, 'g', 'tablet', (-4, 3, -1), (4, 9, 1), base='1', front=on, glow='WLP',
          top=fill(8, 2, '3'), back=fill(8, 6, '2'))
     if cam:
@@ -201,7 +206,7 @@ def portalci(f):
         kutu(f, 'halka', 'h_' + nm, aa, bb, base='ğ', glow='ğüÇ',
              front=[['ü' if (i + j) % 3 == 0 else 'ğ' for i in range(w_)] for j in range(h_)],
              back=[['ü' if (i + j) % 3 == 1 else 'ğ' for i in range(w_)] for j in range(h_)])
-    kutu(f, 'g', 'kure', (-2.5, 4.5, -2.5), (2.5, 8.5, 2.5), base='3', front=rows('kkkkk', 'kWkWk', 'kWkWk', 'kkLkk'),
+    kutu(f, 'g', 'kure', (-2.5, 4.5, -2.5), (2.5, 8.5, 2.5), base='3', front=rows('kkkkk', 'kWkWk', 'kWkWk', 'kkkkk'),
          glow='WüL', top=rows('3üüü3', 'ü333ü', 'ü333ü', 'ü333ü', '3üüü3'))
     kutu(f, 'g', 'iz', (-0.5, 1, -0.5), (0.5, 2, 0.5), base='ü', glow='ü')
 
