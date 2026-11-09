@@ -30,14 +30,10 @@ def model_portalci(cam=True, t=0.0):
     f.bone('root', None, (0, 0, 0))
     f.bone('govde', 'root', (0, 10, 0))
     # gövde = robot kafası boyunda kutu (x -6..6, y 6..15, z -5..5)
-    on = fill(12, 9, 'M')
-    for x in range(12):
-        on[0][x] = 'H'; on[8][x] = 'D'
-    for y in range(2, 7):
-        for x in range(1, 11):
-            on[y][x] = 'k'
+    on = fill(12, 9, 'k')                 # çerçevesiz tam ekran, robot gözleri
     over(on, rows('LWL', 'WWW', 'WWW', 'LWL'), 2, 2)
     over(on, rows('LWL', 'WWW', 'WWW', 'LWL'), 7, 2)
+    over(on, rows('LL'), 5, 7)
     yan = fill(10, 9, 'M')
     for x in range(10):
         yan[0][x] = 'H'; yan[8][x] = 'D'
@@ -45,7 +41,7 @@ def model_portalci(cam=True, t=0.0):
     ust = panel(12, 10, 'L', t='H', b='M', l='H', r='M')
     over(ust, rows('ğğ', 'ğğ'), 5, 4)
     kutu(f, 'govde', 'govde', (-6, 6, -5), (6, 15, 5), base='M', front=on, left=yan, right=[r[:] for r in yan],
-         back=fill(12, 9, 'D'), top=ust, glow='Wğü')
+         back=fill(12, 9, 'D'), top=ust, glow='WLğü')
     # mor portal şeridi (gövdenin altında) ve alında portal taşı
     kutu(f, 'govde', 'serit', (-6.5, 6, -5.5), (6.5, 7, 5.5), base='ğ', glow='ğ', top=fill(13, 11, 'ş'))
     kutu(f, 'govde', 'alin', (-1, 13, 5), (1, 15, 6), base='ğ', glow='ğü', front=rows('üğ', 'ğş'))

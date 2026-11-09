@@ -31,11 +31,8 @@ BONE = {'govde': 'body', 'baret_kenar': 'hat', 'baret_tepe': 'hat', 'direk': 'ha
 
 
 def parts():
-    face = plate(6, 5, 'M', top='H', bottom='D', left='H', right='D')
-    put(face, ['WkkW', 'WkkW'], 1, 1)   # iki göz, arası koyu vizör
-    face[3][2] = 'k'                    # gülen ağız
-    face[3][3] = 'k'
-    # (v0.4: kırmızı yanaklar kaldırıldı; yalnız Kılıçlı'nın imzası)
+    # v0.4: çerçevesiz tam ekran yüz: dik ışıklı gözler (üstte parlama), küçük ışıklı gülüş; kırmızı yanak yok
+    face = [list(r) for r in ('kkkkkk', 'kLkkLk', 'kWkkWk', 'kWkkWk', 'kkLLkk')]
     side = plate(6, 5, 'M', top='H', bottom='D', left='L', right='D')
     side[2][2] = 'L'
     side[2][3] = 'L'
@@ -71,8 +68,8 @@ def parts():
 def glow(p, face, g):
     m = [[False] * len(g[0]) for _ in g]
     if p.name == 'govde' and face == 'front':
-        for y in range(1, 3):
-            for x in range(1, 5):
+        for y in range(len(g)):
+            for x in range(len(g[0])):
                 m[y][x] = g[y][x] in ('W', 'L')
     if p.name == 'itici' and face in ('bottom', 'front', 'back', 'left', 'right'):
         for y in range(len(g)):

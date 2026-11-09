@@ -48,13 +48,9 @@ from robot import plate, put, G
 
 
 def yuz6(renk='M', sert=False):
-    """Mimar dronundaki yüz (6x5): iki dik göz, gülen ağız, pembe yanaklar. sert: kısık gözler, düz ağız."""
-    g = plate(6, 5, renk, top='H', bottom='D', left='H', right='D')
-    put(g, ['WkkW', 'WkkW'] if not sert else ['kkkk', 'WkkW'], 1, 1)
-    g[3][2] = g[3][3] = 'k'
-    if sert:
-        g[3][1] = g[3][4] = 'R'      # kırmızı yanak işareti yalnız Kılıçlı'nın imzası
-    return g
+    """Çerçevesiz tam ekran yüz (6x5)."""
+    from ortak import YUZ6, YUZ6_SERT
+    return [list(r) for r in (YUZ6_SERT if sert else YUZ6)]
 
 
 def govde6(f, renk='M', sert=False, y0=3):
@@ -63,7 +59,7 @@ def govde6(f, renk='M', sert=False, y0=3):
     yan[2][2] = yan[2][3] = 'L'
     kutu(f, 'g', 'govde', (-3, y0, -3), (3, y0 + 5, 3), base=renk, front=yuz6(renk, sert), left=yan,
          right=[r[:] for r in yan], back=plate(6, 5, renk), top=plate(6, 6, 'L', top='H', bottom='M', left='H', right='M'),
-         glow='W')
+         glow='WL')
 
 
 def madenci(f):
@@ -183,15 +179,8 @@ def kilicli(f):
 
 def organizator(f, cam=True):
     # dik duran ince tablet (ekranı öne bakar); cam ekranın ardında Mimar dronundaki gibi gözler; üstte iki pervane
-    on = fill(8, 6, '1')
-    for x in range(8):
-        on[0][x] = '3'; on[5][x] = 'P'
-    for y in range(1, 5):
-        for x in range(1, 7):
-            on[y][x] = 'k'
-    put(on, ['WkkW', 'WkkW'], 2, 1)
-    on[3][3] = on[3][4] = 'k'
-    kutu(f, 'g', 'tablet', (-4, 3, -1), (4, 9, 1), base='1', front=on, glow='WP',
+    on = [list(r) for r in ('kkkkkkkk', 'kkLkkLkk', 'kkWkkWkk', 'kkWkkWkk', 'kkkLLkkk', 'kkkkkkkk')]
+    kutu(f, 'g', 'tablet', (-4, 3, -1), (4, 9, 1), base='1', front=on, glow='WLP',
          top=fill(8, 2, '3'), back=fill(8, 6, '2'))
     if cam:
         kutu(f, 'g', 'cam', (-3, 4, 1), (3, 8, 2), base='<', front=rows('~9~<<<', '<<<<<<', '<<<<<<', '^^^^^^'))
@@ -212,8 +201,8 @@ def portalci(f):
         kutu(f, 'halka', 'h_' + nm, aa, bb, base='ğ', glow='ğüÇ',
              front=[['ü' if (i + j) % 3 == 0 else 'ğ' for i in range(w_)] for j in range(h_)],
              back=[['ü' if (i + j) % 3 == 1 else 'ğ' for i in range(w_)] for j in range(h_)])
-    kutu(f, 'g', 'kure', (-2.5, 4.5, -2.5), (2.5, 8.5, 2.5), base='3', front=rows('33333', '3W3W3', '3W3W3', '33333'),
-         glow='Wü', top=rows('3üüü3', 'ü333ü', 'ü333ü', 'ü333ü', '3üüü3'))
+    kutu(f, 'g', 'kure', (-2.5, 4.5, -2.5), (2.5, 8.5, 2.5), base='3', front=rows('kkkkk', 'kWkWk', 'kWkWk', 'kkLkk'),
+         glow='WüL', top=rows('3üüü3', 'ü333ü', 'ü333ü', 'ü333ü', '3üüü3'))
     kutu(f, 'g', 'iz', (-0.5, 1, -0.5), (0.5, 2, 0.5), base='ü', glow='ü')
 
 

@@ -14,14 +14,10 @@ def yardimci(cam=True):
     f.bone('root', None, (0, 0, 0))
     f.bone('govde', 'root', (0, 10, 0))
     # gövde
-    on = fill(14, 8, '1')
-    for x in range(14):
-        on[0][x] = '3'; on[7][x] = '2'
-    for y in range(2, 6):
-        for x in range(2, 12):
-            on[y][x] = 'k'
-    over(on, rows('WW', 'WW'), 4, 3)        # gözler (camın ardında)
-    over(on, rows('WW', 'WW'), 8, 3)
+    on = fill(14, 8, 'k')                 # çerçevesiz tam ekran
+    over(on, rows('LL', 'WW', 'WW'), 4, 2)
+    over(on, rows('LL', 'WW', 'WW'), 8, 2)
+    over(on, rows('LLLL'), 5, 6)
     yan = fill(14, 8, '1')
     hline(yan, 0, '3') if False else None
     for x in range(14):
@@ -30,7 +26,7 @@ def yardimci(cam=True):
     ust = panel(14, 14, '3', t='Z', b='2', l='Z', r='2')
     over(ust, rows('PP', 'PP'), 6, 6)
     kutu(f, 'govde', 'govde', (-7, 6, -7), (7, 14, 7), base='1', front=on, left=yan, right=[r[:] for r in yan],
-         back=fill(14, 8, '2'), top=ust, glow='WPZ')
+         back=fill(14, 8, '2'), top=ust, glow='WLPZ')
     # mor şerit (Organizatör) ve yan ışıklar
     kutu(f, 'govde', 'serit', (-7.5, 6, -7.5), (7.5, 7, 7.5), base='P', glow='P', top=fill(15, 15, 'p'))
     # alt: ışın merceği (halka + parlayan iç) ve iki kıskaç

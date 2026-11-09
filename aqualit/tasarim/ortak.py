@@ -107,3 +107,16 @@ def kizak(f, bone, x, y0, y1, z, govde_x=None, isik='ö'):
 
 KIZAK_ISARET = -1
 UC_ACI = -40
+
+
+# v0.4: dron yüzleri: çerçevesiz, baştan başa koyu ekran
+YUZ6 = ['kkkkkk',
+        'kLkkLk',
+        'kWkkWk',
+        'kWkkWk',
+        'kkLLkk']          # dik ışıklı gözler (üstte parlama), küçük ışıklı gülüş
+YUZ6_SERT = ['kkkkkk',
+             'Wkkkkw'.replace('w', 'W'),
+             'kWkkWk',
+             'RkkkkR',
+             'kkkkkk']     # Kılıçlı: 2 piksellik kızgın (içe eğik) gözler, yanaklar gözün dış köşesi altında
