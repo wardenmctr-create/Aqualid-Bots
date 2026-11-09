@@ -145,7 +145,14 @@ def renk_donustur(tex, tema, maske=None, glow=False, isik=None):
                 sinif = 'koyu'
             parlak = glow or (ip and ip[x, y][3] > 0)
             if parlak and sinif in ('acik', 'govde', 'cam'):
-                px[x, y] = GOZ[tema] + (a,)
+                # gözler ve ışıklar: şekli ve iki tonu korunur (beyaz orta açık renk, renkli köşeler koyu renk)
+                h_, s_, v_ = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                gr, gg, gb = GOZ[tema]
+                if s_ < 0.2:
+                    px[x, y] = (int(gr * 0.45 + 255 * 0.55), int(gg * 0.45 + 255 * 0.55), int(gb * 0.45 + 255 * 0.55), a)
+                else:
+                    k = 0.55 + 0.45 * v_
+                    px[x, y] = (int(gr * k), int(gg * k), int(gb * k), a)
                 continue
             if glow:
                 continue
