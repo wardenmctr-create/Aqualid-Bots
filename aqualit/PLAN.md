@@ -107,6 +107,51 @@ Oyunda doğrulanacaklar:
 
 Her sürümde: iş robotu iyileştirmeleri, 4 denetim temiz, oyunda deneme listesi.
 
+## 9 Kasım oyun raporu — yapılacaklar (önce tasarımlar, sonra kod)
+
+**Keşif araçları**
+1. Gemi: Minecraft teknesi gibi suyun üstünde kaysın (şimdi zıplayan mob gibi), çok daha hızlı.
+2. Denizaltı: suda çok yavaş; sudan çıkınca uçabiliyor (uçmamalı).
+3. Uçak bir yere çarpınca binen robot ölüyor (araçtaki robotlar çarpma/düşme hasarı almasın).
+4. Arazi aracı inip çıkarken eğilmiyor; Tırmanma Modu eşyası envantere gelmiyor.
+5. Birinci şahısta araç önü kapatıyor (görünmesin); diğer kamera açılarında yakınlaştırma/uzaklaştırma.
+6. Matkapta karanlık ve bloklar görüşü kapatıyor.
+7. Kılıçlı robot Keşif'i tanımıyor, saldırıp öldürüyor (Aqualit varlıklarına saldırmasın).
+8. Keşif yapıları neredeyse hiç bulamıyor.
+
+**Mimar**
+9. Kapıları çoğu zaman koyamıyor; meşale/flama gibi şeyleri bazen koyamıyor; piston gibi blokları bazen ters yönde koyuyor.
+10. Bütün dronlar aynı yeri inşa ediyor (işi bölmeli).
+11. İnşada kırması gerekeni kırmıyor (ör. cevherler), bazen kırmaması gerekeni kırıyor. Cevherler doğrudan Organizatör'ün sandığına gitsin.
+12. Yer seçmek zor: 3-4 saniyede bir gelen toz kılavuzu yetersiz.
+13. Yapı seçerken arama kutusu: yazım hatasını ve anlatımı anlayan arama.
+
+**Organizatör**
+14. Vizörü beğenilmedi (yeni tasarım).
+15. Şimdikinin en az 100 katı zekâ; oyunda eksik bırakılan şeyler tamamlanacak.
+16. Sebepsiz etrafta dolaşıyor. Sandıklara uzaktan bakabilmeli ya da yardımcısını çağırıp taşıtmalı.
+17. **Organizatör Yardımcısı:** öteki dronlardan büyük dron; blok ışınlayabilir, bazı işleri yapar, Organizatör'e yardım eder.
+18. Boş zamanda eksikleri robotlara yaptırmalı.
+19. Çağırınca yanında sandığı da gelmeli.
+
+**Kılıçlı ve bütün robotlar**
+20. Robotlar (özellikle Kılıçlı) bloklardan yukarı çıkmakta zorlanıyor.
+21. Enerji sistemi kalksın: güçler her zaman kullanılabilsin.
+22. Kılıçlı'yı çağırınca sandığı da yanında gelsin.
+23. Kılıçlı'ya Görev ver menüsünden eşya toplatılabilsin.
+
+**Yeni: Portalcı (boyutlar arası) robot**
+24. Kendisi dron: öteki dronlardan büyük, kafası normal robot kafası boyunda, çapraza açılan 4 pervane.
+25. 1×1 ya da 2×1 kendi portalını açar (Minecraft portalı değil), birilerini geçirir.
+26. Görev ver → "Çırağı yap": bir robota yardımcı olur. Portalcısı olan robot gerekince Nether'de güvenli yere ışınlanır,
+    malzeme toplar, portalla döner. Portalcı robotları omuzlarından tutup uçurabilir.
+27. Boşken küçülüp robotun/oyuncunun omzunda süzülür. Oyuncu kendisi de kullanabilir.
+
+**Yeni: Evcil mini dronlar**
+28. Tarif: 2 demir + 2 Aqualit + 4 kızıltaş tozu, ortaya robot → robot geri verilir + o robotun evcil dronu.
+29. Basılı tutunca omzunda süzülen mini dron olur; ölünce envantere gelir. Her robot türüne uygun dron (Mimar ve Keşif
+    dronları var; Organizatör ve öteki türler için yeni). Portalcıya ayrıca dron gerekip gerekmediği kullanıcıya sorulacak.
+
 ## Robot robot yapılacaklar
 
 "Öneri" yazanlar onaylanmadı; başlamadan kullanıcıya sor.
