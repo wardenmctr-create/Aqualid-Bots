@@ -17,7 +17,7 @@ import { ICONS } from "./ikon_data.js";
 import { YAPI } from "./yapi_bilgi.js";
 import { seferMenu } from "./sefer.js";
 import { KOLTUK, YALNIZ_OYUNCU } from "./kesif_koltuk.js";
-import { hizCarpani } from "./kesif_radar.js";
+import { hizCarpani, tutucuAcik, tirmanMenu } from "./kesif_radar.js";
 import { dronTara } from "./kesif_dron.js";
 
 const CRUISE = 14;            // yüzeyin kaç blok üstünden uçar
@@ -1015,6 +1015,11 @@ export async function anaMenu(pl, e) {
   btns.push({ text: "§lRobotları taşı§r\n§7Yakındaki robotları başka yere götürür", icon: robotIcon("madenci", 1), v: "tasi" });
   btns.push({ text: "§lBirini takip et§r\n§7Başka bir Keşif'in, robotun ya da oyuncunun hemen arkasından gelir", icon: ICON("lead"), v: "takip" });
   const depo = depoSay(e);
+  // v0.3.8: Tırmanma Modu menüden de açılır (envanter doluyken eşya gelmeyebiliyor)
+  if (formOf(e) === "arazi") {
+    btns.push({ text: tutucuAcik(e) ? "§l§bTırmanma Modu: AÇIK§r\n§7Kapatmak için dokun" : "§lTırmanma Modu: KAPALI§r\n§7Tutucuları çıkar, düz duvara tırman",
+      icon: "textures/items/kesif_tirman_" + (tutucuAcik(e) ? "acik" : "kapali"), v: "tirman" });
+  }
   if (depo) btns.push({ text: `§lMatkap deposu§r\n§7${depo} eşya: bana ver`, icon: ICON("chest"), v: "depo" });
   btns.push({ text: "Araç ol (kendin sür)", icon: ICON("rail"), v: "arac" });
   btns.push({ text: "Eve dön", icon: ICON("bed"), v: "eve" });
@@ -1041,6 +1046,7 @@ export async function anaMenu(pl, e) {
     }
     case "sefer": return seferMenu(pl, k);
     case "arac": return aracMenu(pl, e);
+    case "tirman": return tirmanMenu(pl, e);
     case "depo": {
       const d = depoOku(e);
       const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);

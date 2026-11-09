@@ -39,13 +39,16 @@ SEATS = {
                (3.8, 5, -3.5, 'ic'), (-8, 5, -22.5, 'platform'), (8, 5, -22.5, 'platform'), (-9, 5, -30.5, 'platform'),
                (0, 5, -30.5, 'platform'), (9, 5, -30.5, 'platform')],
 }
-HIZ = {'ucak': 0.62, 'gemi': 0.32, 'denizalti': 0.26, 'arazi': 0.36, 'matkap': 0.1}   # oyuncu sürerken temel hız
+HIZ = {'ucak': 0.62, 'gemi': 0.6, 'denizalti': 0.5, 'arazi': 0.36, 'matkap': 0.1}   # v0.3.8: gemi ve denizaltı hızlandı   # oyuncu sürerken temel hız
 UCAN = {'ucak', 'denizalti'}           # v0.3.6: uçan binek sistemiyle sürülenler
 YALNIZ_OYUNCU = {'denizalti'}
+# v0.3.8: üçüncü şahıs kamerası araca göre uzakta durur (blok)
+KAMERA = {'ucak': 10.0, 'gemi': 8.0, 'denizalti': 6.0, 'arazi': 7.0, 'matkap': 7.0}
 # v0.3.6: sürüş modu grupları (ilk = varsayılan): arazi yerde / duvara tırmanırken, denizaltı suda / karada
 MODLAR = {'arazi': ('k_arazi_yer', 'k_tirman'), 'denizalti': ('k_denizalti_su', 'k_denizalti_kara')}
 HAREKET_BILESEN = {'physics', 'input_ground_controlled', 'input_air_controlled', 'movement', 'movement.basic',
-                   'jump.static', 'variable_max_auto_step', 'flying_speed', 'can_fly'}           # bu araçlara robot binmez (içeri girer)
+                   'jump.static', 'variable_max_auto_step', 'flying_speed', 'can_fly', 'underwater_movement',
+                   'water_movement'}           # bu araçlara robot binmez (içeri girer)
 KAPI_ACI = -100                         # matkap kapısının açık hali (derece, Y ekseni)
 
 
@@ -82,6 +85,19 @@ def kesif_bp():
             g['minecraft:flying_speed'] = {'value': HIZ[f]}
             g['minecraft:movement'] = {'value': HIZ[f]}
             g['minecraft:can_fly'] = {}
+            if f == 'denizalti':
+                # v0.3.8: suda çok yavaştı
+                g['minecraft:underwater_movement'] = {'value': HIZ[f]}
+                g['minecraft:water_movement'] = {'drag_factor': 0.95}
+        elif f == 'gemi':
+            # v0.3.8: tekne gibi suyun üstünde kayar: zıplama yok (zıplayan mob gibi duruyordu), suyun frenlemesi az
+            g['minecraft:input_ground_controlled'] = {}
+            g['minecraft:movement'] = {'value': HIZ[f]}
+            g['minecraft:underwater_movement'] = {'value': HIZ[f]}
+            g['minecraft:water_movement'] = {'drag_factor': 0.96}
+            g['minecraft:movement.basic'] = {}
+            g['minecraft:variable_max_auto_step'] = {'base_value': 1.0625, 'controlled_value': 1.0625,
+                                                     'jump_prevented_value': 1.0625}
         elif f != 'robot':
             # v0.3.5: oyuncu oyunun kendi sürüş sistemiyle sürer (betikle itki, oyuncu binince oyunda işlemiyordu)
             g['minecraft:input_ground_controlled'] = {}
@@ -104,7 +120,9 @@ def kesif_bp():
             g['minecraft:rideable'] = {
                 'seat_count': len(pos), 'family_types': ['player'] + ([] if f in YALNIZ_OYUNCU else ['aqualit_robot']),
                 'interact_text': 'Bin', 'crouching_skip_interact': True, 'pull_in_entities': False,
-                'seats': [{'position': seat_pos(sp), 'min_rider_count': 0, 'max_rider_count': len(pos)} for sp in pos]}
+                'seats': [{'position': seat_pos(sp), 'min_rider_count': 0, 'max_rider_count': len(pos),
+                           'third_person_camera_radius': KAMERA.get(f, 6.0), 'camera_relax_distance_smoothing': 4.0}
+                          for sp in pos]}
         if f == 'gemi':
             g['minecraft:buoyant'] = {'base_buoyancy': 1.0, 'apply_gravity': True, 'simulate_waves': True,
                                       'big_wave_probability': 0.03, 'big_wave_speed': 10.0,
@@ -208,7 +226,10 @@ def kesif_rp():
         'textures': {'default': 'textures/entity/aqualit_kesif/kesif', 'glow': 'textures/entity/aqualit_kesif/kesif_glow'},
         'geometry': {'default': 'geometry.aqualit.kesif'},
         'animations': anims,
-        'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}", 'animate': ['gizle', 'tutucu', 'ctrl', 'kapi_ctrl']},
+        # v0.3.8: v.egim: inip çıkarken yumuşatılmış burun açısı (dikey hızdan; betikteki egim yalnız tırmanma ve uçuş)
+        'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}",
+                    'pre_animation': ['v.egim = math.lerp(v.egim ?? 0, math.clamp(-q.vertical_speed * 6, -30, 30), 0.12);'],
+                    'animate': ['gizle', 'tutucu', 'ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
     }}}
 
@@ -301,7 +322,14 @@ def kesif_anims():
         'k_goggles': {'position': {'0.0': [0, -6, 0], '0.5': [0, -6, 0], '0.7': [0, 0, 0]}}}}
     # v0.3.5: aktif olmayan halleri sıfır boyuta indirir (oyunda render controller'ın parça gizlemesi uygulanmıyor,
     # bütün haller üst üste çiziliyordu; animasyonlar ise çalışıyor)
-    A['gizle'] = {'loop': True, 'bones': {ROOT[f]: {'scale': f"q.variant == {i} ? 1 : 0"} for i, f in enumerate(FORMS)}}
+    # v0.3.8: binen oyuncu birinci şahıstayken (kamera aracın içinde) araç görünmez, önü kapanmaz
+    def ici(f):
+        if f not in SEATS:
+            return '0'
+        x, y, z = seat_pos(SEATS[f][0])
+        return f"(q.has_rider && q.distance_from_camera < {round(math.sqrt(x * x + (y + 1.62) ** 2 + z * z) + 0.5, 2)})"
+    A['gizle'] = {'loop': True, 'bones': {ROOT[f]: {'scale': f"(q.variant == {i} && !{ici(f)}) ? 1 : 0"}
+                                          for i, f in enumerate(FORMS)}}
     # v0.3.6: arazi aracının tırmanma tutucuları (Tırmanma Modu açıkken görünür)
     TUT = f"(q.skin_id == 1 || {P('tutucu')}) ? 1 : 0"
     A['tutucu'] = {'loop': True, 'bones': {f'a_tut_{w}': {'scale': TUT} for w in ('fl', 'fr', 'bl', 'br')}}
@@ -342,11 +370,11 @@ def kesif_anims():
         'd_root': {'rotation': [P('egim'), 0, 0]}, 'd_prop': {'rotation': spin(900)}, 'd_radar': {'rotation': radar},
         'd_flag': {'rotation': wave}}}
     A['run_arazi'] = {'loop': True, 'bones': {
-        'a_root': {'rotation': [P('egim'), 0, 0]},
+        'a_root': {'rotation': [f"{P('egim')} + (v.egim ?? 0)", 0, 0]},
         **{f'a_wheel_{w}': {'rotation': wheel} for w in ('fl', 'fr', 'bl', 'br')},
         'a_radar': {'rotation': radar}, 'a_flag': {'rotation': wave}}}
     A['run_matkap'] = {'loop': True, 'bones': {
-        'm_root': {'rotation': [P('egim'), 0, 0]},
+        'm_root': {'rotation': [f"{P('egim')} + (v.egim ?? 0)", 0, 0]},
         'm_drill': {'rotation': spin(1440)}, 'm_radar': {'rotation': radar},
         **{f'm_rw_{s}{i}': {'rotation': wheel} for s in 'lr' for i in range(3)}}}
     for f in FORMS:

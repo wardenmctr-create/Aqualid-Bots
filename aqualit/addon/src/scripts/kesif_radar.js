@@ -287,26 +287,28 @@ export function tutucuAyarla(v, acik) {
   safe(() => v.triggerEvent(acik ? "aqualit:tutucu_on" : "aqualit:tutucu_off"));
   safe(() => v.setProperty("aqualit:tutucu", !!acik));
 }
-/** Tırmanma Modu eşyası yalnız arazi aracındayken; durumuna göre gri/mavi. */
+/** Tırmanma Modu eşyası Keşif'e binince gelir (v0.3.8: her hâlde); yalnız arazi aracında çalışır. Durumuna göre gri/mavi. */
 function tirmanEsyasi(pl, v) {
   const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
   if (!inv) return;
-  if (formOf(v) !== "arazi") {
-    for (const id of [TIR_ACIK, TIR_KAPALI]) {
-      const i = envanterde(inv, id);
-      if (i >= 0) safe(() => inv.setItem(i));
-    }
-    return;
-  }
   const want = tutucuAcik(v) ? TIR_ACIK : TIR_KAPALI;
   const yanlis = want === TIR_ACIK ? TIR_KAPALI : TIR_ACIK;
   const i = envanterde(inv, yanlis);
   if (i >= 0) safe(() => inv.setItem(i, esyaYap(want)));
-  else if (envanterde(inv, want) < 0) safe(() => inv.addItem(esyaYap(want)));
+  else if (envanterde(inv, want) < 0) {
+    // v0.3.8: envanter doluysa eşya sığmıyordu ("Tırmanma Modu eşyası gelmiyor"); haber ver, menüden de açılır
+    const kalan = safe(() => inv.addItem(esyaYap(want)));
+    if (kalan && !uyarildi.has(pl.id)) {
+      uyarildi.add(pl.id);
+      safe(() => pl.sendMessage("§eEnvanterin dolu: Tırmanma Modu eşyası için bir yer aç. §7(Keşif menüsünden de açabilirsin: eğilip dokun.)"));
+    }
+  }
 }
-export function tirmanMenu(pl) {
-  const v = bindigi(pl);
-  if (!v || formOf(v) !== "arazi") return safe(() => pl.sendMessage("§eTırmanma Modu yalnız arazi aracına binince çalışır."));
+const uyarildi = new Set();
+export function tirmanMenu(pl, arac) {
+  const v = bindigi(pl) ?? arac;
+  if (!v) return safe(() => pl.sendMessage("§eTırmanma Modu yalnız Keşif'in arazi aracına binince çalışır."));
+  if (formOf(v) !== "arazi") return safe(() => pl.onScreenDisplay.setActionBar("§eTırmanma Modu yalnız arazi aracında çalışır"));
   const acik = !tutucuAcik(v);
   tutucuAyarla(v, acik);
   tirmanEsyasi(pl, v);
@@ -347,8 +349,13 @@ system.runInterval(() => {
       if (v && formOf(v) !== "robot") {
         esyalariVer(pl, v);
         verildi.add(pl.id);
+        // v0.3.8: Keşif'e binince her hâlde gece görüşü (matkapta, denizaltıda, gece uçarken önünü gör)
+        const ng = safe(() => pl.getEffect("night_vision")?.duration, 0) ?? 0;
+        if (ng < 300) safe(() => pl.addEffect("night_vision", 420, { showParticles: false }));
       } else if (verildi.has(pl.id)) {
         esyalariAl(pl);
+        uyarildi.delete(pl.id);
+        safe(() => pl.removeEffect("night_vision"));
         verildi.delete(pl.id);
       }
     }

@@ -366,11 +366,18 @@ export function tirman(v, pl, mv, t) {
 /** Denizaltı suyun içindeyse uçan binek gibi (dalar, çıkar), dışındaysa düşer ve yavaş sürünür. */
 function dzMod(v) {
   const d = durum(v);
-  const su = safe(() => v.isInWater, false) || waterAt(v.dimension, v.location, 0.5);
+  // v0.3.8: gövdenin ortası suda değilse kara modu (sudan çıkınca uçabiliyordu)
+  const su = waterAt(v.dimension, v.location, 0.8) || waterAt(v.dimension, v.location, 0.3);
   const m = su ? "su" : "kara";
-  if (d.dz === m) return;
-  d.dz = m;
-  safe(() => v.triggerEvent(su ? "aqualit:dz_su" : "aqualit:dz_kara"));
+  if (d.dz !== m || system.currentTick % 40 === 0) {
+    d.dz = m;
+    safe(() => v.triggerEvent(su ? "aqualit:dz_su" : "aqualit:dz_kara"));
+  }
+  // yedek: suyun dışındaysa aşağı it (bileşen değişimi oyunda gecikirse de uçamasın)
+  if (!su) {
+    const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 });
+    if (vel.y > -0.3) safe(() => v.applyImpulse({ x: 0, y: -0.3 - vel.y, z: 0 }));
+  }
 }
 
 function drive(v, pl, t) {
@@ -434,10 +441,8 @@ function drive(v, pl, t) {
   // gibi baktığın yöne). Betikle dikey itki oyuncu binince oyunda işlemiyordu (uçak birkaç blokta kalıyordu).
   // yedek: uçan binek sistemi bu biçimde çalışmazsa betik bakış yönüne göre dikey hız verir (v0.3.5 gibi)
   if (fly && (form === "ucak" || safe(() => v.isInWater, false))) safe(() => v.applyImpulse({ x: 0, y: tgt.y - vel.y, z: 0 }));
-  if (form === "arazi" || form === "matkap") {
-    const e2 = egimHesap(v);
-    if (form === "matkap" || !durum(v).tir) tilt = e2;
-  }
+  // v0.3.8: inip çıkarken eğim istemcide (dikey hızdan, v.egim); betik yalnız tırmanma açısını verir
+  if (form === "matkap") tilt = 0;
   const cur = safe(() => v.getProperty("aqualit:egim"), 0) ?? 0;
   if (Math.abs(cur - tilt) > 3) safe(() => v.setProperty("aqualit:egim", Math.round(tilt)));
   const moving = Math.hypot(tgt.x, tgt.y, tgt.z) > 0.03;

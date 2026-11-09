@@ -40,6 +40,8 @@ def robot_bp():
     groups = {
         'aqualit:worker': {
             'minecraft:damage_sensor': {'triggers': [
+                # v0.3.8: araçta (Keşif) giderken çarpma, düşme vb. hasar almaz (uçak çarpınca robot ölüyordu)
+                {'on_damage': {'filters': {'test': 'is_riding', 'subject': 'self'}}, 'deals_damage': 'no'},
                 {'on_damage': {'filters': {'test': 'is_owner', 'subject': 'other'}}, 'deals_damage': 'no'},
                 {'on_damage': {'filters': {'test': 'is_family', 'subject': 'other', 'value': 'aqualit_robot'}},
                  'deals_damage': 'no'},
@@ -49,10 +51,12 @@ def robot_bp():
         'aqualit:kilicli': {
             'minecraft:health': {'value': 20, 'max': 20},
             'minecraft:damage_sensor': {'triggers': [
+                # v0.3.8: araçta (Keşif) giderken çarpma, düşme vb. hasar almaz (uçak çarpınca robot ölüyordu)
+                {'on_damage': {'filters': {'test': 'is_riding', 'subject': 'self'}}, 'deals_damage': 'no'},
                 {'on_damage': {'filters': {'test': 'is_owner', 'subject': 'other'}}, 'deals_damage': 'no'},
                 {'on_damage': {'filters': {'test': 'is_family', 'subject': 'other', 'value': 'aqualit_robot'}},
                  'deals_damage': 'no'},
-            ] + [{'cause': c, 'deals_damage': 'no'} for c in ['fall', 'suffocation', 'drowning', 'falling_block']]},
+            ] + [{'cause': c, 'deals_damage': 'no'} for c in ['fall', 'suffocation', 'drowning', 'falling_block', 'fly_into_wall']]},
             'minecraft:behavior.float': {'priority': 0},
             'minecraft:behavior.random_stroll': {'priority': 9, 'speed_multiplier': 0.7, 'xz_dist': 4},
         },

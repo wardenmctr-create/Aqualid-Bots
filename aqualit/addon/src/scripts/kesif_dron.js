@@ -9,7 +9,8 @@ import { Harita } from "./harita.js";
 export const DRON = "aqualit:kesif_dron";
 const HIZ = 1.6;               // dron hızı (blok/tik)
 const ARALIK = 48;             // halkalar arası (3 yığın: işleme alanı 3x3 yığın tarar)
-const TIK_TARAMA = 1;          // tik başına en çok taranan yığın (bütün dronlar toplam; telefonda tik kısa kalsın)
+const TIK_TARAMA = 4;          // tik başına en çok taranan yığın (bütün dronlar toplam)
+const TIK_MS = 6;              // v0.3.8: tik başına tarama süresi sınırı (telefonda tik kısa kalsın)
 const EN_COK = 100;            // dron sınırı yok gibi: alan büyüdükçe Keşif daha çok dron gönderir
 const canli = new Set();       // çalışan dron varlık kimlikleri (yeniden yüklemede sahipsizler silinir)
 
@@ -83,18 +84,19 @@ export function* dronTara(k, o) {
   let dur = false;
   for (let t = 0; !dur && dronlar.some((d) => !d.bitti); t++) {
     let tarandi = 0;
+    const t0 = Date.now();
     for (const d of dronlar) {
       if (d.bitti || !safe(() => d.e.isValid, false)) { d.bitti = true; continue; }
       // 1) yol üzerinde ilerle (yüksekten)
       const hedef = d.yol[d.j];
-      if (!hedef) {
+      if (!hedef && !d.kuyruk.length) {
         d.bitti = true;
         alanSil(d.alanId);
         d.alan = null;
         continue;
       }
       const l = d.e.location;
-      const dx = hedef.x - l.x, dz = hedef.z - l.z;
+      const dx = (hedef?.x ?? l.x) - l.x, dz = (hedef?.z ?? l.z) - l.z;
       const hd = Math.hypot(dx, dz);
       // bulunduğu yer yüklenmeden ilerlemez (tarama atlanmasın)
       // senin çevrendeki yüklü yerlerde izin gerekmez; uzakta yükletme izni alır (yoksa sırasını bekler)
@@ -111,14 +113,16 @@ export function* dronTara(k, o) {
           d.kuyruk.push([c.x + ax, c.z + az]);
         }
       }
-      if (hd < HIZ + 0.1) d.j++;
+      // v0.3.8: altındaki yığınlar taranmadan ilerlemez (eskiden dron uçup gidince sıra yükten düşüyor, hiç taranmıyordu)
+      if (!hedef || d.kuyruk.length) { /* tarıyor */ }
+      else if (hd < HIZ + 0.1) d.j++;
       else if (yuklu) {
         const step = Math.min(HIZ, hd);
         const ny = l.y + Math.max(-0.5, Math.min(0.5, yukseklik - l.y));
         safe(() => d.e.teleport({ x: l.x + (dx / hd) * step, y: ny, z: l.z + (dz / hd) * step }, { rotation: { x: 0, y: (Math.atan2(-dx, dz) * 180) / Math.PI } }));
       }
       // 2) sıradaki yığını tara (tik başına sınırlı)
-      if (tarandi < TIK_TARAMA && d.kuyruk.length) {
+      if (tarandi < TIK_TARAMA && d.kuyruk.length && Date.now() - t0 < TIK_MS) {
         const [cx, cz] = d.kuyruk.shift();
         tarandi++;
         const f = o.tara(dim, cx, cz, o.turler);
