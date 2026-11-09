@@ -187,23 +187,23 @@ def kilicli(f):
 
 
 def organizator(f, cam=True):
-    # dik duran ince tablet (ekranı öne bakar); cam ekranın ardında Mimar dronundaki gibi gözler; üstte iki pervane
-    on = [list(r) for r in ('kkkkkkkk', 'kkWkkWkk', 'kkWkkWkk', 'kkkkkkkk', 'kkkkkkkk')]   # alttan 1 piksel kısa
-    kutu(f, 'g', 'tablet', (-4, 4, -1), (4, 9, 1), base='1', front=on, glow='WLP',
-         top=fill(8, 2, '3'), back=fill(8, 5, '2'))
-    # mavi cam bütün ön ekranı kaplar: ortası yarı saydam, çerçevesi daha opak (koyu mavi)
+    # dik duran ince tablet (8x6; üstten 1 piksel uzun), ekranı öne bakar; ortada yarı saydam mavi cam (6x3),
+    # camın çevresinde 3/5 opak siyah çerçeve; üstte iki pervane, kulaklık ve mikrofon anteni
+    on = [list(r) for r in ('kkkkkkkk', 'kkkkkkkk', 'kkWkkWkk', 'kkWkkWkk', 'kkkkkkkk', 'kkkkkkkk')]
+    kutu(f, 'g', 'tablet', (-4, 4, -1), (4, 10, 1), base='1', front=on, glow='WLP',
+         top=fill(8, 2, '3'), back=fill(8, 6, '2'))
     if cam:
         for nm, aa, bb in (('cer_u', (-4, 8, 1), (4, 9, 2)), ('cer_a', (-4, 4, 1), (4, 5, 2)),
                            ('cer_l', (-4, 5, 1), (-3, 8, 2)), ('cer_r', (3, 5, 1), (4, 8, 2))):
-            kutu(f, 'g', nm, aa, bb, base='@')
+            kutu(f, 'g', nm, aa, bb, base='k')
     if cam is True:
         kutu(f, 'g', 'cam', (-3, 5, 1), (3, 8, 2), base='<', front=rows('~9~<<<', '<~<<<<', '<<<<<^'))
     for ad, sx in (('l', -1), ('r', 1)):
-        kutu(f, 'g', 'direk_' + ad, (sx * 3.5 - 0.5, 9, -0.5), (sx * 3.5 + 0.5, 10, 0.5), base='%')
-        pervane(f, 'g', 'p_' + ad, (sx * 3.5, 10.5, 0), 3, 10.5)
-    kutu(f, 'g', 'kulaklik', (-1.5, 9, -0.5), (1.5, 10, 0.5), base='g')
-    kutu(f, 'g', 'mikrofon', (-0.5, 10, -0.5), (0.5, 12, 0.5), base='g')
-    kutu(f, 'g', 'mikrofon_uc', (-1, 12, -1), (1, 13, 1), base='P', glow='P')
+        kutu(f, 'g', 'direk_' + ad, (sx * 3.5 - 0.5, 10, -0.5), (sx * 3.5 + 0.5, 11, 0.5), base='%')
+        pervane(f, 'g', 'p_' + ad, (sx * 3.5, 11.5, 0), 3, 11.5)
+    kutu(f, 'g', 'kulaklik', (-1.5, 10, -0.5), (1.5, 11, 0.5), base='g')
+    kutu(f, 'g', 'mikrofon', (-0.5, 11, -0.5), (0.5, 13, 0.5), base='g')
+    kutu(f, 'g', 'mikrofon_uc', (-1, 13, -1), (1, 14, 1), base='P', glow='P')
 
 
 def portalci(f):
@@ -246,7 +246,7 @@ def poz(t, tur):
     return p
 
 
-CAM_ALFA, CERCEVE_ALFA = 0.5, 0.8   # cam ortası yarı saydam, çerçevesi daha opak
+CAM_ALFA, CERCEVE_ALFA = 0.5, 0.6   # cam yarı saydam; siyah çerçeve 3/5 opak, 2/5 saydam
 
 
 def ciz(tur, cam, t, M, C):
