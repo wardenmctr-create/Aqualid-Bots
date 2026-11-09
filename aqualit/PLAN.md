@@ -156,7 +156,8 @@ Her sürümde: iş robotu iyileştirmeleri, 4 denetim temiz, oyunda deneme liste
 **Yeni: Keşif Haritası (devasa, oyuncu ortada)**
 31. Sıfırdan harita: kaynak paketinde özel glif kareleri (biyom renkleri, yapı/robot/oyuncu simgeleri); menüde kare kare
     çizilir. Oyuncu hep ortada; kaydırma ve yakınlaştırma; yapılar simge + koordinatla. Keşif'e binince ekranda canlı
-    mini harita. Yalnız Keşif'in/dronların gezip taradığı yerler renkli (gidilmeyen karanlık). Önce tasarım gösterilecek.
+    mini harita. Açılma yarıçapı çok büyük: oyuncu 1 blok atınca oyunun yüklediği bütün alan (telefonda ~100-150 blok) bir
+    seferde dolar; daha uzağı Keşif dronları yükletince. Yapılar her zaman görünür. Önce tasarım gösterilecek.
 
 ## Robot robot yapılacaklar
 
