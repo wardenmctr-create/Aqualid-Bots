@@ -10,7 +10,7 @@ export const DRON = "aqualit:kesif_dron";
 const HIZ = 1.6;               // dron hızı (blok/tik)
 const ARALIK = 48;             // halkalar arası (3 yığın: işleme alanı 3x3 yığın tarar)
 const TIK_TARAMA = 4;          // tik başına en çok taranan yığın (bütün dronlar toplam)
-const TIK_MS = 6;              // v0.3.8: tik başına tarama süresi sınırı (telefonda tik kısa kalsın)
+const TIK_MS = 3;              // v0.3.8: tik başına tarama süresi sınırı (telefonda tik kısa kalsın)
 const EN_COK = 100;            // dron sınırı yok gibi: alan büyüdükçe Keşif daha çok dron gönderir
 const canli = new Set();       // çalışan dron varlık kimlikleri (yeniden yüklemede sahipsizler silinir)
 
@@ -56,6 +56,7 @@ function parla(dim, p) {
 /**
  * Dronları çıkarıp tarar. o: { merkez, yaricap, turler: [yapı türü], tara(dim,cx,cz,turler) -> {tur,pos}|null,
  *   hepsi: true ise bulduğunda durmaz (keşif), bulunca(f), n: dron sayısı (en çok 4), durum(yuzde, n) }
+ * atla(cx, cz): true dönen yığınlar taranmaz, yol da onların üstünden geçmez (v0.3.8).
  * Dönen: bulunanlar dizisi.
  */
 export function* dronTara(k, o) {
@@ -72,7 +73,7 @@ export function* dronTara(k, o) {
     if (!e) continue;
     canli.add(e.id);
     safe(() => e.setDynamicProperty("aq:kesif", k.e.id));
-    dronlar.push({ e, i, yol: yolYap(merkez, R, i, n), j: 0, alanId: `aqd_${k.rid}_${i}`, kuyruk: [], bakildi: new Set(), bitti: false, alan: null });
+    dronlar.push({ e, i, yol: yolYap(merkez, R, i, n).filter((p) => !o.atla?.(Math.floor(p.x / 16), Math.floor(p.z / 16))), j: 0, alanId: `aqd_${k.rid}_${i}`, kuyruk: [], bakildi: new Set(), bitti: false, alan: null });
     if (i % 4 === 0) parla(dim, k.loc);
     yield* wait(i < 8 ? 3 : 1);
   }
@@ -110,6 +111,7 @@ export function* dronTara(k, o) {
           const key = `${c.x + ax},${c.z + az}`;
           if (d.bakildi.has(key)) continue;
           d.bakildi.add(key);
+          if (o.atla?.(c.x + ax, c.z + az)) continue;     // v0.3.8: bilinen yığın (dron ordusu yalnız keşfedilmemişe bakar)
           d.kuyruk.push([c.x + ax, c.z + az]);
         }
       }

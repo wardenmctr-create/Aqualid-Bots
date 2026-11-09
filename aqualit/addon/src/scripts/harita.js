@@ -3,7 +3,7 @@
 // Robotlar gezdikçe dolar (şimdilik Keşif); "en yakın köy / orman" soruları önce buraya bakar.
 import { safe, V } from "./util.js";
 import { getJSON, setJSON } from "./store.js";
-import { world } from "@minecraft/server";
+import { world, system } from "@minecraft/server";
 
 const REG = 512;
 const MAX_YER = 200;
@@ -28,6 +28,28 @@ function saveBiyom() {
   setJSON(world, "aq:hrt_biyom", BIYOM);
 }
 
+// v0.3.8: bölge kayıtları bellekte tutulur, değişenler 5 saniyede bir yazılır (oyuncu yürüdükçe harita dolar;
+// her yığında yazmak telefonu yorardı)
+const BOLGE = new Map();      // anahtar -> { reg, kirli }
+function bolge(k) {
+  let b = BOLGE.get(k);
+  if (!b) {
+    b = { reg: getJSON(world, k, {}), kirli: false };
+    BOLGE.set(k, b);
+  }
+  return b;
+}
+function yaz() {
+  for (const [k, b] of BOLGE) {
+    if (b.kirli) {
+      setJSON(world, k, b.reg);
+      b.kirli = false;
+    }
+  }
+  if (BOLGE.size > 400) BOLGE.clear();
+}
+system.runInterval(() => safe(yaz), 100);
+
 export const Harita = {
   /** Bir yığını kaydet. */
   kaydet(owner, dimId, pos, biome, h) {
@@ -37,19 +59,19 @@ export const Harita = {
     if (BIX.size !== n) saveBiyom();
     const rx = Math.floor(pos.x / REG), rz = Math.floor(pos.z / REG);
     const k = `aq:hrt:${owner}:${dimKey(dimId)}:${rx}:${rz}`;
-    const reg = getJSON(world, k, {});
+    const bo = bolge(k);
     const ck = `${Math.floor(pos.x / 16)},${Math.floor(pos.z / 16)}`;
     const v = `${b.toString(36)}.${Math.round(h ?? 64)}`;
-    if (reg[ck] === v) return false;
-    reg[ck] = v;
-    setJSON(world, k, reg);
+    if (bo.reg[ck] === v) return false;
+    bo.reg[ck] = v;
+    bo.kirli = true;
     return true;
   },
   /** Bir yığının bilgisi: {biome, h} ya da undefined. */
   bak(owner, dimId, pos) {
     loadBiyom();
     const rx = Math.floor(pos.x / REG), rz = Math.floor(pos.z / REG);
-    const reg = getJSON(world, `aq:hrt:${owner}:${dimKey(dimId)}:${rx}:${rz}`, {});
+    const reg = bolge(`aq:hrt:${owner}:${dimKey(dimId)}:${rx}:${rz}`).reg;
     const v = reg[`${Math.floor(pos.x / 16)},${Math.floor(pos.z / 16)}`];
     if (!v) return undefined;
     const [b, h] = v.split(".");
@@ -62,9 +84,9 @@ export const Harita = {
     if (!want.size) return undefined;
     let best, bd = maxDist * maxDist;
     const pre = `aq:hrt:${owner}:${dimKey(dimId)}:`;
-    for (const k of safe(() => world.getDynamicPropertyIds(), []) ?? []) {
+    for (const k of new Set([...(safe(() => world.getDynamicPropertyIds(), []) ?? []), ...BOLGE.keys()])) {
       if (!k.startsWith(pre)) continue;
-      const reg = getJSON(world, k, {});
+      const reg = bolge(k).reg;
       for (const [ck, v] of Object.entries(reg)) {
         if (!want.has(v.split(".")[0])) continue;
         const [cx, cz] = ck.split(",").map(Number);
@@ -75,11 +97,20 @@ export const Harita = {
     }
     return best;
   },
+  /** Yığın biliniyor mu (biyom kayıtlı)? */
+  bilinir(owner, dimId, cx, cz) {
+    const rx = Math.floor((cx * 16) / REG), rz = Math.floor((cz * 16) / REG);
+    return !!bolge(`aq:hrt:${owner}:${dimKey(dimId)}:${rx}:${rz}`).reg[`${cx},${cz}`];
+  },
+  /** Yazılmamış değişiklikleri hemen yaz (testler ve kapanış için). */
+  yaz() {
+    yaz();
+  },
   /** Kaç yığın keşfedildi. */
   boyut(owner) {
     let n = 0;
-    for (const k of safe(() => world.getDynamicPropertyIds(), []) ?? []) {
-      if (k.startsWith(`aq:hrt:${owner}:`)) n += Object.keys(getJSON(world, k, {})).length;
+    for (const k of new Set([...(safe(() => world.getDynamicPropertyIds(), []) ?? []), ...BOLGE.keys()])) {
+      if (k.startsWith(`aq:hrt:${owner}:`)) n += Object.keys(bolge(k).reg).length;
     }
     return n;
   },

@@ -149,7 +149,7 @@ function check(cond, msg) {
 }
 
 const scenario = process.argv[2] ?? "all";
-const run = (name) => scenario === "all" || scenario === name;
+const run = (name) => scenario === "all" || scenario === name || scenario.split(",").includes(name);
 
 // ---------------------------------------------------------------- 1) madenci
 if (run("madenci")) {
@@ -1216,6 +1216,41 @@ if (run("kesif")) {
   KS.transform(k, "robot", player); ticks(30);
   check(k._props["aqualit:form"] === "robot" && !player._ridingOn, "robota dönünce yolcular indi");
   guest.remove();
+}
+
+// ---------------------------------------------------------------- v0.3.8 Keşif Haritası
+if (run("harita")) {
+  console.log("== Keşif Haritası: yürüyünce dolar, yapılar simgeyle, dron ordusu bilineni atlar");
+  const KH = await import("./scripts/kesif_harita.js");
+  const HR = await import("./scripts/harita.js");
+  const HG = await import("./scripts/harita_glif.js");
+  const KD = await import("./scripts/kesif_dron.js");
+  const KA = await import("./scripts/kesif_ai.js");
+  player.teleport({ x: 300.5, y: GROUND + 1, z: 300.5 });
+  player._rot = { x: 0, y: 0 };
+  const t0 = Date.now();
+  ticks(200);
+  const n = HR.Harita.boyut(player.id);
+  check(n > 100, `oyuncu yürüyünce yüklü alan haritaya işlendi (${n} yığın, ${Date.now() - t0} ms)`);
+  HR.Yerler.ekle(player.id, { tur: "koy", ad: "Köy", pos: { x: 360, y: GROUND, z: 300 }, dim: ow.id });
+  const { satirlar, gorunen } = KH.haritaCiz(player.id, ow, { x: 300, y: GROUND, z: 300 }, 32, 0, null);
+  check(satirlar.length === 25 && gorunen.length === 1, "harita 25 satır, bilinen köy görünüyor");
+  check(satirlar.some((r) => r.includes(HG.YAPI.koy)) && satirlar.some((r) => r.includes(HG.ETIKET.koy)), "köy kendi simgesiyle, altında kısa adı");
+  check(satirlar[12].includes(HG.ISARET.ok_s), "ortada oyuncu, baktığı yöne ok");
+  check(!satirlar.join("").includes(HG.ISARET.robot), "oyuncu haritasında robot/sandık/mob yok (kalabalık olmasın)");
+  const uzak = KH.haritaCiz(player.id, ow, { x: 5000, y: GROUND, z: 5000 }, 64, 0, null).satirlar.join("");
+  check(uzak.includes(HG.BIYOM.bilinmiyor), "gidilmeyen yer karanlık");
+  // dron ordusu: bilinen yığınları atlar, bilinmeyeni tarar
+  const k = { dim: ow, e: player, rid: "ptest", owner: player.id, name: "Ordu", get loc() { return player.location; }, say() {}, setStatus() {} };
+  const once = HR.Harita.boyut(player.id);
+  const gen = KD.dronTara(k, { merkez: { x: 300, y: GROUND, z: 300 }, yaricap: 160, n: 25, hepsi: true, turler: KA.boyutYapilari(ow.id),
+    tara: KA.yiginTara, atla: (cx, cz) => HR.Harita.bilinir(player.id, ow.id, cx, cz) });
+  let r, adim = 0;
+  while (!(r = gen.next()).done && adim++ < 20000) {}
+  check(r.done, `dron ordusu işini bitirdi (${adim} adım)`);
+  check(!world.getDimension("overworld").getEntities({ type: "aqualit:kesif_dron" }).length, "dronlar geri döndü");
+  check(KA.boyutYapilari("minecraft:nether").every((t) => ["nether_kalesi", "burc_kalintisi"].includes(t)), "Nether'de yalnız Nether yapıları aranır");
+  void once;
 }
 
 // ---------------------------------------------------------------- 21) Aqualit sandığı (v0.2.9)

@@ -24,6 +24,7 @@ import yapi_kutuphane as YK  # noqa: E402
 import dron as DR            # noqa: E402
 import esya3d as E3          # noqa: E402
 import kesif_dron as KD       # noqa: E402
+import harita_glif as HG      # noqa: E402
 
 OUT = os.path.join(HERE, 'out')
 GEN = os.path.join(HERE, 'build_gen')
@@ -539,7 +540,7 @@ def main():
         if os.path.exists(d):
             shutil.rmtree(d)
     os.makedirs(BP); os.makedirs(RP); os.makedirs(GEN)
-    manifests(); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
+    manifests(); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
     addon = package()
     print('paket:', addon)
 

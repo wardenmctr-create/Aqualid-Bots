@@ -13,7 +13,7 @@ P = {
     'g': (18, 70, 66), 'c': (40, 170, 150), 'C': (100, 240, 210), 'L': (190, 255, 240),
     'M': (30, 150, 140), 'H': (90, 210, 190), 'D': (16, 92, 88),
     'r': (210, 50, 50), 'R': (255, 110, 90), 'e': (120, 20, 24), 'E': (255, 90, 80),
-    'n': (16, 90, 40), 'N': (120, 255, 140), 'o': (240, 150, 50), 's': (150, 160, 170), 'S': (210, 220, 228),
+    'n': (16, 90, 40), 'N': (120, 255, 140), 'w': (232, 220, 180), 'o': (240, 150, 50), 's': (150, 160, 170), 'S': (210, 220, 228),
 }
 RADAR = [
     "............Y...",
@@ -140,6 +140,44 @@ def tirman(acik):
     ]
 
 
+HARITA = [
+    "................",
+    ".kkkkkkkkkkkkkk.",
+    ".kwwHHwwwwccwwk.",
+    ".kwHHHwwwccccwk.",
+    ".kwwHwwyywwccwk.",
+    ".kwwwwyYYywwwwk.",
+    ".kwccwyYYywHHwk.",
+    ".kcccwwyywwHHwk.",
+    ".kwccwwwwwwwwwk.",
+    ".kwwwwwRRwwccwk.",
+    ".kwHHwwRRwccccwk",
+    ".kwHHwwwwwwccwk.",
+    ".kwwwwccwwwwwwk.",
+    ".kkkkkkkkkkkkkk.",
+    "..yyyyyyyyyyyy..",
+    "................",
+]
+ORDU = [
+    "................",
+    "..CC........CC..",
+    ".CkkC......CkkC.",
+    "..CC........CC..",
+    "......CCCC......",
+    ".....CkkkkC.....",
+    ".....CkWkWC.....",
+    "......CCCC......",
+    "..CC........CC..",
+    ".CkkC......CkkC.",
+    ".CkWkC....CkWkC.",
+    "..CC........CC..",
+    "......CCCC......",
+    ".....CkWkWC.....",
+    "......CCCC......",
+    "................",
+]
+
+
 def img(rows):
     im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
     for y, r in enumerate(rows):
@@ -183,6 +221,16 @@ def main():
     d3.text((40, 10), 'Tırmanma Modu KAPALI', font=f, fill=(200, 200, 200))
     d3.text((340, 10), 'Tırmanma Modu AÇIK', font=f, fill=(120, 200, 255))
     c3.save(os.path.join(HERE, 'onizleme', '72_tirmanma_modu.png'))
+    hr, od = img(HARITA), img(ORDU)
+    hr.save(os.path.join(out, 'kesif_haritasi.png'))
+    od.save(os.path.join(out, 'dron_ordusu.png'))
+    c4 = Image.new('RGB', (560, 300), (24, 28, 32))
+    c4.paste(hr.resize((224, 224), Image.NEAREST), (24, 40), hr.resize((224, 224), Image.NEAREST))
+    c4.paste(od.resize((224, 224), Image.NEAREST), (312, 40), od.resize((224, 224), Image.NEAREST))
+    d4 = ImageDraw.Draw(c4)
+    d4.text((60, 10), 'Keşif Haritası', font=f, fill=(64, 224, 208))
+    d4.text((340, 10), 'Dron Ordusu', font=f, fill=(64, 224, 208))
+    c4.save(os.path.join(HERE, 'onizleme', '89_harita_ordu_esya.png'))
     kit = img(KIT)
     kit.save(os.path.join(out, 'kesif_kiti.png'))
     kit.resize((256, 256), Image.NEAREST).save(os.path.join(HERE, 'onizleme', '70_donusum_kiti.png'))

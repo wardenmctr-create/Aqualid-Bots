@@ -19,6 +19,7 @@ import { seferMenu } from "./sefer.js";
 import { KOLTUK, YALNIZ_OYUNCU } from "./kesif_koltuk.js";
 import { hizCarpani, tutucuAcik, tirmanMenu } from "./kesif_radar.js";
 import { dronTara } from "./kesif_dron.js";
+import { haritaAc } from "./kesif_harita.js";
 
 const CRUISE = 14;            // yüzeyin kaç blok üstünden uçar
 const FLY = 0.9;              // tek başına uçuş hızı (blok/tik)
@@ -440,13 +441,13 @@ function* kesfet(k, T) {
 }
 
 /** Mini dronlarla tarama (kesif_dron.js): bulunanları Bilinen yerlere yazar. */
-function* dronlarla(k, turler, merkez, yaricap, hepsi = false) {
+function* dronlarla(k, turler, merkez, yaricap, hepsi = false, ek = {}) {
   const p = (oran, n) => {
     k.setStatus(`${n} dron tarıyor %${oran}`);
     const pl = world.getAllPlayers().find((x) => x.id === k.owner);
     if (pl && V.dist(pl.location, k.loc) < 64) safe(() => pl.onScreenDisplay.setActionBar(`§s${k.name}§r: ${n} dron tarıyor §f%${oran}`));
   };
-  return yield* dronTara(k, { merkez, yaricap, turler, tara: yiginTara, hepsi, durum: p, bulunca: (f) => {
+  return yield* dronTara(k, { merkez, yaricap, turler, tara: yiginTara, hepsi, durum: p, ...ek, bulunca: (f) => {
     const yer = Yerler.ekle(k.owner, { tur: f.tur, ad: YAPI[f.tur].ad, pos: f.pos, dim: k.dim.id, kim: k.name });
     if (hepsi) k.say(`Dronlar ${YAPI[f.tur].ad.toLowerCase()} buldu (${yer.pos.x}, ${yer.pos.y}, ${yer.pos.z}).`);
   } });
@@ -980,6 +981,49 @@ export function varlikBul(id) {
   return world.getAllPlayers().find((p) => p.id === id) ?? safe(() => world.getEntity(id));
 }
 
+/** v0.3.8: Keşif dron ordusu: 25 dron haritanın keşfedilmemiş yerlerini tarar (bilinen yığınları atlar). */
+export function* orduIsi(k, yaricap = 640) {
+  const turler = boyutYapilari(k.dim.id);
+  const bulunan = yield* dronlarla(k, turler, k.loc, yaricap, true,
+    { n: 25, atla: (cx, cz) => Harita.bilinir(k.owner, k.dim.id, cx, cz) });
+  k.say(`Dron ordusu döndü: ${bulunan.length ? bulunan.length + " yeni yapı buldu, haritaya işledim" : "yeni yapı yok, harita güncellendi"}.`);
+  k.setStatus("Bekliyor");
+}
+/** v0.3.8: Keşif boştayken (sahibi yakınında, çevrenin en az üçte biri haritada boşsa) 15 dakikada bir orduyu kendisi gönderir. */
+const OTO_ORDU_ARA = 15 * 60 * 1000;
+function bilinmeyenOrani(k, yaricap = 640) {
+  let bos = 0, top = 0;
+  const cx = Math.floor(k.loc.x / 16), cz = Math.floor(k.loc.z / 16), R = Math.floor(yaricap / 16);
+  for (let dx = -R; dx <= R; dx += 4) for (let dz = -R; dz <= R; dz += 4) {
+    if (dx * dx + dz * dz > R * R) continue;
+    top++;
+    if (!Harita.bilinir(k.owner, k.dim.id, cx + dx, cz + dz)) bos++;
+  }
+  return top ? bos / top : 0;
+}
+system.runInterval(() => {
+  for (const k of kesifListesi()) {
+    if (k.job || !k.owner || formOf(k.e) !== "robot") continue;
+    if (safe(() => k.e.getDynamicProperty("aq:oto_ordu"), true) === false) continue;
+    if (k._sonOrdu === undefined) { k._sonOrdu = Date.now(); continue; }   // ilk kez: 15 dakika sonra
+    if (Date.now() - k._sonOrdu < OTO_ORDU_ARA) continue;
+    const pl = world.getAllPlayers().find((p) => p.id === k.owner);
+    if (!pl || safe(() => pl.dimension.id) !== k.dim.id || V.dist(pl.location, k.loc) > 128) continue;
+    k._sonOrdu = Date.now();
+    if (bilinmeyenOrani(k) < 0.33) continue;
+    basla(k, orduIsi(k), "Haritada boş yerler çok: dron ordumu kendiliğimden gönderiyorum (menüden kapatabilirsin).");
+  }
+}, 1200);
+
+/** Bir boyutta aranabilecek yapı türleri. */
+export function boyutYapilari(dimId) {
+  const n = ["nether_kalesi", "burc_kalintisi"], e = ["end_sehri"];
+  const hepsi = Object.keys(YAPI);
+  if (dimId.includes("nether")) return hepsi.filter((t) => n.includes(t));
+  if (dimId.includes("end")) return hepsi.filter((t) => e.includes(t));
+  return hepsi.filter((t) => !n.includes(t) && !e.includes(t));
+}
+
 export function basla(k, gen, msg) {
   k.job = gen;
   if (msg) k.say(msg);
@@ -1008,6 +1052,10 @@ export async function anaMenu(pl, e) {
   btns.push({ text: "§lYapı bul§r\n§7Köy, tapınak, deneme odası...", icon: ICON("filled_map"), v: "yapi" });
   btns.push({ text: "§lBiyom bul§r\n§7Çöl, kiraz bahçesi, mantar adası...", icon: ICON("compass"), v: "biyom" });
   btns.push({ text: "§lÇevreyi keşfet§r\n§7Harita çıkarır, yoldaki yapıları kaydeder", icon: ICON("filled_map"), v: "kesfet" });
+  btns.push({ text: "§lHaritam§r\n§7Biyomlar, yapılar, sandıklar, moblar, robotlar", icon: "textures/items/kesif_haritasi", v: "harita" });
+  btns.push({ text: "§lDron ordusu gönder§r\n§725 dron haritanın keşfedilmemiş yerlerine", icon: "textures/items/dron_ordusu", v: "ordu" });
+  const otoOrdu = safe(() => e.getDynamicProperty("aq:oto_ordu"), true) !== false;
+  btns.push({ text: `Otomatik dron ordusu: ${otoOrdu ? "§2AÇIK" : "§cKAPALI"}§r\n§7Boştayken 15 dakikada bir kendisi gönderir`, icon: ICON("clock"), v: "otoordu" });
   btns.push({ text: "§lBilinen yerler§r\n§7Bulduklarım: konum, götür, sil", icon: ICON("writable_book"), v: "yerler" });
   btns.push({ text: "§lBeni götür§r\n§7Araç olur, bindirir, kendisi sürer", icon: ICON("elytra"), v: "gotur" });
   btns.push({ text: "§lSefer düzenle§r\n§7Robot ekibini bir yapıya götürür: korur, yağmalar, döner", icon: ICON("trial_key"), v: "sefer" });
@@ -1036,6 +1084,13 @@ export async function anaMenu(pl, e) {
     case "biyom": return biyomMenu(pl, k);
     case "kesfet": return kesfetMenu(pl, k);
     case "yerler": return yerlerMenu(pl, k);
+    case "harita": return haritaAc(pl, { kesif: k });
+    case "otoordu": {
+      const acik = safe(() => e.getDynamicProperty("aq:oto_ordu"), true) !== false;
+      safe(() => e.setDynamicProperty("aq:oto_ordu", !acik));
+      return k.say(acik ? "Tamam, dron ordusunu kendiliğimden göndermeyeceğim." : "Tamam, boştayken dron ordusunu kendim gönderirim.");
+    }
+    case "ordu": return basla(k, orduIsi(k), "25 dronluk ordumu haritanın keşfedilmemiş yerlerine gönderiyorum!");
     case "gotur": return goturMenu(pl, k);
     case "tasi": return tasiMenu(pl, k);
     case "cagir": return robotCagirMenu(pl, k);

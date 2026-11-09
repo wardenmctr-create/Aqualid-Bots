@@ -71,6 +71,9 @@ DEVICES = [
     ('tuning_gear', 'Kılıçlı Ayar Dişlisi', 'tuning_gear', 'gear', 'Ayarla'),
     ('kesif_kiti', 'Keşif Dönüşüm Kiti (Keşif\'e basılı tut)', 'kesif_kiti', 'donusum', 'Dönüştür'),
     ('aqualit_telefon', 'Aqualit Telefon (Organizatör ile konuş)', 'aqualit_telefon', 'telefon', 'Konuş'),
+    # v0.3.8: devasa Keşif Haritası (oyuncu da kullanır) ve yalnız yaratıcıdan alınan dron ordusu
+    ('kesif_haritasi', 'Keşif Haritası (basılı tut)', 'kesif_haritasi', 'harita', 'Haritayı aç'),
+    ('dron_ordusu', 'Keşif Dron Ordusu Çağırma (basılı tut: 25 dron)', 'dron_ordusu', 'ordu', 'Ordu gönder'),
 ]
 
 # Keşif'e binince oyuncuya verilen eşyalar (inince geri alınır; yaratıcı menüde yok): id, ad, ikon, tür
@@ -160,6 +163,8 @@ shaped('robot_radio', [' X ', 'XRX', 'XXX'], {'X': I(K), 'R': I('minecraft:redst
 shaped('aqualit_telefon', [' X ', 'XGX', 'XRX'], {'X': I(K), 'G': I('minecraft:glass_pane'), 'R': I('minecraft:redstone')},
        'aqualit:aqualit_telefon')
 shapeless('kesif_kiti', [I(K), I('minecraft:compass'), I('minecraft:redstone')], 'aqualit:kesif_kiti')
+shaped('kesif_haritasi', [' X ', 'XMX', ' C '], {'X': I(K), 'M': I('minecraft:empty_map'), 'C': I('minecraft:compass')},
+       'aqualit:kesif_haritasi')   # dron_ordusu: tarifi yok, yalnız yaratıcı menüde
 shaped('robot_tracker', ['XXX', 'XGX', 'XCX'], {'X': I(K), 'G': I('minecraft:glass_pane'), 'C': I('minecraft:compass')},
        'aqualit:robot_tracker')
 shapeless('task_remote', [I(K), I('minecraft:redstone'), I('minecraft:stone_button')], 'aqualit:task_remote')
