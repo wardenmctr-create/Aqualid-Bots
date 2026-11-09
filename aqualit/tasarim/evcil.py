@@ -191,8 +191,13 @@ def organizator(f, cam=True):
     on = [list(r) for r in ('kkkkkkkk', 'kkWkkWkk', 'kkWkkWkk', 'kkkkkkkk', 'kkkkkkkk')]   # alttan 1 piksel kısa
     kutu(f, 'g', 'tablet', (-4, 4, -1), (4, 9, 1), base='1', front=on, glow='WLP',
          top=fill(8, 2, '3'), back=fill(8, 5, '2'))
+    # mavi cam bütün ön ekranı kaplar: ortası yarı saydam, çerçevesi daha opak (koyu mavi)
     if cam:
-        kutu(f, 'g', 'cam', (-3, 5, 1), (3, 8, 2), base='<', front=rows('~9~<<<', '<<<<<<', '^^^^^^'))
+        for nm, aa, bb in (('cer_u', (-4, 8, 1), (4, 9, 2)), ('cer_a', (-4, 4, 1), (4, 5, 2)),
+                           ('cer_l', (-4, 5, 1), (-3, 8, 2)), ('cer_r', (3, 5, 1), (4, 8, 2))):
+            kutu(f, 'g', nm, aa, bb, base='@')
+    if cam is True:
+        kutu(f, 'g', 'cam', (-3, 5, 1), (3, 8, 2), base='<', front=rows('~9~<<<', '<~<<<<', '<<<<<^'))
     for ad, sx in (('l', -1), ('r', 1)):
         kutu(f, 'g', 'direk_' + ad, (sx * 3.5 - 0.5, 9, -0.5), (sx * 3.5 + 0.5, 10, 0.5), base='%')
         pervane(f, 'g', 'p_' + ad, (sx * 3.5, 10.5, 0), 3, 10.5)
@@ -241,19 +246,26 @@ def poz(t, tur):
     return p
 
 
+CAM_ALFA, CERCEVE_ALFA = 0.5, 0.8   # cam ortası yarı saydam, çerçevesi daha opak
+
+
 def ciz(tur, cam, t, M, C):
-    a = Z.render(*M[tur][:2], poz(t, tur), (), cam, glow=M[tur][2], ground={'y': -3, 'color': (58, 66, 74)}).convert('RGB')
+    r = lambda m: np.asarray(Z.render(*m[:2], poz(t, tur), (), cam, glow=m[2],
+                                      ground={'y': -3, 'color': (58, 66, 74)}).convert('RGB'), np.float32)
+    a = r(M[tur])
     if tur not in C:
-        return a
-    b = Z.render(*C[tur][:2], poz(t, tur), (), cam, glow=C[tur][2], ground={'y': -3, 'color': (58, 66, 74)}).convert('RGB')
-    a, b = np.asarray(a, np.float32), np.asarray(b, np.float32)
-    m = (np.abs(a - b).sum(2) > 6)[:, :, None]
-    return Image.fromarray(np.where(m, b * 0.5 + a * 0.5, a).clip(0, 255).astype(np.uint8))
+        return Image.fromarray(a.astype(np.uint8))
+    yok, cer = r(C[tur][0]), r(C[tur][1])           # camsız, yalnız çerçeve
+    m_cer = (np.abs(cer - yok).sum(2) > 6)[:, :, None]
+    m_cam = (np.abs(a - cer).sum(2) > 6)[:, :, None]
+    out = np.where(m_cer, yok * (1 - CERCEVE_ALFA) + cer * CERCEVE_ALFA, yok)
+    out = np.where(m_cam, yok * (1 - CAM_ALFA) + a * CAM_ALFA, out)
+    return Image.fromarray(out.clip(0, 255).astype(np.uint8))
 
 
 if __name__ == '__main__':
     M = {t: model(evcil(t), W=128) for t in TURLER}
-    C = {'organizator': model(evcil('organizator', False), W=128)}
+    C = {'organizator': (model(evcil('organizator', False), W=128), model(evcil('organizator', 'cerceve'), W=128))}
     frames = []
     for i in range(72):
         t = i / 72

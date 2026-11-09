@@ -39,7 +39,7 @@ if __name__ == '__main__':
     M = {t: model(E.evcil(t), W=128) for t in E.TURLER}
     M['mimar'] = model(mimar(), W=128)
     M['kesif'] = model(KD.model(), W=128)
-    C = {'organizator': model(E.evcil('organizator', False), W=128)}
+    C = {'organizator': (model(E.evcil('organizator', False), W=128), model(E.evcil('organizator', 'cerceve'), W=128))}
     E_ciz = E.ciz
 
     YA, YB = model(Y.yardimci(False), W=256), model(Y.yardimci(True), W=256)
