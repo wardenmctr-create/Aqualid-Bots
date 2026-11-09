@@ -3,7 +3,7 @@
 import { world, system, BlockPermutation, ItemStack } from "@minecraft/server";
 import { V, wait, safe, yawOf, clamp } from "./util.js";
 import { YAPILAR, KATEGORI, BLOK_DURUM, ALTERNATIF, BLOK_ESYA } from "./yapi_data.js";
-import { eksikleriIste } from "./organizator.js";
+import { eksikleriIste, sandigaKoy } from "./organizator.js";
 import { getJSON, setJSON, setProp } from "./store.js";
 import { menu, confirm } from "./ui/forms.js";
 import { idleJob } from "./jobs.js";
@@ -20,7 +20,20 @@ const DRON_COOL = 3;            // dron iki blok arası bekleme (tik)
 const OPS_PER_TICK = 24;        // tik başına en çok blok işlemi (temizleme + koyma), bütçe ayrıca sınırlar
 
 // temizlenebilen doğal bloklar (yapının kapladığı alanda); sandık, robot işi ve oyuncu yapıları korunur
-const NATURAL = /^minecraft:(dirt|coarse_dirt|grass_block|podzol|mycelium|mud|rooted_dirt|dirt_with_roots|moss_block|moss_carpet|stone|granite|diorite|andesite|deepslate|tuff|calcite|sand|red_sand|gravel|clay|snow|snow_layer|ice|packed_ice|powder_snow|water|flowing_water|short_grass|tall_grass|fern|large_fern|dead_bush|seagrass|kelp|vine|sweet_berry_bush|.*_leaves|.*_log|.*_wood|.*_sapling|.*_flower|poppy|dandelion|blue_orchid|allium|azure_bluet|.*_tulip|oxeye_daisy|cornflower|lily_of_the_valley|sunflower|lilac|rose_bush|peony|pink_petals|brown_mushroom|red_mushroom|cactus|sugar_cane|bamboo|pumpkin|melon_block|pointed_dripstone|glow_lichen|hanging_roots|leaf_litter|bush|firefly_bush|short_dry_grass|tall_dry_grass|wildflowers)$/;
+const NATURAL = /^minecraft:(dirt|coarse_dirt|grass_block|podzol|mycelium|mud|rooted_dirt|dirt_with_roots|moss_block|moss_carpet|stone|granite|diorite|andesite|deepslate|tuff|calcite|sand|red_sand|gravel|clay|snow|snow_layer|ice|packed_ice|powder_snow|water|flowing_water|short_grass|tall_grass|fern|large_fern|dead_bush|seagrass|kelp|vine|sweet_berry_bush|.*_leaves|.*_log|.*_wood|.*_sapling|.*_flower|poppy|dandelion|blue_orchid|allium|azure_bluet|.*_tulip|oxeye_daisy|cornflower|lily_of_the_valley|sunflower|lilac|rose_bush|peony|pink_petals|brown_mushroom|red_mushroom|cactus|sugar_cane|bamboo|pumpkin|melon_block|pointed_dripstone|glow_lichen|hanging_roots|leaf_litter|bush|firefly_bush|short_dry_grass|tall_dry_grass|wildflowers|.*_ore|netherrack|soul_sand|soul_soil|basalt|smooth_basalt|blackstone|end_stone|.*terracotta|sandstone|red_sandstone|cobblestone|mossy_cobblestone|cobbled_deepslate|magma|glowstone|amethyst_block|budding_amethyst|.*amethyst_bud|amethyst_cluster|dripstone_block|sculk|sculk_vein|crimson_nylium|warped_nylium)$/;
+// v0.3.8: inşa alanında çıkan cevherlerin düşürdüğü (Organizatör'ün sandığına gider)
+const CEVHER_DUSUR = { coal: ['coal', 1], iron: ['raw_iron', 1], copper: ['raw_copper', 3], gold: ['raw_gold', 1],
+  redstone: ['redstone', 4], lapis: ['lapis_lazuli', 5], diamond: ['diamond', 1], emerald: ['emerald', 1],
+  quartz: ['quartz', 1], nether_gold: ['gold_nugget', 4] };
+function cevherDususu(t) {
+  const m = /^minecraft:(?:deepslate_|nether_)?(\w+?)_ore$/.exec(t);
+  if (!m) return null;
+  const k = t.includes('nether_gold') ? 'nether_gold' : t.includes('quartz') ? 'quartz' : m[1].replace('lit_', '');
+  const d = CEVHER_DUSUR[k];
+  return d ? ['minecraft:' + d[0], d[1]] : null;
+}
+// v0.3.8: bir yere tutunan / iki parçalı bloklar yapı bitince son turda konur (önce konunca düşüyordu)
+const BAGIMLI = /(door|_bed$|torch|lantern|_sign$|_sign_|banner|ladder|button|lever|carpet|rail$|_rail|pressure_plate|vine|candle|redstone_wire|repeater|comparator|tripwire|sapling|coral_fan|_fan$|bell$|item_frame|flower_pot|double_plant|tall_grass|large_fern|sunflower|lilac|rose_bush|peony|snow_layer|cake$|chain$|_chain$|campfire|lily_pad|pointed_dripstone|hanging_roots|glow_lichen|spore_blossom|amethyst_bud|amethyst_cluster|dripleaf|pitcher_plant)/;
 
 export function yapi(id) {
   return BY_ID.get(id);
@@ -159,6 +172,11 @@ function placedPerm(perm, r) {
 }
 
 /** Bloğu koymak için gereken eşya (yoksa null: bedava ya da yarım parça). */
+function ikinciParcaMi(perm) {
+  const st = safe(() => perm.getAllStates(), {}) ?? {};
+  return !!(st.upper_block_bit || st.head_piece_bit);
+}
+
 function itemFor(perm) {
   const st = safe(() => perm.getAllStates(), {}) ?? {};
   if (st.upper_block_bit || st.head_piece_bit) return null;
@@ -429,12 +447,26 @@ export function* mimarJob(bot) {
   let lastPct = Math.floor((done * 100) / total);
   const d = depo(bot);
   let dirty = 0;
+  const sonra = [];                 // v0.3.8: son turda konacak bağımlı bloklar
+  const ikinci = new Map();         // kapının üst yarısı, yatağın başı: alt/ayak yarısıyla aynı anda konur
+  let sonTur = false;
+  const cevherler = {};
+  const koy = (cell) => {
+    const b = safe(() => bot.dim.getBlock(cell.p));
+    if (!b) return false;
+    safe(() => b.setPermutation(placedPerm(degistir(cell.perm, T.degis), T.rot)));
+    return true;
+  };
   const work = (job) => {
     // temizleme ya da koyma (tek blok); true: yapıldı
     const b = safe(() => bot.dim.getBlock(job.p));
     if (!b) return false;
     if (job.clear) {
-      if (NATURAL.test(b.typeId)) safe(() => b.setType("minecraft:air"));
+      if (NATURAL.test(b.typeId)) {
+        const dd = cevherDususu(b.typeId);
+        if (dd) cevherler[dd[0]] = (cevherler[dd[0]] ?? 0) + dd[1];
+        safe(() => b.setType("minecraft:air"));
+      }
       return true;
     }
     const src = degistir(job.perm, T.degis);
@@ -453,6 +485,17 @@ export function* mimarJob(bot) {
       dirty++;
     }
     safe(() => b.setPermutation(perm));
+    // iki parçalı blok: öbür yarısını aynı anda koy (yoksa oyun yarım kapıyı hemen kırıyor)
+    if (job.bagimli) {
+      for (const o of [{ x: 0, y: 1, z: 0 }, { x: 1, y: 0, z: 0 }, { x: -1, y: 0, z: 0 }, { x: 0, y: 0, z: 1 }, { x: 0, y: 0, z: -1 }]) {
+        const k = V.key(V.add(job.p, o));
+        const es = ikinci.get(k);
+        if (es) {
+          koy(es);
+          ikinci.delete(k);
+        }
+      }
+    }
     return true;
   };
   const refill = () => {
@@ -465,6 +508,15 @@ export function* mimarJob(bot) {
       idx++;
       if (idx <= startIdx || !n.value) continue;
       const c = n.value;
+      const tid = safe(() => c.perm.type.id, "") ?? "";
+      if (ikinciParcaMi(c.perm)) {
+        ikinci.set(V.key(c.p), c);
+        continue;
+      }
+      if (BAGIMLI.test(tid)) {
+        sonra.push({ ...c, bagimli: true });
+        continue;
+      }
       if (c.y !== layer) {
         layer = c.y;
         // yeni kat: kaplanan alanın bu katındaki doğal blokları temizle (taban katı hariç)
@@ -478,7 +530,15 @@ export function* mimarJob(bot) {
   bot.setStatus(`${Y.ad} inşa ediliyor %0`);
   while (true) {
     refill();
-    if (!queue.length && ended && !(bot.drones ?? []).some((x) => x.job && safe(() => x.e.isValid, false))) break;
+    const dronIsi = (bot.drones ?? []).some((x) => x.job && safe(() => x.e.isValid, false));
+    if (!queue.length && ended && !dronIsi && !sonTur && (sonra.length || ikinci.size)) {
+      // son tur: kapılar, meşaleler, flamalar... (dayandıkları bloklar artık yerinde)
+      sonTur = true;
+      for (const c of sonra) queue.push(c);
+      for (const c of ikinci.values()) if (!sonra.some((x) => V.dist(x.p, c.p) <= 1.01)) queue.push({ ...c });
+      sonra.length = 0;
+    }
+    if (!queue.length && ended && !dronIsi) break;
     let ops = 0;
     // önce bu katın temizliği (Mimar'ın kendisi yapar, hızlı)
     while (queue.length && queue[0].clear && ops < OPS_PER_TICK) {
@@ -495,12 +555,18 @@ export function* mimarJob(bot) {
       }
       if (!dr.job && !clearing) {
         const l = dr.e.location;
+        // v0.3.8: her dronun kendi şeridi var (yapı x boyunca dron sayısı kadar dilim); önce kendi diliminden iş alır,
+        // yoksa en yakınını (eskiden hepsi aynı yere üşüşüyordu)
+        const nd = Math.max(1, (bot.drones ?? []).length);
+        const di = (bot.drones ?? []).indexOf(dr);
+        const s0 = T.at.x + (di * W2) / nd, s1 = T.at.x + ((di + 1) * W2) / nd;
         let best = -1, bd = 1e9;
         for (let q = 0; q < queue.length; q++) {
           if (queue[q].clear) break;                  // sonraki katın temizliği: önce bu kat bitsin
-          if (queue[q].y !== queue[0].y) break;
+          if (queue[q].y !== queue[0].y && !sonTur) break;
           const c = queue[q].p;
-          const dd = (c.x + 0.5 - l.x) ** 2 + (c.y + 1 - l.y) ** 2 + (c.z + 0.5 - l.z) ** 2;
+          const disarida = c.x < s0 || c.x >= s1 ? 4000 : 0;
+          const dd = (c.x + 0.5 - l.x) ** 2 + (c.y + 1 - l.y) ** 2 + (c.z + 0.5 - l.z) ** 2 + disarida;
           if (dd < bd) { bd = dd; best = q; }
         }
         if (best >= 0) dr.job = queue.splice(best, 1)[0];
@@ -557,6 +623,13 @@ export function* mimarJob(bot) {
   saveDepo(bot, d);
   // 5) dronlar barete, eve dönüş
   yield* recallDrones(bot);
+  // v0.3.8: inşa alanından çıkan cevherler Organizatör'ün dizinindeki uygun sandığa
+  const cv = Object.entries(cevherler);
+  if (cv.length) {
+    for (const [id, n] of cv) safe(() => bot.inv.addItem(new ItemStack(id, n)));
+    bot.say(`İnşa alanında ${cv.map(([id, n]) => `${n} ${itemName(id)}`).join(", ")} çıktı; sandığa gönderiyorum.`);
+    yield* sandigaKoy(bot);
+  }
   const miss = Object.keys(missing).length;
   if (miss) bot.say(`${Y.ad} bitti ama bazı bloklar eksik kaldı: ${needText(missing)}. Malzemeyi sandığıma koyup bana yeniden görev verirsen tamamlarım.`, { force: true });
   else bot.say(`${Y.ad} tamamlandı!`, { force: true });
