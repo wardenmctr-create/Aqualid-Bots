@@ -128,6 +128,9 @@ def yazi_genislik(metin, o=1):
     return (sum(len(FONT.get(AKSAN.get(c, (c,))[0], FONT[' '])[0]) + 1 for c in metin) - 1) * o
 
 
+CEVHERLER = [('tas', (60, 60, 60)), ('bos', (0, 0, 0)), ('komur', (12, 12, 12)), ('demir', (226, 192, 170)),
+             ('bakir', (230, 120, 70)), ('altin', (255, 210, 60)), ('kizil', (255, 40, 40)), ('lapis', (40, 90, 230)),
+             ('elmas', (90, 240, 230)), ('zumrut', (40, 220, 90)), ('kuvars', (240, 236, 228)), ('enkaz', (150, 100, 80))]
 ISARET = ['ok_n', 'ok_ne', 'ok_e', 'ok_se', 'ok_s', 'ok_sw', 'ok_w', 'ok_nw', 'kesif', 'robot', 'sandik', 'ev', 'izgara',
           'canavar', 'hayvan', 'koylu']
 
@@ -242,6 +245,32 @@ def glif_resmi():
         else:
             d.rectangle([x0, y0, x0 + 15, y0 + 15], fill=(14, 18, 26, 255), outline=(40, 50, 64, 255))
         harita['isaret'][ad] = 0xE100 + i
+    # v0.3.8 cevher dürbünü kareleri: koyu taş zemin üzerinde parlak cevher taşları (her cevher kendi renginde)
+    harita['cevher'] = {}
+    rnd2 = random.Random(11)
+    for n, (ad, renk) in enumerate(CEVHERLER):
+        i = 0x70 + n
+        x0, y0 = _hucre(img, i)
+        zemin = (34, 36, 40) if ad != 'tas' else (40, 42, 46)
+        for yy in range(C):
+            for xx in range(C):
+                img.putpixel((x0 + xx, y0 + yy), (tuple(v + 8 for v in zemin) if rnd2.random() < 0.2 else zemin) + (255,))
+        if ad in ('tas', 'bos'):
+            if ad == 'bos':
+                d.rectangle([x0, y0, x0 + 15, y0 + 15], fill=(10, 12, 16, 255))
+            harita['cevher'][ad] = 0xE100 + i
+            continue
+        acik = tuple(min(255, int(v * 1.3 + 40)) for v in renk)
+        for (gx, gy) in ((3, 3), (9, 4), (5, 9), (11, 10), (2, 12)):
+            d.rectangle([x0 + gx, y0 + gy, x0 + gx + 2, y0 + gy + 2], fill=renk + (255,))
+            img.putpixel((x0 + gx, y0 + gy), acik + (255,))
+        d.rectangle([x0, y0, x0 + 15, y0 + 15], outline=((170, 170, 170) if ad == 'komur' else renk) + (255,))
+        harita['cevher'][ad] = 0xE100 + i
+    # matkap işareti (aşağıda, yukarı bakan sarı ok)
+    i = 0x70 + len(CEVHERLER)
+    x0, y0 = _hucre(img, i)
+    d.polygon([(x0 + 8, y0 + 1), (x0 + 15, y0 + 14), (x0 + 8, y0 + 10), (x0 + 1, y0 + 14)], fill=(255, 214, 60, 255), outline=(60, 40, 10, 255))
+    harita['cevher']['matkap'] = 0xE100 + i
     return img, harita, etiket
 
 
@@ -254,6 +283,7 @@ def js_yaz(harita, yol):
             fh.write(f'export const {k.upper()} = Object.fromEntries(Object.entries({json.dumps(harita[k])}).map(([a, b]) => [a, C(b)]));\n')
         fh.write(f'export const ETIKET = Object.fromEntries(Object.entries({json.dumps(harita["etiket"])}).map(([a, b]) => [a, b.map(C).join("")]));\n')
         fh.write(f'export const KISA = {json.dumps(KISA, ensure_ascii=False)};\n')
+        fh.write(f'export const CEVHER = Object.fromEntries(Object.entries({json.dumps(harita["cevher"])}).map(([a, b]) => [a, C(b)]));\n')
         fh.write(f'export const BIYOM_ESLESME = {json.dumps(harita["biyom_eslesme"])};\n')
 
 

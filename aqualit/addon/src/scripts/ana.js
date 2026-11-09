@@ -1,5 +1,5 @@
 // Aqualit Robotları — asıl giriş (main.js güvenli açılışla yükler)
-// Sürüm 0.3.8 (oyun raporu düzeltmeleri: Keşif araçları, Kılıçlı, Mimar; yapı arama, Tırmanma menüde, gece görüşü)
+// Sürüm 0.3.9 (matkap: baktığın yöne kazma, cevher dürbünü; 0.3.8: harita, temalar, düzeltmeler)
 import { world, system } from "@minecraft/server";
 import "./brain.js";
 import "./items.js";
@@ -8,6 +8,7 @@ import "./statue.js";
 import "./zirh.js";
 import "./sandik.js";
 import "./konum.js";
+import "./cevher_durbunu.js";
 import { safe } from "./util.js";
 import { fxCleanup } from "./fx.js";
 
@@ -16,7 +17,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
   if (!ev.initialSpawn) return;
   const p = ev.player;
   system.runTimeout(() => {
-    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.3.8 yüklendi. Gemi tekne gibi, Kılıçlı Keşif'e saldırmıyor, Mimar kapıları koyuyor, yapı arama!"));
+    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.3.9 yüklendi. Matkap baktığın yöne kazıyor, cevher dürbünü açık!"));
     if (!cleaned) {
       cleaned = true;
       fxCleanup(); // önceki oturumdan kalmış güç efekti varlıkları

@@ -15,8 +15,8 @@ import { hizCarpani, tutucuAcik, tutucuAyarla } from "./kesif_radar.js";
 export const KESIF_ID = "aqualit:kesif";
 export const KFORMS = ["robot", "ucak", "gemi", "denizalti", "arazi", "matkap"];
 export const KAD = { robot: "Robot", ucak: "Uçak", gemi: "Gemi", denizalti: "Denizaltı", arazi: "Arazi aracı", matkap: "Matkap" };
-const KAZ = ["yatay", "dikey", "capraz"];
-const KAZ_AD = { yatay: "düz ileri", dikey: "aşağı", capraz: "çapraz aşağı" };
+const KAZ = ["bakis", "yatay", "dikey", "capraz"];
+const KAZ_AD = { bakis: "baktığın yöne", yatay: "düz ileri", dikey: "aşağı", capraz: "çapraz aşağı" };
 const SPEED = { ucak: 1.1, gemi: 0.6, denizalti: 0.38, arazi: 0.55, matkap: 0.14 }; // blok/tik
 const LOOP = { ucak: "aqualit.kesif.plane_loop", gemi: "aqualit.kesif.boat_loop", denizalti: "aqualit.kesif.sub_loop",
   arazi: "aqualit.kesif.rover_loop", matkap: "aqualit.kesif.drill_loop" };
@@ -250,7 +250,7 @@ export function transform(e, to, pl) {
 export async function aracMenu(pl, e) {
   if (!safe(() => e.isValid, false)) return;
   const form = formOf(e);
-  const kaz = safe(() => e.getDynamicProperty("aq:kaz"), "yatay") ?? "yatay";
+  const kaz = safe(() => e.getDynamicProperty("aq:kaz"), "bakis") ?? "bakis";
   const f = new ActionFormData().title("Keşif Robotu")
     .body(`Şu an: §l${KAD[form]}§r\n§7Araçken dokunarak binersin, eğilince inersin. İleri tuşu: baktığın yöne git.` +
       (form === "matkap" ? `\nKazma yönü: §l${KAZ_AD[kaz]}` : ""));
@@ -283,8 +283,9 @@ function blocked(dim, b) {
   return !B.isPassableType(t);
 }
 
-function dig(v, fwd, mode) {
+function dig(v, fwd, mode, bakis) {
   const dim = v.dimension, p = v.location;
+  if (mode === "bakis" && bakis) return kazBakis(v, bakis);
   const ax = Math.abs(fwd.x) >= Math.abs(fwd.z);
   const dx = ax ? Math.sign(fwd.x) : 0, dz = ax ? 0 : Math.sign(fwd.z);
   const lx = dz, lz = dx; // yana dik
@@ -303,6 +304,36 @@ function dig(v, fwd, mode) {
     const b = safe(() => dim.getBlock({ x, y, z }));
     if (!b) continue;
     const id = safe(() => b.typeId, "minecraft:air");
+    if (id === "minecraft:air" || /water|lava/.test(id) || UNBREAK.has(id) || KEEP.test(id)) continue;
+    safe(() => dim.runCommand(`setblock ${x} ${y} ${z} air destroy`));
+    n++;
+  }
+  return n;
+}
+
+/** v0.3.8: baktığın yöne (yukarı, aşağı, çapraz dahil) 3x3 tünel kazar. Matkap uçmaz: yerçekimi hep var, yukarı
+ * kazarken açtığı basamaklara otomatik çıkar, aşağı kazarken çukura iner. */
+function kazBakis(v, b) {
+  const dim = v.dimension, p = v.location;
+  const L = Math.hypot(b.x, b.y, b.z) || 1;
+  const f = { x: b.x / L, y: b.y / L, z: b.z / L };
+  // bakışa dik iki eksen (u: yatay yan, w: "yukarı")
+  let u = { x: -f.z, y: 0, z: f.x };
+  const ul = Math.hypot(u.x, u.z);
+  u = ul < 0.2 ? { x: 1, y: 0, z: 0 } : { x: u.x / ul, y: 0, z: u.z / ul };
+  const w = { x: f.y * u.z - f.z * u.y, y: f.z * u.x - f.x * u.z, z: f.x * u.y - f.y * u.x };
+  const c = { x: p.x, y: p.y + 1.0, z: p.z };
+  const hucre = new Set();
+  for (const d of [1.0, 2.0]) for (let a = -1; a <= 1; a++) for (let k = -1; k <= 1; k++) {
+    const q = { x: c.x + f.x * d + u.x * a + w.x * k, y: c.y + f.y * d + u.y * a + w.y * k, z: c.z + f.z * d + u.z * a + w.z * k };
+    hucre.add(`${Math.floor(q.x)},${Math.floor(q.y)},${Math.floor(q.z)}`);
+  }
+  let n = 0;
+  for (const h of hucre) {
+    const [x, y, z] = h.split(",").map(Number);
+    const bl = safe(() => dim.getBlock({ x, y, z }));
+    if (!bl) continue;
+    const id = safe(() => bl.typeId, "minecraft:air");
     if (id === "minecraft:air" || /water|lava/.test(id) || UNBREAK.has(id) || KEEP.test(id)) continue;
     safe(() => dim.runCommand(`setblock ${x} ${y} ${z} air destroy`));
     n++;
@@ -518,9 +549,9 @@ function drive(v, pl, t) {
     // bir blok: oyunun otomatik basamak çıkması (variable_max_auto_step); 2-6 blok dik duvar: tırmanma modu
     tilt = tirman(v, pl, mv, t);
   } else if (form === "matkap") {
-    const mode = safe(() => v.getDynamicProperty("aq:kaz"), "yatay") ?? "yatay";
+    const mode = safe(() => v.getDynamicProperty("aq:kaz"), "bakis") ?? "bakis";
     if (f > 0.1 && t % 4 === 0) {
-      const n = dig(v, fwd, mode);
+      const n = dig(v, fwd, mode, safe(() => pl.getViewDirection(), null));
       if (n) kaziTopla(v);
       if (n && t % 20 === 0) snd(dim, "aqualit.kesif.drill_loop", v.location, { volume: 0.8 });
     }

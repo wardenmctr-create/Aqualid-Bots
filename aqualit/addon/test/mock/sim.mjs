@@ -1194,6 +1194,25 @@ if (run("kesif")) {
   for (let d = 1; d <= 2; d++) for (let l = -1; l <= 1; l++) for (let h = 0; h <= 2; h++) air += ow._cell({ x: bx + l, y: by + h, z: bz + d }).type === "minecraft:air" ? 1 : 0;
   check(air === 17, `matkap önündeki 3x3x2 taşı kazdı (${air}/17)`);
   check(ow._cell({ x: bx, y: by, z: bz + 2 }).type === "minecraft:bedrock", "katman kayasına dokunmadı");
+  // v0.3.8: cevher dürbünü: önde ve aşağıdaki cevheri gösterir
+  {
+    const CD = await import("./scripts/cevher_durbunu.js");
+    const HG = await import("./scripts/harita_glif.js");
+    set({ x: bx + 2, y: by - 2, z: bz + 5 }, "minecraft:diamond_ore");
+    set({ x: bx - 1, y: by + 1, z: bz + 3 }, "minecraft:coal_ore");
+    const dr = CD.durbun(k);
+    check(dr.satirlar.length === 9 && dr.satirlar.join("").includes(HG.CEVHER.elmas) && dr.satirlar.join("").includes(HG.CEVHER.komur),
+      "cevher dürbünü önde ve aşağıdaki cevherleri gösteriyor");
+    check(dr.en?.c?.[2] === "elmas" && dr.en.dy === -2, `en değerli cevher elmas, ${dr.en?.uz} blok, 2 aşağıda`);
+    set({ x: bx + 2, y: by - 2, z: bz + 5 }, "minecraft:stone");
+    set({ x: bx - 1, y: by + 1, z: bz + 3 }, "minecraft:stone");
+  }
+  // v0.3.8: baktığın yöne kazar: aşağı bakınca önü-aşağısı kazılır (matkap uçmaz)
+  for (let l = -1; l <= 1; l++) for (let d = 1; d <= 2; d++) set({ x: bx + l, y: by - 1, z: bz + d }, "minecraft:stone");
+  player._rot = { x: 55, y: 0 };
+  ticks(8);
+  check(ow._cell({ x: bx, y: by - 1, z: bz + 1 }).type === "minecraft:air", "aşağı bakınca önü-aşağısı kazıldı (baktığın yöne kazma)");
+  player._rot = { x: 0, y: 0 };
   k._dp["aq:kaz"] = "dikey";
   ticks(8);
   check(ow._cell({ x: bx, y: by - 1, z: bz }).type === "minecraft:air", "aşağı kazma modunda altını kazdı");
