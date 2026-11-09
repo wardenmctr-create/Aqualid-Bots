@@ -51,12 +51,9 @@ def yuz6(renk='M', sert=False):
     """Mimar dronundaki yüz (6x5): iki dik göz, gülen ağız, pembe yanaklar. sert: kısık gözler, düz ağız."""
     g = plate(6, 5, renk, top='H', bottom='D', left='H', right='D')
     put(g, ['WkkW', 'WkkW'] if not sert else ['kkkk', 'WkkW'], 1, 1)
+    g[3][2] = g[3][3] = 'k'
     if sert:
-        g[3][2] = g[3][3] = 'k'
-        g[3][1] = g[3][4] = 'R'
-    else:
-        g[3][2] = g[3][3] = 'k'
-        g[3][1] = g[3][4] = 'R'
+        g[3][1] = g[3][4] = 'R'      # kırmızı yanak işareti yalnız Kılıçlı'nın imzası
     return g
 
 
@@ -84,15 +81,14 @@ def madenci(f):
 
 
 def kasik(f, bone, ad, cx, y0):
-    """Gerçekten oyuk kaşık (kürek ağzı): sap + 4x4 kaşık; arkası kapalı plaka, kenarları 1 piksel kabarık, içi boş (koyu oyuk).
-    Kemiğin yerel +y yönüne uzanır; oyuk yüz +z'ye (dönüş yönüne) bakar."""
-    kutu(f, bone, ad + '_sap', (cx - 0.5, y0 + 1, -0.5), (cx + 0.5, y0 + 2, 0.5), base='m', front=rows('o'))
-    kutu(f, bone, ad + '_arka', (cx - 2, y0 + 2, -1), (cx + 2, y0 + 6, 0), base='*', front=fill(4, 4, '%'),
-         back=rows('*++*', '+**+', '+**+', '*++*'))
-    kutu(f, bone, ad + '_kenar_l', (cx - 2, y0 + 2, 0), (cx - 1, y0 + 6, 2), base='+')
-    kutu(f, bone, ad + '_kenar_r', (cx + 1, y0 + 2, 0), (cx + 2, y0 + 6, 2), base='+')
-    kutu(f, bone, ad + '_kenar_u', (cx - 1, y0 + 5, 0), (cx + 1, y0 + 6, 2), base='+')
-    kutu(f, bone, ad + '_kenar_a', (cx - 1, y0 + 2, 0), (cx + 1, y0 + 3, 2), base='*')
+    """Küçük, sığ oyuk kaşık: sap + 3x3 kaşık; plaka arkada, kenarları (sol, sağ, uç) 1 piksel kabarık, ortası boş.
+    Oyuk -z'ye bakar (v5'te ters ve çok derindi)."""
+    kutu(f, bone, ad + '_sap', (cx - 0.5, y0 + 1, -0.5), (cx + 0.5, y0 + 2, 0.5), base='m')
+    kutu(f, bone, ad + '_arka', (cx - 1.5, y0 + 2, 0), (cx + 1.5, y0 + 5, 1), base='*', back=fill(3, 3, '%'),
+         front=rows('*+*', '+**', '*+*'))
+    kutu(f, bone, ad + '_kenar_l', (cx - 1.5, y0 + 2, -1), (cx - 0.5, y0 + 5, 0), base='+')
+    kutu(f, bone, ad + '_kenar_r', (cx + 0.5, y0 + 2, -1), (cx + 1.5, y0 + 5, 0), base='+')
+    kutu(f, bone, ad + '_kenar_u', (cx - 0.5, y0 + 4, -1), (cx + 0.5, y0 + 5, 0), base='+')
 
 
 def kurekci(f):
@@ -130,26 +126,44 @@ def ciftci(f):
 
 
 def oduncu(f):
-    # yeşil atkı, antenin ucunda yaprak; tepede yatay dönen daire testere (dişli kenar, ahşap göbek)
+    # yeşil atkı, antenin ucunda yaprak, sırtta küçük balta; tepede yatay dönen daire testere
+    # (11 piksel çaplı yuvarlak disk, 12 sivri diş, pirinç göbek, iki kesik çizgi)
     govde6(f)
     kutu(f, 'g', 'atki', (-3.5, 3, -3.5), (3.5, 4, 3.5), base='E', front=rows('EfEfEfE'), top=fill(7, 7, 'E'))
     kutu(f, 'g', 'atki_uc', (2, 1, 3), (3, 3, 4), base='E')
     kutu(f, 'g', 'anten', (2, 8, -2), (3, 10, -1), base='%')
     kutu(f, 'g', 'anten_yaprak', (1.5, 10, -2.5), (3.5, 11, -0.5), base='e', top=rows('fe', 'Ef'))
+    kutu(f, 'g', 'balta_sap', (-0.5, 3, -4), (0.5, 8, -3), base='m')
+    kutu(f, 'g', 'balta_agiz', (-0.5, 6, -5), (0.5, 8, -3), base='*', left=rows('+*', '**'), right=rows('*+', '**'))
     kutu(f, 'g', 'mil', (-0.5, 8, -0.5), (0.5, 10, 0.5), base='%')
     f.bone('p_testere', 'g', (0, 10.5, 0))
-    # testere diski: 9x9 yaklaşık daire, kenarda dişler, ortada ahşap göbek
+    n = 11
     disk = []
-    for zz in range(9):
+    for zz in range(n):
         r = []
-        for xx in range(9):
-            d = ((xx - 4) ** 2 + (zz - 4) ** 2) ** 0.5
-            r.append(' ' if d > 4.6 else ('m' if d < 1.2 else ('o' if d < 1.8 else ('%' if d > 3.6 else ('+' if (xx + zz) % 3 == 0 else '*')))))
+        for xx in range(n):
+            d = ((xx - 5) ** 2 + (zz - 5) ** 2) ** 0.5
+            if d > 5.3:
+                r.append(' ')
+            elif d < 1.3:
+                r.append('Q')
+            elif d < 2.0:
+                r.append('y')
+            elif d > 4.4:
+                r.append('%')
+            elif (xx == zz or xx + zz == 10) and d > 2.4:
+                r.append('&')                # kesik çizgileri
+            else:
+                r.append('+' if (xx * 3 + zz) % 5 == 0 else '*')
         disk.append(r)
-    kutu(f, 'p_testere', 'disk', (-4.5, 10, -4.5), (4.5, 11, 4.5), base='*', top=disk, bottom=[r[:] for r in disk],
-         front=rows(' %*+*+*% '), back=rows(' %*+*+*% '), left=rows(' %*+*+*% '), right=rows(' %*+*+*% '))
-    for k, (x, z) in enumerate(((5, 0), (-5, 0), (0, 5), (0, -5), (3.5, 3.5), (-3.5, 3.5), (3.5, -3.5), (-3.5, -3.5))):
-        kutu(f, 'p_testere', f'dis{k}', (x - 0.5, 10, z - 0.5), (x + 0.5, 11, z + 0.5), base='+')
+    kutu(f, 'p_testere', 'disk', (-5.5, 10, -5.5), (5.5, 11, 5.5), base='*', top=disk, bottom=[r[:] for r in disk],
+         front=[[' ', ' ', '%'] + ['*'] * 5 + ['%', ' ', ' ']], back=[[' ', ' ', '%'] + ['*'] * 5 + ['%', ' ', ' ']],
+         left=[[' ', ' ', '%'] + ['*'] * 5 + ['%', ' ', ' ']], right=[[' ', ' ', '%'] + ['*'] * 5 + ['%', ' ', ' ']])
+    import math as _m
+    for k in range(12):
+        a = k * 30
+        x, z = round(_m.cos(_m.radians(a)) * 6 * 2) / 2, round(_m.sin(_m.radians(a)) * 6 * 2) / 2
+        kutu(f, 'p_testere', f'dis{k}', (x - 0.5, 10, z - 0.5), (x + 0.5, 11, z + 0.5), base='9')
 
 
 def kilicli(f):
@@ -177,7 +191,6 @@ def organizator(f, cam=True):
             on[y][x] = 'k'
     put(on, ['WkkW', 'WkkW'], 2, 1)
     on[3][3] = on[3][4] = 'k'
-    on[3][2] = on[3][5] = 'P'
     kutu(f, 'g', 'tablet', (-4, 3, -1), (4, 9, 1), base='1', front=on, glow='WP',
          top=fill(8, 2, '3'), back=fill(8, 6, '2'))
     if cam:
@@ -254,5 +267,5 @@ if __name__ == '__main__':
     print(Z.gif(frames, os.path.join(OUT, '84_evcil_dronlar.gif'), ms=60))
     imgs = [(ciz(tur, Z.Cam(yaw=30, elev=18, scale=8.5, size=(170, 220), center=(0, 7, 0)), 0.1, M, C), ADLAR[tur])
             for tur in TURLER]
-    print(kart('Evcil mini dronlar · 5. tasarım', imgs, os.path.join(OUT, '84_evcil_dronlar.png'),
+    print(kart('Evcil mini dronlar · 6. tasarım', imgs, os.path.join(OUT, '84_evcil_dronlar.png'),
                alt='Mimar ve Keşif dronları zaten var. Hepsi omuzda süzülür.'))
