@@ -48,7 +48,7 @@ KAMERA = {'ucak': 10.0, 'gemi': 8.0, 'denizalti': 6.0, 'arazi': 7.0, 'matkap': 7
 MODLAR = {'arazi': ('k_arazi_yer', 'k_tirman'), 'denizalti': ('k_denizalti_su', 'k_denizalti_kara')}
 HAREKET_BILESEN = {'physics', 'input_ground_controlled', 'input_air_controlled', 'movement', 'movement.basic',
                    'jump.static', 'variable_max_auto_step', 'flying_speed', 'can_fly', 'underwater_movement',
-                   'water_movement'}           # bu araçlara robot binmez (içeri girer)
+                   'water_movement', 'lava_movement'}           # bu araçlara robot binmez (içeri girer)
 KAPI_ACI = -100                         # matkap kapısının açık hali (derece, Y ekseni)
 
 
@@ -89,6 +89,7 @@ def kesif_bp():
                 # v0.3.8: suda çok yavaştı
                 g['minecraft:underwater_movement'] = {'value': HIZ[f]}
                 g['minecraft:water_movement'] = {'drag_factor': 0.95}
+                g['minecraft:lava_movement'] = {'value': HIZ[f]}      # v0.3.8: lavda da dalar
         elif f == 'gemi':
             # v0.3.8: tekne gibi suyun üstünde kayar: zıplama yok (zıplayan mob gibi duruyordu), suyun frenlemesi az
             g['minecraft:input_ground_controlled'] = {}
@@ -126,7 +127,8 @@ def kesif_bp():
         if f == 'gemi':
             g['minecraft:buoyant'] = {'base_buoyancy': 1.0, 'apply_gravity': True, 'simulate_waves': True,
                                       'big_wave_probability': 0.03, 'big_wave_speed': 10.0,
-                                      'liquid_blocks': ['minecraft:water', 'minecraft:flowing_water']}
+                                      'liquid_blocks': ['minecraft:water', 'minecraft:flowing_water', 'minecraft:lava', 'minecraft:flowing_lava']}
+            g['minecraft:lava_movement'] = {'value': HIZ[f]}      # v0.3.8: Nether'de lavda yüzer
         # dokununca menü: robotken her dokunuşta, araçken eğilip dokununca (dokunmak binmek)
         # (v0.3.0'a kadar etkileşim yoktu: robot haline dokunmak oyunda vuruş sayılıyor, menü hiç açılmıyordu)
         g['minecraft:interact'] = {'interactions': [{
@@ -146,9 +148,9 @@ def kesif_bp():
     # v0.3.6: grubu kaldırmak işareti sıfırlamıyordu; araç dönüşüm animasyonunun son karesinde (0,22 boy, 180° dönük)
     # kalıyordu: "her hal küçük, araca tersten biniyorum". İşaret artık ayrı grupla açıkça 0'a çekilir.
     groups['k_gecis0'] = {'minecraft:mark_variant': {'value': 0}}
-    # tutucular: istemci q.skin_id ile de bilir (özellik okunmazsa diye)
-    groups['k_tutucu1'] = {'minecraft:skin_id': {'value': 1}}
-    groups['k_tutucu0'] = {'minecraft:skin_id': {'value': 0}}
+    # v0.3.8: q.skin_id = tema * 2 + tutucu (tema: 0 normal, 1 Nether, 2 End; tutucu: arazi tırmanma pençeleri)
+    for n in range(6):
+        groups[f'k_skin_{n}'] = {'minecraft:skin_id': {'value': n}}
     # v0.3.6: arazi aracı tırmanma modu: duvara dayanınca yerçekimsiz, baktığı/sürdüğü yöne (yukarı) gider
     groups['k_tirman'] = {'minecraft:physics': {'has_gravity': False, 'has_collision': True},
                           'minecraft:input_air_controlled': {'strafe_speed_modifier': 0.3, 'backwards_movement_modifier': 0.6},
@@ -166,10 +168,9 @@ def kesif_bp():
               'aqualit:gecis_off': {'remove': {'component_groups': ['k_gecis']}, 'add': {'component_groups': ['k_gecis0']}},
               'aqualit:tirman_on': {'remove': {'component_groups': ['k_arazi_yer']}, 'add': {'component_groups': ['k_tirman']}},
               'aqualit:tirman_off': {'remove': {'component_groups': ['k_tirman']}, 'add': {'component_groups': ['k_arazi_yer']}},
-              'aqualit:tutucu_on': {'remove': {'component_groups': ['k_tutucu0']}, 'add': {'component_groups': ['k_tutucu1']},
-                                    'set_property': {'aqualit:tutucu': True}},
-              'aqualit:tutucu_off': {'remove': {'component_groups': ['k_tutucu1']}, 'add': {'component_groups': ['k_tutucu0']},
-                                     'set_property': {'aqualit:tutucu': False}},
+              **{f'aqualit:skin_{n}': {'remove': {'component_groups': [f'k_skin_{m}' for m in range(6) if m != n]},
+                                       'add': {'component_groups': [f'k_skin_{n}']},
+                                       'set_property': {'aqualit:tutucu': n % 2 == 1}} for n in range(6)},
               'aqualit:dz_su': {'remove': {'component_groups': ['k_denizalti_kara']}, 'add': {'component_groups': ['k_denizalti_su']}},
               'aqualit:dz_kara': {'remove': {'component_groups': ['k_denizalti_su']}, 'add': {'component_groups': ['k_denizalti_kara']}}}
     for f in FORMS:
@@ -219,18 +220,20 @@ def kesif_bp():
 def kesif_rp():
     anims = {'ctrl': 'controller.animation.aqualit.kesif', 'kapi_ctrl': 'controller.animation.aqualit.kesif.kapi'}
     anims['look_at_target'] = 'animation.common.look_at_target'
-    for n in ['gizle', 'tutucu', 'fold', 'robot_in', 'kapi_ac', 'kapi_kapa', 'idle_robot', 'walk_robot'] + [f'run_{f}' for f in FORMS] + [f'unfold_{f}' for f in FORMS if f != 'robot']:
+    for n in ['gizle', 'tutucu', 'tema', 'fold', 'robot_in', 'kapi_ac', 'kapi_kapa', 'idle_robot', 'walk_robot'] + [f'run_{f}' for f in FORMS] + [f'unfold_{f}' for f in FORMS if f != 'robot']:
         anims[n] = f'animation.aqualit.kesif.{n}'
     return {'format_version': '1.10.0', 'minecraft:client_entity': {'description': {
         'identifier': KID,
         'materials': {'default': 'entity_alphatest', 'glow': 'copper_golem_eyes'},
-        'textures': {'default': 'textures/entity/aqualit_kesif/kesif', 'glow': 'textures/entity/aqualit_kesif/kesif_glow'},
+        'textures': {'default': 'textures/entity/aqualit_kesif/kesif', 'glow': 'textures/entity/aqualit_kesif/kesif_glow',
+                     'nether': 'textures/entity/aqualit_kesif/kesif_nether', 'nether_glow': 'textures/entity/aqualit_kesif/kesif_nether_glow',
+                     'end': 'textures/entity/aqualit_kesif/kesif_end', 'end_glow': 'textures/entity/aqualit_kesif/kesif_end_glow'},
         'geometry': {'default': 'geometry.aqualit.kesif'},
         'animations': anims,
         # v0.3.8: v.egim: inip çıkarken yumuşatılmış burun açısı (dikey hızdan; betikteki egim yalnız tırmanma ve uçuş)
         'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}",
                     'pre_animation': ['v.egim = math.lerp(v.egim ?? 0, math.clamp(-q.vertical_speed * 6, -30, 30), 0.12);'],
-                    'animate': ['gizle', 'tutucu', 'ctrl', 'kapi_ctrl']},
+                    'animate': ['gizle', 'tutucu', 'tema', 'ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
     }}}
 
@@ -238,10 +241,15 @@ def kesif_rp():
 def kesif_render():
     vis = [{'*': True}] + [{ROOT[f]: f"q.variant == {i}"} for i, f in enumerate(FORMS)]
     base = {'geometry': 'Geometry.default', 'part_visibility': vis}
+    # v0.3.8: tema dokusu q.skin_id'den (tema * 2 + tutucu)
+    tema = 'math.floor(q.skin_id / 2)'
+    dizi = {'textures': {'Array.tema': ['Texture.default', 'Texture.nether', 'Texture.end'],
+                         'Array.tema_glow': ['Texture.glow', 'Texture.nether_glow', 'Texture.end_glow']}}
     return {'format_version': '1.8.0', 'render_controllers': {
-        'controller.render.aqualit.kesif': {**base, 'materials': [{'*': 'Material.default'}], 'textures': ['Texture.default']},
-        'controller.render.aqualit.kesif_glow': {**base, 'materials': [{'*': 'Material.glow'}], 'textures': ['Texture.glow'],
-                                                 'ignore_lighting': True},
+        'controller.render.aqualit.kesif': {**base, 'arrays': dizi, 'materials': [{'*': 'Material.default'}],
+                                            'textures': [f'Array.tema[{tema}]']},
+        'controller.render.aqualit.kesif_glow': {**base, 'arrays': dizi, 'materials': [{'*': 'Material.glow'}],
+                                                 'textures': [f'Array.tema_glow[{tema}]'], 'ignore_lighting': True},
     }}
 
 
@@ -332,8 +340,15 @@ def kesif_anims():
     A['gizle'] = {'loop': True, 'bones': {ROOT[f]: {'scale': f"(q.variant == {i} && !{ici(f)}) ? 1 : 0"}
                                           for i, f in enumerate(FORMS)}}
     # v0.3.6: arazi aracının tırmanma tutucuları (Tırmanma Modu açıkken görünür)
-    TUT = f"(q.skin_id == 1 || {P('tutucu')}) ? 1 : 0"
+    TUT = f"(math.mod(q.skin_id, 2) == 1 || {P('tutucu')}) ? 1 : 0"
     A['tutucu'] = {'loop': True, 'bones': {f'a_tut_{w}': {'scale': TUT} for w in ('fl', 'fr', 'bl', 'br')}}
+    # v0.3.8: tema süsleri (Nether boynuzları / End kristali) yalnız o boyutta; kristal süzülüp döner
+    tema = 'math.floor(q.skin_id / 2)'
+    A['tema'] = {'loop': True, 'bones': {
+        **{f'tn_{ROOT[f]}': {'scale': f"{tema} == 1 ? 1 : 0"} for f in FORMS},
+        **{f'te_{ROOT[f]}': {'scale': f"{tema} == 2 ? 1 : 0"} for f in FORMS},
+        **{f'te_{ROOT[f]}_kristal': {'rotation': [0, 'q.life_time * 90', 0], 'position': [0, 'math.sin(q.life_time * 120) * 0.8', 0]}
+           for f in FORMS}}}
     # matkabın arka kapısı (0,4 sn): dışarı, platforma doğru açılır
     A['kapi_ac'] = {'loop': 'hold_on_last_frame', 'animation_length': 0.4, 'bones': {
         'm_door': {'rotation': {'0.0': [0, 0, 0], '0.4': [0, KAPI_ACI, 0]}}}}
@@ -411,11 +426,19 @@ def kafa_simgeleri(geo, tex, glow, out_dir):
 
 def build(RP, BP, wj):
     import kesif as K
-    geo, tex, glow = K.build(W=512)
+    import kesif_tema as KT
+    geo, tex, glow = K.build(forms=KT.tum_formlar(), W=512)
     d = f'{RP}/textures/entity/aqualit_kesif'
     os.makedirs(d, exist_ok=True)
     tex.save(f'{d}/kesif.png')
     glow.save(f'{d}/kesif_glow.png')
+    # v0.3.8: Nether ve End temaları (boyuta girince betik q.skin_id ile seçer)
+    for tema in ('nether', 'end'):
+        t2, g2 = KT.renk_donustur(tex, tema), KT.renk_donustur(glow, tema)
+        if tema == 'nether':
+            t2, g2 = KT.magma_catlak(t2, g2)
+        t2.save(f'{d}/kesif_{tema}.png')
+        g2.save(f'{d}/kesif_{tema}_glow.png')
     wj(f'{RP}/models/entity/aqualit_kesif.geo.json', geo)
     wj(f'{BP}/entities/kesif.json', kesif_bp())
     wj(f'{RP}/entity/aqualit_kesif.entity.json', kesif_rp())
