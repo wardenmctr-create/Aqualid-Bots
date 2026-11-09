@@ -3,7 +3,7 @@
 turkuaz ışın merceği ve iki kargo kıskacı; arkada küçük çanak anten."""
 import math
 import os
-from ortak import Form, kutu, fill, rows, panel, over, kart, OUT, Z, model
+from ortak import Form, kutu, kizak, fill, rows, panel, over, kart, OUT, Z, model
 from vizor2 import cam_yuz, CAM_ALFA
 import numpy as np
 from PIL import Image
@@ -38,9 +38,8 @@ def yardimci(cam=True):
          bottom=rows('ıööööı', 'öÇÇÇÇö', 'öÇ99Çö', 'öÇ99Çö', 'öÇÇÇÇö', 'ıööööı'),
          front=rows('2ööö22'[:6], '2ıııı2'), back=rows('2ööö22'[:6], '2ıııı2'),
          left=rows('2ööö22'[:6], '2ıııı2'), right=rows('2ööö22'[:6], '2ıııı2'))
-    for ad, z0 in (('kiskac_on', 4), ('kiskac_arka', -5)):
-        kutu(f, 'govde', ad, (-1, 2, z0), (1, 6, z0 + 1), base='&')
-        kutu(f, 'govde', ad + '_uc', (-2, 1, z0 - (1 if z0 > 0 else -1) * 0), (2, 2, z0 + 1), base='*')
+    # v2: bacak gibi duran kıskaçlar yerine helikopter kızakları (blokları ışınla taşır)
+    kizak(f, 'govde', 10, 0, 6, 7, govde_x=5)
     # arka çanak anten
     kutu(f, 'govde', 'anten', (-0.5, 14, -6), (0.5, 17, -5), base='%')
     kutu(f, 'govde', 'canak', (-2, 16, -6.5), (2, 19, -5.5), base='*', front=rows('*++*', '+PP+', '*++*'), glow='P')
@@ -85,4 +84,4 @@ if __name__ == '__main__':
     imgs = [(ciz(Z.Cam(yaw=y, elev=e, scale=9.5, size=(330, 300), center=(0, 10, 0)), 0, A, B), t)
             for y, e, t in ((15, 10, '3/4 önden'), (160, 30, 'arkadan'), (30, -35, 'alttan: ışın merceği'))]
     print(kart('Organizatör Yardımcısı (büyük dron)', imgs, os.path.join(OUT, '82_org_yardimci.png'),
-               alt='Gövde 14x14 (Mimar dronu 6, Keşif dronu 5) · blok ışınlar · kıskaçla taşır'))
+               alt='Gövde 14x14 · blok ışınlar · helikopter kızakları'))

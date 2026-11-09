@@ -1,15 +1,15 @@
-"""Portalcı (boyutlar arası) robot, 2. tasarım: yalnız kafa (normal robot kafası 12x9x10) uçan dron.
-Kafanın üst köşelerine yakın, çapraz (X) dizili dört büyük yatay pervane (yarıçap 5 = kafa yarıçapının (6) 5/6'sı),
-her biri kare koruma halkasında. Altta helikopter gibi ince, modern iniş kızakları (turkuaz şeritli).
-Alnında portal taşı, yanlarda portal halkaları, kafanın altında yüzeye gömülü parlayan portal çekirdeği."""
+"""Portalcı (boyutlar arası) robot, 3. tasarım: Organizatör Yardımcısı tarzında dron, gövdesi normal robot kafası
+boyunda (12x9x10). Önde yarı saydam mavi cam ekranın ardında gözler; köşelerde halkalı 4 yatay pervane (yarıçap 5,
+kafa yarıçapı 6); altta dönen portal merceği; yanlarda portal halkaları; helikopter kızakları. Robot turkuazı + portal
+moru-turkuazı."""
 import math
 import os
-from ortak import Form, Part, kutu, fill, rows, panel, over, dondur_gif, kart, OUT, Z, model, R
+import numpy as np
+from PIL import Image
+from ortak import Form, kutu, kizak, fill, rows, panel, over, kart, OUT, Z, model
+from vizor2 import cam_yuz, CAM_ALFA
 
-D = 7            # pervane merkezlerinin kafa merkezine x/z uzaklığı
-YP = 20          # pervane yüksekliği (kafa tepesi 19)
-RP = 5           # pervane yarıçapı
-KOSE = [('fl', 1, 1), ('fr', -1, 1), ('bl', 1, -1), ('br', -1, -1)]
+RP = 5
 
 
 def girdap(n, t=0.0):
@@ -25,71 +25,80 @@ def girdap(n, t=0.0):
     return g
 
 
-def model_portalci(t=0.0):
+def model_portalci(cam=True, t=0.0):
     f = Form('portalci', 'Portalcı')
     f.bone('root', None, (0, 0, 0))
-    f.bone('govde', 'root', (0, 14, 0))
-    # kafa = robotun kendisi
-    for p in R.base_robot('portalci'):
-        if p.name == 'head':
-            f.parts.append(Part('govde', p, 'EYES'))
-    kutu(f, 'govde', 'alin_tasi', (-1, 17, 5), (1, 19, 6), base='ğ', glow='ğüÇ', front=rows('üğ', 'ğş'))
-    for ad, x0 in (('kulak_l', -7), ('kulak_r', 6)):
-        kutu(f, 'govde', ad, (x0, 12, -2), (x0 + 1, 17, 3), base='3', glow='ğüÇ',
-             left=over(fill(5, 5, '3'), rows('ğüğ', 'üÇü', 'ğüğ'), 1, 1), right=over(fill(5, 5, '3'), rows('ğüğ', 'üÇü', 'ğüğ'), 1, 1))
-    # kafanın altında gömülü portal çekirdeği (sarkmaz)
-    kutu(f, 'govde', 'cekirdek', (-3, 9, -3), (3, 10, 3), base='3', bottom=girdap(6, t), glow='ğüÇöşç')
-    # tepe göbeği: dört kolu taşıyan yassı plaka
-    kutu(f, 'govde', 'gobek', (-4, 19, -4), (4, 20, 4), base='&', top=panel(8, 8, '*', t='+', b='%', l='+', r='%'))
-    for ad, sx, sz in KOSE:
-        # göbekten pervaneye kısa çapraz kol (iki basamak)
-        for k in range(3):
-            x, z = sx * (3 + k * 1.5), sz * (3 + k * 1.5)
-            kutu(f, 'govde', f'kol_{ad}{k}', (x - 1, 19, z - 1), (x + 1, 20, z + 1), base='&', top=fill(2, 2, '*'))
-        cx, cz = sx * D, sz * D
-        kutu(f, 'govde', f'mil_{ad}', (cx - 0.5, 20, cz - 0.5), (cx + 0.5, 21, cz + 0.5), base='%')
-        # kare koruma halkası (yarıçap 6)
+    f.bone('govde', 'root', (0, 10, 0))
+    # gövde = robot kafası boyunda kutu (x -6..6, y 6..15, z -5..5)
+    on = fill(12, 9, 'M')
+    for x in range(12):
+        on[0][x] = 'H'; on[8][x] = 'D'
+    for y in range(2, 7):
+        for x in range(1, 11):
+            on[y][x] = 'k'
+    over(on, rows('LWL', 'WWW', 'WWW', 'LWL'), 2, 2)
+    over(on, rows('LWL', 'WWW', 'WWW', 'LWL'), 7, 2)
+    yan = fill(10, 9, 'M')
+    for x in range(10):
+        yan[0][x] = 'H'; yan[8][x] = 'D'
+    over(yan, rows('3333', '3ğü3', '3üğ3', '3333'), 3, 2)
+    ust = panel(12, 10, 'L', t='H', b='M', l='H', r='M')
+    over(ust, rows('ğğ', 'ğğ'), 5, 4)
+    kutu(f, 'govde', 'govde', (-6, 6, -5), (6, 15, 5), base='M', front=on, left=yan, right=[r[:] for r in yan],
+         back=fill(12, 9, 'D'), top=ust, glow='Wğü')
+    # mor portal şeridi (gövdenin altında) ve alında portal taşı
+    kutu(f, 'govde', 'serit', (-6.5, 6, -5.5), (6.5, 7, 5.5), base='ğ', glow='ğ', top=fill(13, 11, 'ş'))
+    kutu(f, 'govde', 'alin', (-1, 13, 5), (1, 15, 6), base='ğ', glow='ğü', front=rows('üğ', 'ğş'))
+    # arkada 1 piksel kalınlığında dönen portal merceği (gövdenin arka yüzüne yapışık disk)
+    kutu(f, 'govde', 'mercek', (-3.5, 7, -6), (3.5, 14, -5), base='3', glow='ğüÇöşç', back=girdap(7, t),
+         front=fill(7, 7, '3'))
+    # tepede küçük girdap küresi
+    kutu(f, 'govde', 'anten', (-0.5, 15, -0.5), (0.5, 17, 0.5), base='%')
+    kutu(f, 'govde', 'kure', (-1.5, 17, -1.5), (1.5, 20, 1.5), base='ğ', glow='ğüÇöşç', front=girdap(3, t),
+         back=girdap(3, t + .3), left=girdap(3, t + .5), right=girdap(3, t + .7), top=girdap(3, t))
+    # köşe kolları + halkalı yatay pervaneler (yarıçap 5)
+    for ad, sx, sz in (('fl', 1, 1), ('fr', -1, 1), ('bl', 1, -1), ('br', -1, -1)):
+        cx, cz = sx * 11, sz * 10
+        a = (min(sx * 5, sx * 8), 13, min(sz * 4, sz * 7))
+        b = (max(sx * 5, sx * 8), 14, max(sz * 4, sz * 7))
+        kutu(f, 'govde', f'kol_{ad}', a, b, base='&', top=fill(3, 3, '*'))
         r = RP + 1
-        for nm, aa, bb in ((f'h1_{ad}', (cx - r, 20.5, cz - r), (cx + r, 21.5, cz - r + 1)),
-                           (f'h2_{ad}', (cx - r, 20.5, cz + r - 1), (cx + r, 21.5, cz + r)),
-                           (f'h3_{ad}', (cx - r, 20.5, cz - r + 1), (cx - r + 1, 21.5, cz + r - 1)),
-                           (f'h4_{ad}', (cx + r - 1, 20.5, cz - r + 1), (cx + r, 21.5, cz + r - 1))):
-            w_, d_ = int(round(bb[0] - aa[0])), int(round(bb[2] - aa[2]))
-            kutu(f, 'govde', nm, aa, bb, base='%', glow='ö',
-                 top=[['ö' if (i + j) % 4 == 0 else '&' for i in range(w_)] for j in range(d_)])
+        for nm, aa, bb in ((f'h1_{ad}', (cx - r, 13, cz - r), (cx + r, 15, cz - r + 1)),
+                           (f'h2_{ad}', (cx - r, 13, cz + r - 1), (cx + r, 15, cz + r)),
+                           (f'h3_{ad}', (cx - r, 13, cz - r + 1), (cx - r + 1, 15, cz + r - 1)),
+                           (f'h4_{ad}', (cx + r - 1, 13, cz - r + 1), (cx + r, 15, cz + r - 1))):
+            w_, d_ = int(bb[0] - aa[0]), int(bb[2] - aa[2])
+            kutu(f, 'govde', nm, aa, bb, base='3', glow='ğü',
+                 top=[['ü' if (i + j) % 4 == 0 else 'ğ' for i in range(w_)] for j in range(d_)])
         pb = f'per_{ad}'
-        f.bone(pb, 'govde', (cx, 21.5, cz))
-        kutu(f, pb, pb + 'a', (cx - RP, 21, cz - 0.5), (cx + RP, 22, cz + 0.5), base='D', top=rows('kDLLHHLLDk'))
-        kutu(f, pb, pb + 'b', (cx - 0.5, 21, cz - RP), (cx + 0.5, 22, cz + RP), base='D',
+        f.bone(pb, 'govde', (cx, 14, cz))
+        kutu(f, pb, pb + 'a', (cx - RP, 13.5, cz - 0.5), (cx + RP, 14.5, cz + 0.5), base='D', top=rows('kDLLHHLLDk'))
+        kutu(f, pb, pb + 'b', (cx - 0.5, 13.5, cz - RP), (cx + 0.5, 14.5, cz + RP), base='D',
              top=[[c] for c in 'kDLLHHLLDk'])
-        kutu(f, pb, pb + 'c', (cx - 1, 22, cz - 1), (cx + 1, 23, cz + 1), base='ğ', glow='ğ')
-    # helikopter iniş kızakları: iki ince boru, ucu yukarı kıvrık; ikişer eğik dikme; turkuaz şerit
-    for ad, sx in (('l', -1), ('r', 1)):
-        x = sx * 4.5
-        kutu(f, 'govde', f'kizak_{ad}', (x - 0.5, 5, -6), (x + 0.5, 6, 6), base='%',
-             top=[['ö' if j % 4 == 1 else '*'] for j in range(12)], glow='ö')
-        kutu(f, 'govde', f'kizak_uc_{ad}', (x - 0.5, 6, 6), (x + 0.5, 7, 7), base='%')
-        kutu(f, 'govde', f'kizak_uc2_{ad}', (x - 0.5, 7, 7), (x + 0.5, 8, 8), base='*')
-        for k, z in enumerate((-3.5, 3.5)):
-            kutu(f, 'govde', f'dikme_{ad}{k}', (x - 0.5, 6, z - 0.5), (x + 0.5, 8, z + 0.5), base='&')
-            kutu(f, 'govde', f'dikme2_{ad}{k}', (x - 0.5 - sx, 8, z - 0.5), (x + 0.5 - sx, 10, z + 0.5), base='&')
+    kizak(f, 'govde', 9, 0, 6, 6, govde_x=4)
+    if cam:
+        kutu(f, 'govde', 'cam', (-5.5, 7.5, 5), (5.5, 13.5, 6), base='<', front=cam_yuz(11, 6))
     return f
 
 
 def poz(t):
-    p = {f'per_{a}': [0, t * 1440 * (1 if a in ('fl', 'br') else -1), 0] for a, _, _ in KOSE}
-    p['govde'] = {'p': [0, math.sin(t * 6.283) * 0.6, 0]}
+    p = {f'per_{a}': [0, t * 1440 * (1 if a in ('fl', 'br') else -1), 0] for a in ('fl', 'fr', 'bl', 'br')}
+    p['govde'] = {'p': [0, math.sin(t * 6.283) * 0.8, 0], 'r': [math.sin(t * 6.283) * 3, 0, 0]}
     return p
 
 
+def ciz(cam, t, A, B):
+    a = np.asarray(Z.render(*A[:2], poz(t), (), cam, glow=A[2], ground={'y': -1, 'color': (58, 66, 74)}).convert('RGB'), np.float32)
+    b = np.asarray(Z.render(*B[:2], poz(t), (), cam, glow=B[2], ground={'y': -1, 'color': (58, 66, 74)}).convert('RGB'), np.float32)
+    m = (np.abs(a - b).sum(2) > 6)[:, :, None]
+    return Image.fromarray(np.where(m, a * (1 - CAM_ALFA) + b * CAM_ALFA, a).clip(0, 255).astype(np.uint8))
+
+
 if __name__ == '__main__':
-    yol, fr = dondur_gif(model_portalci(), '81_portalci.gif', center=(0, 14, 0), scale=9, size=(420, 380), poz=poz,
-                         W=256, elev=22)
-    print(yol)
-    imgs = []
-    geo, tex, glow = model(model_portalci(), W=256)
-    for yaw, el, ad in ((30, 18, '3/4 önden'), (0, 70, 'üstten: pervaneler'), (90, 4, 'yandan: kızaklar')):
-        cam = Z.Cam(yaw=yaw, elev=el, scale=9, size=(330, 310), center=(0, 14, 0))
-        imgs.append((Z.render(geo, tex, poz(0), (), cam, glow=glow, ground={'y': -1, 'color': (58, 66, 74)}), ad))
-    print(kart('Portalcı robot · 2. tasarım', imgs, os.path.join(OUT, '81_portalci.png'),
-               alt='Yalnız kafa · pervane yarıçapı 5 (kafa 6) · helikopter kızakları'))
+    A, B = model(model_portalci(False), W=256), model(model_portalci(True), W=256)
+    fr = [ciz(Z.Cam(yaw=25 + i * 10, elev=16, scale=10, size=(400, 340), center=(0, 10, 0)), i / 36, A, B) for i in range(36)]
+    print(Z.gif(fr, os.path.join(OUT, '81_portalci.gif'), ms=60))
+    imgs = [(ciz(Z.Cam(yaw=y, elev=e, scale=9.5, size=(330, 300), center=(0, 10, 0)), 0, A, B), t)
+            for y, e, t in ((15, 10, '3/4 önden'), (90, 6, 'yandan: kızaklar'), (180, 12, 'arkadan: portal merceği'))]
+    print(kart('Portalcı robot · 3. tasarım (Yardımcı tarzında)', imgs, os.path.join(OUT, '81_portalci.png'),
+               alt='Gövde robot kafası boyunda · pervane yarıçapı 5 · portal merceği · kızaklar'))

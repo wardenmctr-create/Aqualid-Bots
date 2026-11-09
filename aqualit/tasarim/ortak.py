@@ -77,3 +77,33 @@ def kart(baslik, resimler, yol, alt=None):
         d.text((20, h - 26), alt, font=f2, fill=(160, 170, 180))
     c.save(yol)
     return yol
+
+
+def kizak(f, bone, x, y0, y1, z, govde_x=None, isik='ö'):
+    """Helikopter iniş kızakları: gövdenin altından (x=±govde_x, y1) sağa-sola çapraz açılan düz dikmeler;
+    dikmelerin ucunda z boyunca kızak borusu (x=±x, y0), ön ucu yukarı kıvrık, üstünde akan turkuaz şerit."""
+    gx = govde_x if govde_x is not None else x - 4
+    dx, dy = x - gx, y1 - (y0 + 1)
+    L = math.hypot(dx, dy)
+    aci = math.degrees(math.atan2(dx, dy))
+    for ad, sx in (('l', -1), ('r', 1)):
+        cx = sx * x
+        kutu(f, bone, f'kizak_{ad}', (cx - 0.5, y0, -z), (cx + 0.5, y0 + 1, z), base='%',
+             top=[['ö' if j % 4 == 1 else '*'] for j in range(int(2 * z))], glow=isik)
+        # ön uç: tek düz çubuk, çapraz yukarı kalkar (eğik kemik)
+        ub = f'kizak_uc_{ad}'
+        f.bone(ub, bone, (cx, y0 + 0.5, z), (UC_ACI, 0, 0))
+        kutu(f, ub, ub, (cx - 0.5, y0, z - 1), (cx + 0.5, y0 + 1, z + 3), base='%',
+             top=[['*'], ['*'], ['*'], [isik]], front=rows(isik), glow=isik)
+        kutu(f, bone, f'kizak_arka_{ad}', (cx - 0.5, y0, -z - 1), (cx + 0.5, y0 + 1, -z), base='*')
+        for k, zz in enumerate((-round(z * 0.55), round(z * 0.55))):
+            db = f'dikme_{ad}{k}'
+            f.bone(db, bone, (sx * gx, y1, zz), (0, 0, sx * aci * KIZAK_ISARET))
+            n = max(1, round(L))
+            kutu(f, db, db, (sx * gx - 0.5, y1 - n, zz - 0.5), (sx * gx + 0.5, y1, zz + 0.5), base='&',
+                 left=[['&'] for _ in range(n)], right=[['&'] for _ in range(n)])
+            kutu(f, bone, f'baglanti_{ad}{k}', (sx * gx - 1, y1, zz - 1), (sx * gx + 1, y1 + 1, zz + 1), base='%')
+
+
+KIZAK_ISARET = -1
+UC_ACI = -40
