@@ -34,90 +34,125 @@ def pervane(f, bone, ad, c, r, y, eksen='y'):
              front=[[c_] for c_ in ('kL' + 'H' * (2 * r - 4) + 'Lk')[:2 * r]])
 
 
+def yuz(w, h, renk='M', sert=False, agiz=True):
+    """Dron yüzü: koyu ekran, iki ışıklı göz, küçük ağız (Mimar dronu gibi sevimli)."""
+    g = fill(w, h, renk)
+    for y in range(1, h - 1):
+        for x in range(1, w - 1):
+            g[y][x] = 'k'
+    ex = [1, w - 3] if w >= 6 else [1, w - 2]
+    for x in ex:
+        if sert:
+            g[1][x] = 'k'; g[1][x + (1 if x == ex[0] else -1) * 0] = 'k'
+            g[2][x] = 'W'
+            if x + 1 < w - 1:
+                g[2][x + 1] = 'W'
+        else:
+            g[1][x] = 'W'; g[2][x] = 'W'
+            if w >= 7 and x + 1 < w - 1:
+                g[1][x + 1] = 'W'; g[2][x + 1] = 'W'
+    if agiz and h >= 5:
+        g[h - 2][w // 2] = 'W' if not sert else 'k'
+    return g
+
+
 def madenci(f):
-    # kask gövde: geniş kenar + kubbe katları; önde fener; altta yüz şeridi (iki göz)
-    kutu(f, 'g', 'yuz', (-2.5, 3, -2.5), (2.5, 5, 2.5), base='M', front=rows('kWkWk', 'kkkkk'), glow='W')
-    kutu(f, 'g', 'kenar', (-4, 5, -4), (4, 6, 4), base='y', top=panel(8, 8, 'Y', t='W', b='Q', l='W', r='Q'))
-    kutu(f, 'g', 'kubbe1', (-3, 6, -3), (3, 8, 3), base='Y', front=rows('YYYYYY', 'yyyyyy'))
-    kutu(f, 'g', 'kubbe2', (-2, 8, -2), (2, 9, 2), base='Y', top=rows('WYYY', 'YYYY', 'YYYQ', 'YYQQ'))
-    kutu(f, 'g', 'fener', (-1.5, 6, 3), (1.5, 8, 5), base='Q', front=rows('WWW', 'WWW'), glow='W')
-    for ad, x in (('l', -5), ('r', 5)):
-        kutu(f, 'g', 'kol_' + ad, (min(x, x * 0.8), 5, -0.5), (max(x, x * 0.8), 6, 0.5), base='&')
-        pervane(f, 'g', 'p_' + ad, (x, 6.5, 0), 2, 6.5)
-    kutu(f, 'g', 'kazma_sap', (-0.5, 0, -0.5), (0.5, 3, 0.5), base='m')
-    kutu(f, 'g', 'kazma_bas', (-2.5, 0, -0.5), (2.5, 1, 0.5), base='*', front=rows('+***+'))
+    # gövde + madenci kaskı ve fener; iki yan kanatçıkta döner (tilt) pervaneler; altta mini matkap ucu
+    kutu(f, 'g', 'govde', (-3, 3, -2.5), (3, 8, 2.5), base='M', front=yuz(6, 5), glow='W',
+         top=panel(6, 5, 'L', t='H', b='D', l='H', r='D'))
+    kutu(f, 'g', 'kask', (-3.5, 8, -3), (3.5, 9, 3), base='y', top=panel(7, 6, 'Y', t='W', b='Q', l='W', r='Q'))
+    kutu(f, 'g', 'kask2', (-2.5, 9, -2), (2.5, 10, 2), base='Y')
+    kutu(f, 'g', 'fener', (-1, 8, 3), (1, 10, 4), base='Q', front=rows('WW', 'WW'), glow='W')
+    for ad, sx in (('l', -1), ('r', 1)):
+        kutu(f, 'g', 'kanat_' + ad, (min(sx * 3, sx * 5), 5, -1), (max(sx * 3, sx * 5), 6, 1), base='&')
+        kutu(f, 'g', 'nasel_' + ad, (sx * 5.5 - 1, 5, -1.5), (sx * 5.5 + 1, 7, 1.5), base='%', top=fill(2, 3, '*'))
+        pervane(f, 'g', 'p_' + ad, (sx * 5.5, 7.5, 0), 3, 7.5)
+    kutu(f, 'g', 'matkap1', (-1, 2, -1), (1, 3, 1), base='*')
+    kutu(f, 'g', 'matkap2', (-0.5, 1, -0.5), (0.5, 2, 0.5), base='+')
 
 
 def kurekci(f):
-    # kova: üst geniş (6x6), alt dar (4x4); kum dolu; tutma sapı; arkada itici pervane; önde göz bandı
-    kutu(f, 'g', 'kova_alt', (-2, 2, -2), (2, 4, 2), base='&', front=rows('&&&&', '%%%%'))
-    kutu(f, 'g', 'kova_ust', (-3, 4, -3), (3, 7, 3), base='*', front=rows('+++++++'[:6], '*kWkW*'[:6], '******'),
-         top=over(fill(6, 6, 'n'), rows('NnN', 'nNn'), 1, 2), glow='W')
-    kutu(f, 'g', 'sap_l', (-3.5, 7, -0.5), (-2.5, 9, 0.5), base='%')
-    kutu(f, 'g', 'sap_r', (2.5, 7, -0.5), (3.5, 9, 0.5), base='%')
-    kutu(f, 'g', 'sap_ust', (-3.5, 9, -0.5), (3.5, 10, 0.5), base='%')
-    kutu(f, 'g', 'motor', (-1, 4, -5), (1, 6, -3), base='%')
-    pervane(f, 'g', 'p_arka', (0, 5, -5.5), 3, 5, eksen='z')
-    kutu(f, 'g', 'kurek', (-1.5, 0, 1), (1.5, 2, 2), base='*', front=rows('+*+', '***'))
+    # yassı gövde; Y düzeninde üç pervane (önde iki, arkada bir); kum rengi alt etek; önde mini kepçe kolu
+    kutu(f, 'g', 'govde', (-3, 3, -3), (3, 7, 3), base='M', front=yuz(6, 4, agiz=False), glow='W',
+         top=panel(6, 6, 'L', t='H', b='D', l='H', r='D'))
+    kutu(f, 'g', 'etek', (-3.5, 2.5, -3.5), (3.5, 3.5, 3.5), base='N', top=fill(7, 7, 'n'))
+    for ad, (x, z) in (('fl', (-5, 3)), ('fr', (5, 3)), ('b', (0, -6))):
+        a = (min(0, x) if x else -0.5, 6, min(0, z)); b = (max(0, x) if x else 0.5, 7, max(0, z))
+        if x == 0:
+            a, b = (-0.5, 6, z), (0.5, 7, -3)
+        else:
+            a, b = (min(x * 0.6, x), 6, min(z * 0.6, z) - 0.5 + 0.5), (max(x * 0.6, x), 7, max(z * 0.6, z) + 0.5 + 0.5)
+            a = (round(a[0]), 6, round(a[2])); b = (round(b[0]), 7, round(b[2]))
+            if b[2] - a[2] < 1:
+                b = (b[0], 7, a[2] + 1)
+        kutu(f, 'g', 'kol_' + ad, a, b, base='&')
+        pervane(f, 'g', 'p_' + ad, (x, 7.5, z), 3, 7.5)
+    kutu(f, 'g', 'kepce_kol', (-0.5, 3, 3), (0.5, 4, 5), base='&')
+    kutu(f, 'g', 'kepce', (-1.5, 2, 5), (1.5, 4, 6), base='*', front=rows('*+*', '***'))
 
 
 def ciftci(f):
-    # saksı: altı dar toprak rengi, üst ağız hasır; önde gözler; tepede filiz ve dönen iki büyük yaprak
-    kutu(f, 'g', 'saksi_alt', (-2, 2, -2), (2, 3, 2), base='C')
-    kutu(f, 'g', 'saksi', (-2.5, 3, -2.5), (2.5, 7, 2.5), base='A', front=rows('AAAAA', 'kWkWk', 'kWkWk', 'CCCCC'), glow='W')
-    kutu(f, 'g', 'agiz', (-3, 7, -3), (3, 8, 3), base='w', top=over(fill(6, 6, 'm'), rows('mo', 'om'), 2, 2),
-         front=rows('wxwxwx'))
-    kutu(f, 'g', 'filiz', (-0.5, 8, -0.5), (0.5, 11, 0.5), base='e')
-    f.bone('p_yaprak', 'g', (0, 11, 0))
-    kutu(f, 'p_yaprak', 'yaprak1', (-5.5, 10.5, -1), (-0.5, 11.5, 1), base='f', top=rows('Effef', 'fEeff'))
-    kutu(f, 'p_yaprak', 'yaprak2', (0.5, 10.5, -1), (5.5, 11.5, 1), base='f', top=rows('feffE', 'ffeEf'))
+    # gövde + hasır şapka kenarı; şapkanın tepesinden çıkan filiz; filizin iki yaprağı pervane gibi döner
+    kutu(f, 'g', 'govde', (-2.5, 3, -2.5), (2.5, 8, 2.5), base='M', front=yuz(5, 5), glow='W',
+         top=panel(5, 5, 'L', t='H', b='D', l='H', r='D'))
+    kutu(f, 'g', 'sapka_kenar', (-4, 8, -4), (4, 9, 4), base='w', top=panel(8, 8, 'w', t='x', b='X', l='x', r='X'))
+    kutu(f, 'g', 'sapka_tepe', (-2, 9, -2), (2, 10, 2), base='x', front=rows('RRRR'))
+    kutu(f, 'g', 'filiz', (-0.5, 10, -0.5), (0.5, 12, 0.5), base='e')
+    f.bone('p_yaprak', 'g', (0, 12.5, 0))
+    kutu(f, 'p_yaprak', 'yaprak1', (-5.5, 12, -1), (-0.5, 13, 1), base='f', top=rows('Effef', 'fEeff'))
+    kutu(f, 'p_yaprak', 'yaprak2', (0.5, 12, -1), (5.5, 13, 1), base='f', top=rows('feffE', 'ffeEf'))
+    kutu(f, 'g', 'itici', (-1, 2, -1), (1, 3, 1), base='L', bottom=rows('HW', 'WH'), glow='W')
 
 
 def oduncu(f):
-    # yatay kütük (z boyunca), uçlarında yıllık halkalar; önde gözler; sırtta yaprak tutamı; iki yan kol + pervane
-    halka = rows('mooom'[:5], 'ommmo', 'omxmo', 'ommmo', 'mooom')
-    kutu(f, 'g', 'kutuk', (-2.5, 3, -3.5), (2.5, 8, 3.5), base='m',
-         front=over([r[:] for r in halka], rows('W W'), 1, 1), back=halka,
-         left=[['m' if (j % 3) else 'o' for j in range(7)] for _ in range(5)],
-         right=[['m' if (j % 3) else 'o' for j in range(7)] for _ in range(5)],
-         top=[['o' if j % 3 == 0 else 'm' for j in range(5)] for _ in range(7)], glow='W')
-    kutu(f, 'g', 'yaprak', (-1.5, 8, -1.5), (1.5, 9, 1.5), base='e', top=rows('fEf', 'EfE', 'fEf'))
-    kutu(f, 'g', 'yaprak2', (-0.5, 9, -0.5), (0.5, 10, 0.5), base='f')
-    for ad, x in (('l', -5.5), ('r', 5.5)):
-        sx = 1 if x > 0 else -1
-        kutu(f, 'g', 'kol_' + ad, (min(sx * 2.5, sx * 4.5), 6, -0.5), (max(sx * 2.5, sx * 4.5), 7, 0.5), base='&')
-        pervane(f, 'g', 'p_' + ad, (x, 7.5, 0), 3, 7.5)
-    kutu(f, 'g', 'balta_sap', (-0.5, 4, -6), (0.5, 5, -3), base='m')
-    kutu(f, 'g', 'balta_bas', (-0.5, 3, -7), (0.5, 6, -6), base='*', back=rows('+', '*', '*'))
+    # uzun gövde; önde ve arkada iki büyük pervane (çift rotorlu helikopter gibi); yeşil atkı; yan kolda balta
+    kutu(f, 'g', 'govde', (-2.5, 3, -4), (2.5, 7, 4), base='M', front=yuz(5, 4, agiz=False), glow='W',
+         top=panel(5, 8, 'L', t='H', b='D', l='H', r='D'))
+    kutu(f, 'g', 'atki', (-3, 3, -1.5), (3, 4, 1.5), base='E', front=rows('EfEfEf'), top=fill(6, 3, 'E'))
+    kutu(f, 'g', 'atki_uc', (2, 1, -1), (3, 3, 0), base='E')
+    for ad, z in (('on', 4), ('arka', -4)):
+        kutu(f, 'g', 'direk_' + ad, (-0.5, 7, z - 0.5 - (0 if z > 0 else 0)), (0.5, 8 + (1 if z < 0 else 0), z + 0.5), base='%')
+        pervane(f, 'g', 'p_' + ad, (0, 8.5 + (1 if z < 0 else 0), z), 3, 8.5)
+    kutu(f, 'g', 'balta_sap', (-4, 3, 0), (-3, 7, 1), base='m')
+    kutu(f, 'g', 'balta_bas', (-5, 5, 0), (-4, 7, 2), base='*', left=rows('+*', '**'))
 
 
 def kilicli(f):
-    # dik kalkan: üst geniş, alt sivri (basamaklı), kırmızı-altın amblem; çatık gözler; altta omurga kılıç; pelerin
-    kutu(f, 'g', 'kalkan1', (-3, 6, -1), (3, 9, 1), base='r', front=rows('yyyyyy', 'RWkkWR', 'rkWWkr'), glow='W')
-    kutu(f, 'g', 'kalkan2', (-2, 4, -1), (2, 6, 1), base='r', front=rows('ryyr', 'rrrr'))
-    kutu(f, 'g', 'kalkan3', (-1, 3, -1), (1, 4, 1), base='r', front=rows('yy'))
-    kutu(f, 'g', 'pelerin', (-2.5, 3, -2), (2.5, 8, -1), base='q', back=over(fill(5, 5, 'q'), rows('RRRRR'), 0, 0))
+    # sivri, köşeli hızlı gövde; çatık gözler; çapraz 4 küçük pervane (yarış dronu); arkada kırmızı pelerin kanadı
+    kutu(f, 'g', 'govde', (-2.5, 3, -3), (2.5, 6, 3), base='r', front=over(fill(5, 3, 'r'), rows('WkW', 'kWk'), 1, 0), glow='W',
+         top=panel(5, 6, 'R', t='y', b='q', l='y', r='q'))
+    kutu(f, 'g', 'burun', (-1.5, 3.5, 3), (1.5, 5.5, 4), base='y', front=rows('yyy', 'QyQ'))
+    kutu(f, 'g', 'pelerin', (-2, 4, -5), (2, 6, -3), base='q', back=rows('RRRR', 'qqqq'), top=fill(4, 2, 'R'))
+    for ad, sx, sz in (('fl', 1, 1), ('fr', -1, 1), ('bl', 1, -1), ('br', -1, -1)):
+        kutu(f, 'g', 'kol_' + ad, (min(sx * 2, sx * 4), 5, min(sz * 2, sz * 4)), (max(sx * 2, sx * 4), 6, max(sz * 2, sz * 4)),
+             base='%')
+        pervane(f, 'g', 'p_' + ad, (sx * 4.5, 6.5, sz * 4.5), 2, 6.5)
     kutu(f, 'g', 'kilic_kabza', (-1.5, 2, -0.5), (1.5, 3, 0.5), base='y')
-    kutu(f, 'g', 'kilic', (-0.5, -3, -0.5), (0.5, 2, 0.5), base='+', front=rows('+', '+', '+', '+', '*'))
-    kutu(f, 'g', 'direk', (-0.5, 9, -0.5), (0.5, 10, 0.5), base='%')
-    f.bone('p_ikili', 'g', (0, 10.5, 0))
-    for k, z in enumerate((-2, 2)):
-        kutu(f, 'p_ikili', f'pk{k}', (-3.5, 10, z - 0.5), (3.5, 11, z + 0.5), base='D', top=rows('kLHHHLk'))
-    kutu(f, 'p_ikili', 'pk_orta', (-0.5, 10, -2.5), (0.5, 11, 2.5), base='%')
+    kutu(f, 'g', 'kilic', (-0.5, -2, -0.5), (0.5, 2, 0.5), base='+', front=rows('+', '+', '+', '*'))
 
 
 def organizator(f, cam=True):
-    # yassı tablet (8x2x8): üstte cam ekran ve gözler; dört köşede gömülü pervane; mor şerit; kulaklık anteni
-    kutu(f, 'g', 'tablet', (-4, 4, -4), (4, 6, 4), base='1', front=rows('1PPPPPP1', '22222222'), glow='P',
-         top=panel(8, 8, '3', t='Z', b='2', l='Z', r='2'))
-    kutu(f, 'g', 'ekran', (-2.5, 6, -1), (2.5, 7, 3), base='k', top=rows('kkkkk', 'kWkWk', 'kWkWk', 'kkkkk'), glow='W')
+    # dik duran ince tablet (ekranı öne bakar), cam ekranın ardında gözler; üst köşelerde iki pervane; mor şerit;
+    # tepede kulaklık bandı ve mikrofon anteni
+    on = fill(8, 6, '1')
+    for x in range(8):
+        on[0][x] = '3'; on[5][x] = 'P'
+    for y in range(1, 5):
+        for x in range(1, 7):
+            on[y][x] = 'k'
+    over(on, rows('W  W', 'W  W'), 2, 2)
+    for y in (2, 3):
+        on[y][3] = 'k'; on[y][4] = 'k'
+    kutu(f, 'g', 'tablet', (-4, 3, -1), (4, 9, 1), base='1', front=on, glow='WP',
+         top=fill(8, 2, '3'), back=fill(8, 6, '2'))
     if cam:
-        kutu(f, 'g', 'cam', (-2.5, 7, -1), (2.5, 8, 3), base='<', top=rows('~9~<<', '<<<<<', '<<<<<', '^^^^^'))
-    for ad, sx, sz in (('fl', 1, 1), ('fr', -1, 1), ('bl', 1, -1), ('br', -1, -1)):
-        pervane(f, 'g', 'p_' + ad, (sx * 4, 6.5, sz * 4), 2, 6.5)
-    kutu(f, 'g', 'kulaklik', (-2.5, 6, -3), (2.5, 7, -2), base='g')
-    kutu(f, 'g', 'anten', (-0.5, 7, -2.5), (0.5, 10, -1.5), base='g')
-    kutu(f, 'g', 'anten_uc', (-1, 10, -2.5), (1, 11, -1.5), base='P', glow='P')
+        kutu(f, 'g', 'cam', (-3, 4, 1), (3, 8, 2), base='<', front=rows('~9~<<<', '<<<<<<', '<<<<<<', '^^^^^^'))
+    for ad, sx in (('l', -1), ('r', 1)):
+        kutu(f, 'g', 'direk_' + ad, (sx * 3.5 - 0.5, 9, -0.5), (sx * 3.5 + 0.5, 10, 0.5), base='%')
+        pervane(f, 'g', 'p_' + ad, (sx * 3.5, 10.5, 0), 3, 10.5)
+    kutu(f, 'g', 'kulaklik', (-1.5, 9, -0.5), (1.5, 10, 0.5), base='g')
+    kutu(f, 'g', 'mikrofon', (-0.5, 10, -0.5), (0.5, 12, 0.5), base='g')
+    kutu(f, 'g', 'mikrofon_uc', (-1, 12, -1), (1, 13, 1), base='P', glow='P')
 
 
 def portalci(f):
@@ -151,11 +186,10 @@ def evcil(tur, cam=True):
 
 def poz(t, tur):
     p = {'g': {'p': [0, math.sin(t * 6.283) * 0.5, 0]}}
-    for ad in ('p_l', 'p_r', 'p_fl', 'p_fr', 'p_bl', 'p_br', 'p_ikili'):
-        p[ad] = [0, t * 1440, 0]
-    p['p_yaprak'] = [0, t * 720, 0]
-    p['p_arka'] = [0, 0, t * 1440]
-    p['halka'] = [0, t * 360, 0]
+    for ad in ('p_l', 'p_r', 'p_fl', 'p_fr', 'p_bl', 'p_br', 'p_b', 'p_on', 'p_arka'):
+        p[ad] = [0, t * 2880, 0]
+    p['p_yaprak'] = [0, t * 1440, 0]
+    p['halka'] = [0, t * 360, 0]   # GIF 72 kare x 60 ms = ~4,3 sn'de bir tur (ne hızlı ne çok yavaş)
     return p
 
 
@@ -173,8 +207,8 @@ if __name__ == '__main__':
     M = {t: model(evcil(t), W=128) for t in TURLER}
     C = {'organizator': model(evcil('organizator', False), W=128)}
     frames = []
-    for i in range(36):
-        t = i / 36
+    for i in range(72):
+        t = i / 72
         c = Image.new('RGB', (7 * 170, 230), (24, 28, 32))
         for k, tur in enumerate(TURLER):
             cam = Z.Cam(yaw=25 + 360 * t, elev=20, scale=11, size=(170, 230), center=(0, 6, 0))
@@ -183,5 +217,5 @@ if __name__ == '__main__':
     print(Z.gif(frames, os.path.join(OUT, '84_evcil_dronlar.gif'), ms=60))
     imgs = [(ciz(tur, Z.Cam(yaw=30, elev=18, scale=11, size=(170, 220), center=(0, 6, 0)), 0.1, M, C), ADLAR[tur])
             for tur in TURLER]
-    print(kart('Evcil mini dronlar · 2. tasarım (her biri ayrı biçim)', imgs, os.path.join(OUT, '84_evcil_dronlar.png'),
+    print(kart('Evcil mini dronlar · 3. tasarım (hepsi dron, her biri ayrı pervane düzeni)', imgs, os.path.join(OUT, '84_evcil_dronlar.png'),
                alt='Mimar ve Keşif dronları zaten var. Hepsi omuzda süzülür.'))
