@@ -153,6 +153,11 @@ Her sürümde: iş robotu iyileştirmeleri, 4 denetim temiz, oyunda deneme liste
     dronları var; Organizatör ve öteki türler için yeni). Portalcı'nın evcil dronu (mor halka) kullanıcı tarafından beğenildi.
 30. Organizatör Yardımcısı'nın da evcil hali olacak: aynı model, öteki evcil dronlar boyunda (ölçek ~0,42). **Ayrı tarifi:** 3 demir + 3 Aqualit + 2 kızıltaş tozu, ortaya Organizatör → Organizatör geri verilir + evcil Yardımcı.
 
+**Yeni: Keşif Haritası (devasa, oyuncu ortada)**
+31. Sıfırdan harita: kaynak paketinde özel glif kareleri (biyom renkleri, yapı/robot/oyuncu simgeleri); menüde kare kare
+    çizilir. Oyuncu hep ortada; kaydırma ve yakınlaştırma; yapılar simge + koordinatla. Keşif'e binince ekranda canlı
+    mini harita. Yalnız Keşif'in/dronların gezip taradığı yerler renkli (gidilmeyen karanlık). Önce tasarım gösterilecek.
+
 ## Robot robot yapılacaklar
 
 "Öneri" yazanlar onaylanmadı; başlamadan kullanıcıya sor.
