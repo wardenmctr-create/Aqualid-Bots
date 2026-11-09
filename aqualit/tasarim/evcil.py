@@ -168,9 +168,9 @@ def kilicli(f):
     # kırmızı pelerin, kararlı bakış; tepede üç kılıçtan pervane (kabzalar göbekte, aralarında 120°)
     govde6(f, sert=True)
     # uzun pelerin: gövdenin altına kadar iner, ucu kırmızı şeritli
-    kutu(f, 'g', 'pelerin', (-3, -1, -4), (3, 8, -3), base='r', back=over(fill(6, 9, 'r'), rows('RRRRRR'), 0, 0),
-         front=fill(6, 9, 'q'))
-    kutu(f, 'g', 'pelerin_uc', (-3, -2, -4.5 + 0.5), (3, -1, -3), base='R')
+    kutu(f, 'g', 'pelerin', (-3, 1, -4), (3, 8, -3), base='r', back=over(fill(6, 7, 'r'), rows('RRRRRR'), 0, 0),
+         front=fill(6, 7, 'q'))
+    kutu(f, 'g', 'pelerin_uc', (-3, 0, -4), (3, 1, -3), base='R')
     kutu(f, 'g', 'mil', (-0.5, 8, -0.5), (0.5, 10, 0.5), base='y')
     f.bone('p_kilic', 'g', (0, 10.5, 0))
     kutu(f, 'p_kilic', 'k_gobek', (-1, 10, -1), (1, 11, 1), base='y', top=rows('yQ', 'Qy'))

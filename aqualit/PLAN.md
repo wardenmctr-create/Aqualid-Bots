@@ -150,7 +150,8 @@ Her sürümde: iş robotu iyileştirmeleri, 4 denetim temiz, oyunda deneme liste
 **Yeni: Evcil mini dronlar**
 28. Tarif: 2 demir + 2 Aqualit + 4 kızıltaş tozu, ortaya robot → robot geri verilir + o robotun evcil dronu.
 29. Basılı tutunca omzunda süzülen mini dron olur; ölünce envantere gelir. Her robot türüne uygun dron (Mimar ve Keşif
-    dronları var; Organizatör ve öteki türler için yeni). Portalcıya ayrıca dron gerekip gerekmediği kullanıcıya sorulacak.
+    dronları var; Organizatör ve öteki türler için yeni). Portalcı'nın evcil dronu (mor halka) kullanıcı tarafından beğenildi.
+30. Organizatör Yardımcısı'nın da evcil hali olacak: aynı model, öteki evcil dronlar boyunda (ölçek ~0,42). **Ayrı tarifi var** (kullanıcıya sorulacak).
 
 ## Robot robot yapılacaklar
 
