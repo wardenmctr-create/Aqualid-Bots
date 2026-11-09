@@ -114,9 +114,11 @@ YUZ6 = ['kkkkkk',
         'kWkkWk',
         'kWkkWk',
         'kkkkkk',
-        'kkkkkk']          # 2 piksellik dik ışıklı gözler, ağız yok
+        'kkkkkk']
+YUZ6_KISA = YUZ6[:4]   # gövde alttan 1 piksel kısa          # 2 piksellik dik ışıklı gözler, ağız yok
 YUZ6_SERT = ['kkkkkk',
              'Wkkkkw'.replace('w', 'W'),
              'kWkkWk',
              'RkkkkR',
-             'kkkkkk']     # Kılıçlı: 2 piksellik kızgın (içe eğik) gözler, yanaklar gözün dış köşesi altında
+             'kkkkkk']
+YUZ6_SERT_KISA = YUZ6_SERT[:4]     # Kılıçlı: 2 piksellik kızgın (içe eğik) gözler, yanaklar gözün dış köşesi altında

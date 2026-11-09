@@ -47,18 +47,22 @@ def pervane(f, bone, ad, c, r, y, eksen='y'):
 from robot import plate, put, G
 
 
-def yuz6(renk='M', sert=False):
-    """Çerçevesiz tam ekran yüz (6x5)."""
-    from ortak import YUZ6, YUZ6_SERT
+def yuz6(renk='M', sert=False, kisa=True):
+    """Çerçevesiz tam ekran yüz (6x4; kisa=False: 6x5)."""
+    from ortak import YUZ6, YUZ6_SERT, YUZ6_KISA, YUZ6_SERT_KISA
+    if kisa:
+        return [list(r) for r in (YUZ6_SERT_KISA if sert else YUZ6_KISA)]
     return [list(r) for r in (YUZ6_SERT if sert else YUZ6)]
 
 
-def govde6(f, renk='M', sert=False, y0=3):
-    """Mimar dronu boyunda gövde (6x5x6), önde yüz."""
-    yan = plate(6, 5, renk, top='H', bottom='D', left='L', right='D')
+def govde6(f, renk='M', sert=False, y0=3, kisa=True):
+    """Mimar dronu boyunda gövde (6x4x6; alttan 1 piksel kısa), önde yüz. kisa=False: 6x5x6 (Oduncu)."""
+    h = 4 if kisa else 5
+    y0 = y0 + (1 if kisa else 0)
+    yan = plate(6, h, renk, top='H', bottom='D', left='L', right='D')
     yan[2][2] = yan[2][3] = 'L'
-    kutu(f, 'g', 'govde', (-3, y0, -3), (3, y0 + 5, 3), base=renk, front=yuz6(renk, sert), left=yan,
-         right=[r[:] for r in yan], back=plate(6, 5, renk), top=plate(6, 6, 'L', top='H', bottom='M', left='H', right='M'),
+    kutu(f, 'g', 'govde', (-3, y0, -3), (3, y0 + h, 3), base=renk, front=yuz6(renk, sert, kisa), left=yan,
+         right=[r[:] for r in yan], back=plate(6, h, renk), top=plate(6, 6, 'L', top='H', bottom='M', left='H', right='M'),
          glow='WL')
 
 
@@ -90,7 +94,7 @@ def kasik(f, bone, ad, cx, y0):
 def kurekci(f):
     # iki yanda tekerlek gibi dik dönen 3 kaşıklı pervane (kumu arkaya atar); üstte normal 3 kanatlı pervane
     govde6(f)
-    kutu(f, 'g', 'bot', (-3.5, 2, -3.5), (3.5, 3, 3.5), base='N', top=fill(7, 7, 'n'))
+    kutu(f, 'g', 'bot', (-3.5, 3, -3.5), (3.5, 4, 3.5), base='N', top=fill(7, 7, 'n'))
     for ad, sx in (('l', -1), ('r', 1)):
         cx = sx * 5
         kutu(f, 'g', 'aks_' + ad, (min(sx * 3, sx * 5), 5, -0.5), (max(sx * 3, sx * 5), 6, 0.5), base='&')
@@ -123,8 +127,8 @@ def ciftci(f):
 
 def oduncu(f):
     # yeşil atkı, antenin ucunda yaprak, sırtta küçük balta; tepede yatay dönen daire testere
-    # (11 piksel çaplı yuvarlak disk, 12 sivri diş, pirinç göbek, iki kesik çizgi)
-    govde6(f)
+    # (11 piksel çaplı yuvarlak disk, 12 sivri diş, pirinç göbek, içi boş, 4 çubuk)
+    govde6(f, kisa=False)
     kutu(f, 'g', 'atki', (-3.5, 3, -3.5), (3.5, 4, 3.5), base='E', front=rows('EfEfEfE'), top=fill(7, 7, 'E'))
     kutu(f, 'g', 'atki_uc', (2, 1, 3), (3, 3, 4), base='E')
     kutu(f, 'g', 'anten', (2, 8, -2), (3, 10, -1), base='%')
@@ -168,9 +172,9 @@ def kilicli(f):
     # kırmızı pelerin, kararlı bakış; tepede üç kılıçtan pervane (kabzalar göbekte, aralarında 120°)
     govde6(f, sert=True)
     # uzun pelerin: gövdenin altına kadar iner, ucu kırmızı şeritli
-    kutu(f, 'g', 'pelerin', (-3, 1, -4), (3, 8, -3), base='r', back=over(fill(6, 7, 'r'), rows('RRRRRR'), 0, 0),
-         front=fill(6, 7, 'q'))
-    kutu(f, 'g', 'pelerin_uc', (-3, 0, -4), (3, 1, -3), base='R')
+    kutu(f, 'g', 'pelerin', (-3, 2, -4), (3, 8, -3), base='r', back=over(fill(6, 6, 'r'), rows('RRRRRR'), 0, 0),
+         front=fill(6, 6, 'q'))
+    kutu(f, 'g', 'pelerin_uc', (-3, 1, -4), (3, 2, -3), base='R')
     kutu(f, 'g', 'mil', (-0.5, 8, -0.5), (0.5, 10, 0.5), base='y')
     f.bone('p_kilic', 'g', (0, 10.5, 0))
     kutu(f, 'p_kilic', 'k_gobek', (-1, 10, -1), (1, 11, 1), base='y', top=rows('yQ', 'Qy'))

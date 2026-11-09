@@ -32,15 +32,16 @@ BONE = {'govde': 'body', 'baret_kenar': 'hat', 'baret_tepe': 'hat', 'direk': 'ha
 
 def parts():
     # v0.4: çerçevesiz tam ekran yüz: 2 piksellik dik ışıklı gözler; ağız ve kırmızı yanak yok
-    face = [list(r) for r in ('kkkkkk', 'kWkkWk', 'kWkkWk', 'kkkkkk', 'kkkkkk')]
-    side = plate(6, 5, 'M', top='H', bottom='D', left='L', right='D')
+    # (gövde alttan 1 piksel kısaldı: çerçevesiz ekranda gözlerin altında boşluk kalıyordu)
+    face = [list(r) for r in ('kkkkkk', 'kWkkWk', 'kWkkWk', 'kkkkkk')]
+    side = plate(6, 4, 'M', top='H', bottom='D', left='L', right='D')
     side[2][2] = 'L'
     side[2][3] = 'L'
-    back = plate(6, 5, 'M')
+    back = plate(6, 4, 'M')
     put(back, ['DD', 'DD'], 2, 1)
     top = plate(6, 6, 'L', top='H', bottom='M', left='H', right='M')
     out = [
-        box('govde', (-3, 2, -3), (3, 7, 3), front=face, back=back, left=side, right=side, top=top,
+        box('govde', (-3, 3, -3), (3, 7, 3), front=face, back=back, left=side, right=side, top=top,
             bottom=G(6, 6, 'D')),
         box('baret_kenar', (-4, 7, -4), (4, 8, 4), front=[['A'] * 8], back=[['C'] * 8], left=[['C'] * 8],
             right=[['A'] * 8], top=plate(8, 8, 'G', top='A', bottom='A', left='A', right='A'), bottom=G(8, 8, 'C')),
@@ -59,7 +60,7 @@ def parts():
             right=[['M', 'M'], ['D', 'D']], top=[['H'], ['H']], bottom=[['D'], ['D']]),
         box('kol_sol', (3, 3, -1), (4, 5, 1), front=[['L'], ['D']], back=[['D'], ['D']], left=[['M', 'M'], ['D', 'D']],
             right=[['L', 'L'], ['D', 'D']], top=[['H'], ['H']], bottom=[['D'], ['D']]),
-        box('itici', (-2, 1, -2), (2, 2, 2), front=[list('DWWD')], back=[list('DWWD')], left=[list('DWWD')],
+        box('itici', (-2, 2, -2), (2, 3, 2), front=[list('DWWD')], back=[list('DWWD')], left=[list('DWWD')],
             right=[list('DWWD')], top=G(4, 4, 'D'), bottom=plate(4, 4, 'W', top='L', bottom='L', left='L', right='L')),
     ]
     return out

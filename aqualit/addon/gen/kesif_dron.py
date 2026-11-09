@@ -24,12 +24,12 @@ def model():
     f.bone('root', None, (0, 4.5, 0.5))
     f.bone('govde', 'root', (0, 4.5, 0.5))
     # gövde: 5x5x5 küp; önde ekran, ekranda iki dikey göz (1x2 piksel, ışıklı)
-    ekran = rows('kkkkk', 'kWkWk', 'kWkWk', 'kkkkk', 'kkkkk')   # v0.4: çerçevesiz tam ekran
-    yan = panel(5, 5, 'M')
+    ekran = rows('kkkkk', 'kWkWk', 'kWkWk', 'kkkkk')   # v0.4: çerçevesiz tam ekran
+    yan = panel(5, 4, 'M')
     hline(yan, 2, 'y', 0, 5)
-    add_box(f, 'govde', 'g_govde', (-2.5, 3, -2), (2.5, 8, 3), base='M', glow='WL',
-            **auto((-2.5, 3, -2), (2.5, 8, 3), base='M', front=ekran, side=yan, top=panel(5, 5, 'L', t='H', b='M', l='H', r='M')))
-    add_box(f, 'govde', 'g_alt', (-1, 2, -0.5), (1, 3, 1.5), base='y', **auto((-1, 2, -0.5), (1, 3, 1.5), base='y'))
+    add_box(f, 'govde', 'g_govde', (-2.5, 4, -2), (2.5, 8, 3), base='M', glow='WL',
+            **auto((-2.5, 4, -2), (2.5, 8, 3), base='M', front=ekran, side=yan, top=panel(5, 5, 'L', t='H', b='M', l='H', r='M')))
+    add_box(f, 'govde', 'g_alt', (-1, 3, -0.5), (1, 4, 1.5), base='y', **auto((-1, 3, -0.5), (1, 4, 1.5), base='y'))
     add_box(f, 'govde', 'g_anten', (-0.5, 8, 0), (0.5, 10, 1), base='&', **auto((-0.5, 8, 0), (0.5, 10, 1), base='&', top=rows('R')))
     # iki yanda yatay, tam kare çember (7x7) ve içinde yatay dönen pervane (Mimar dronundaki gibi)
     for t, x0 in (('l', -10), ('r', 3)):
