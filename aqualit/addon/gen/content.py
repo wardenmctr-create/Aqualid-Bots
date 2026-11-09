@@ -36,7 +36,7 @@ CHESTS = [
     ('chest_lumber', 'Oduncu Sandığı', 'chest_lumber', 'oduncu'),
     ('chest_kilicli', 'Kılıçlı Sandığı', 'chest_kilicli', 'kilicli'),
     ('chest_builder', 'İnşaatçı Sandığı', 'chest_builder', 'insaatci'),
-    ('chest_collector', 'Toplayıcı Sandığı', 'chest_collector', 'toplayici'),
+    ('chest_collector', 'Organizatör Sandığı', 'chest_collector', 'toplayici'),
 ]
 # sandık açıkken görünen işaretler (sayfa okları, kilitli yuva); envantere düşmez, yaratıcı listesinde yok
 SANDIK_MARKERS = [

@@ -19,6 +19,8 @@ CHEST_KINDS = ['genel', 'madenci', 'kurekci', 'ciftci', 'oduncu', 'kilicli']
 DEVICE_INTERACT = [('aqualit:task_remote', 'remote'), ('aqualit:robot_radio', 'radio'),
                    ('aqualit:robot_tracker', 'tracker'), ('aqualit:command_rod', 'rod'),
                    ('aqualit:tuning_gear', 'gear'), ('aqualit:tamir_kiti', 'kit')]
+DOST = [{'test': 'is_family', 'subject': 'other', 'value': v} for v in
+        ('player', 'aqualit_robot', 'aqualit_kesif', 'aqualit_kesif_dron', 'aqualit_dron', 'inanimate')]
 ENV_SAFE = ['fall', 'suffocation', 'drowning', 'fire', 'fire_tick', 'lava', 'magma', 'freezing', 'contact',
             'falling_block']
 
@@ -64,12 +66,12 @@ def robot_bp():
         'aqualit:k_fight': {
             'minecraft:behavior.melee_box_attack': {'priority': 2, 'speed_multiplier': 1.3, 'track_target': True,
                                                      'require_complete_path': False, 'cooldown_time': 0.6},
-            'minecraft:behavior.owner_hurt_by_target': {'priority': 1},
-            'minecraft:behavior.owner_hurt_target': {'priority': 2},
+            # v0.3.8: Aqualit varlıklarına (Keşif, dronlar, sandıklar) asla saldırmaz: uçak çarpınca sahibine "vuran"
+            # Keşif sayılıyordu, Kılıçlı da Keşif'i öldürüyordu
+            'minecraft:behavior.owner_hurt_by_target': {'priority': 1, 'entity_types': {'filters': {'none_of': DOST}}},
+            'minecraft:behavior.owner_hurt_target': {'priority': 2, 'entity_types': {'filters': {'none_of': DOST}}},
             'minecraft:behavior.hurt_by_target': {'priority': 2,
-                                                  'entity_types': {'filters': {'none_of': [
-                                                      {'test': 'is_family', 'subject': 'other', 'value': 'player'},
-                                                      {'test': 'is_family', 'subject': 'other', 'value': 'aqualit_robot'}]}}},
+                                                  'entity_types': {'filters': {'none_of': DOST}}},
             'minecraft:behavior.nearest_attackable_target': {
                 'priority': 3, 'must_see': False, 'reselect_targets': True, 'within_radius': 16,
                 'entity_types': [{'filters': {'all_of': [
@@ -173,6 +175,9 @@ def robot_bp():
                 'minecraft:navigation.walk': {'can_path_over_water': True, 'avoid_damage_blocks': True,
                                               'can_open_doors': True, 'can_pass_doors': True, 'avoid_water': False},
                 'minecraft:jump.static': {},
+                # v0.3.8: bir blok yükseğe zıplamadan, yürüyerek çıkar (Kılıçlı dövüşte bloklara takılıyordu)
+                'minecraft:variable_max_auto_step': {'base_value': 1.0625, 'controlled_value': 1.0625,
+                                                     'jump_prevented_value': 1.0625},
                 'minecraft:can_climb': {},
                 'minecraft:breathable': {'breathes_water': True, 'breathes_air': True, 'suffocate_time': 0,
                                          'total_supply': 15},

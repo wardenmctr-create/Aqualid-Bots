@@ -59,7 +59,7 @@ export const CHEST_NAME = {
   oduncu: "Oduncu Sandığı",
   kilicli: "Kılıçlı Sandığı",
   insaatci: "İnşaatçı Sandığı",
-  toplayici: "Toplayıcı Sandığı",
+  toplayici: "Organizatör Sandığı",
 };
 export const CHEST_ICON = {
   genel: "textures/items/aqualit_chest",

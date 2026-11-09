@@ -670,7 +670,7 @@ if (run("guc")) {
   ticks(35);
   const kb = sk._kb[0];
   check(!!kb && kb.h.x < 0 && (sk._damage ?? 0) > 0, "kanca iskeleti robota doğru çekti ve çarptı");
-  check(bot.pw.energy === bot.pw.max - P.POWERS.kanca.maliyet + (bot.pw.max / 120) * 3 || bot.pw.energy < bot.pw.max, "kanca enerji harcadı");
+  check(bot.pw.energy === bot.pw.max, "v0.3.8: enerji sistemi yok, güç kullanınca enerji azalmıyor");
   check(!P.usePower(bot, "kanca"), "kanca bekleme süresindeyken tekrar kullanılamıyor");
   clear(); reset();
 

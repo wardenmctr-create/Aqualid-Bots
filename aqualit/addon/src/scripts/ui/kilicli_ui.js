@@ -2,7 +2,7 @@
 import { system, world } from "@minecraft/server";
 import { menu, modal, confirm } from "./forms.js";
 import { bots } from "../brain.js";
-import { getStats, applyStats, setMode, guardZone, defaultStats, modeName } from "../kilicli.js";
+import { getStats, applyStats, setMode, guardZone, defaultStats, modeName, esyaTopla } from "../kilicli.js";
 import { KILICLI_MODELS, DMG_TIERS, robotIcon } from "../constants.js";
 import { Prefs, setProp } from "../store.js";
 import { V, safe, fmtPos, clamp } from "../util.js";
@@ -42,9 +42,10 @@ export async function rodRobot(player, b) {
   const s = getStats(b);
   const body = [`§7Seviye: §f${b.model} (${KILICLI_MODELS[b.model]?.renk})`, `§7Durum: §f${b.status}`,
     `§7Can: §f${s.can} · Hasar: ${s.hasar} · Hız: ${s.hiz}/10`,
-    `§7Enerji: §f${Math.round(b.pw?.energy ?? s.enerji)}/${s.enerji} · Tarz: ${TARZ_AD[s.tarz] ?? "Dengeli"}`,
+    `§7Tarz: ${TARZ_AD[s.tarz] ?? "Dengeli"} §8· güçler her zaman hazır`,
     `§7Tamir hakkı: §f${kitCharges(b)}`].join("\n");
   const btns = MODES.map((m) => ({ ...m }));
+  btns.push({ text: "Eşya topla\n§7Yere düşen eşyaları toplar, sandığına koyar", icon: "textures/items/hopper", act: "topla" });
   btns.push({ text: "Güçler", icon: "textures/items/nether_star", act: "powers" });
   btns.push({ text: "Dövüş tarzı", icon: "textures/items/iron_sword", act: "style" });
   btns.push({ text: "Tamir kiti ver", icon: "textures/items/tamir_kiti", act: "kits" });
@@ -52,6 +53,13 @@ export async function rodRobot(player, b) {
   btns.push({ text: "İsim ver", icon: "textures/items/name_tag", act: "name" });
   const c = await menu(player, `§l${b.name}`, body, btns);
   if (!c) return;
+  if (c.act === "topla") {
+    const v = await modal(player, "Eşya topla", [
+      { type: "slider", label: "Senin çevrende kaç blok?", min: 8, max: 48, step: 4, value: 24 }], "Topla");
+    if (!v) return;
+    esyaTopla(b, player.location, v[0]);
+    return player.sendMessage(`§s${b.name}§r çevredeki eşyaları toplayıp sandığına koyacak.`);
+  }
   if (c.act === "style") return styleForm(player, [b]);
   if (c.act === "powers") return powersMenu(player, b);
   if (c.act === "kits") return kitMenu(player, b);
@@ -144,7 +152,7 @@ export async function powersMenu(player, b) {
   const pw = b.pw ?? {};
   const now = system.currentTick;
   const body = [
-    `§7Enerji: §f${Math.round(pw.energy ?? s.enerji)}/${s.enerji} §8(göğüsteki kalp ışığı)`,
+    `§7Güçler her zaman kullanılabilir §8(yalnız kısa bekleme süresi)`,
     `§7Durum ciddiyeti sınırı: §f${s.ciddiyet ?? 100}`,
     `§7Dövüş tarzı: §f${TARZ_AD[s.tarz] ?? "Dengeli"}`,
     `§7Güçler: ${s.guc === false ? "§ckapalı" : "§aaçık"}§7. Robot uygun anı kendisi seçer; dokunursan hemen kullanır.`,

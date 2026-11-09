@@ -194,7 +194,8 @@ def kesif_bp():
         'components': {
             'minecraft:type_family': {'family': ['aqualit_kesif', 'inanimate']},
             'minecraft:health': {'value': 100, 'max': 100},
-            'minecraft:damage_sensor': {'triggers': [{'cause': 'all', 'deals_damage': 'no'}]},
+            # v0.3.8: 1.21.0 biçiminde 'no' yazısı okunmuyor olabilir: hasarsızlık mantıksal değerle
+            'minecraft:damage_sensor': {'triggers': [{'cause': 'all', 'deals_damage': False}]},
             'minecraft:knockback_resistance': {'value': 1},
             'minecraft:pushable': {'is_pushable': False, 'is_pushable_by_piston': False},
             'minecraft:fire_immune': {},

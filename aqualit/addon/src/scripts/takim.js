@@ -173,7 +173,8 @@ export function wireTeam(getBot) {
     const attacker = src?.damagingEntity;
     if (!attacker || !victim) return;
     const at = safe(() => attacker.typeId, "");
-    if (!at || at === "minecraft:player" || at === ROBOT_ID) return;
+    // v0.3.8: Aqualit varlıkları (Keşif çarpması vb.) düşman sayılmaz
+    if (!at || at === "minecraft:player" || at === ROBOT_ID || at.startsWith("aqualit:")) return;
     const vt = safe(() => victim.typeId, "");
     let ownerId = "";
     if (vt === "minecraft:player") ownerId = victim.id;

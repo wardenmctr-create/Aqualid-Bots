@@ -64,7 +64,7 @@ function isEnemy(e, b) {
   if (!e || e.id === b.id) return false;
   if (!safe(() => e.isValid, false)) return false;
   const t = safe(() => e.typeId, "");
-  if (t === "minecraft:player" || t === "aqualit:robot") return false;
+  if (t === "minecraft:player" || t.startsWith("aqualit:")) return false;
   return true;
 }
 
@@ -162,7 +162,7 @@ export function choose(b, ctx) {
     const p = POWERS[key];
     if (p.model > b.model) continue;
     if (p.ciddiyet > lim) continue;
-    if (pw.energy < p.maliyet) continue;
+    // v0.3.8: enerji sistemi kalktı; güçler her zaman kullanılabilir (yalnız bekleme süresi)
     if ((pw.cd[key] ?? 0) > now) continue;
     const score = fit(key, b, ctx, pw) * (STYLE[tarz][key] ?? 1);
     if (score >= THRESHOLD[tarz] && score > bestScore) {
@@ -185,7 +185,7 @@ function bar(b, key) {
   const pw = state(b);
   const o = ownerOf(b);
   if (!o) return;
-  safe(() => o.onScreenDisplay.setActionBar(`§s⚡ ${b.name}: ${POWERS[key].ad} §7· enerji ${Math.round(pw.energy)}/${pw.max}`));
+  safe(() => o.onScreenDisplay.setActionBar(`§s⚡ ${b.name}: ${POWERS[key].ad}`));
 }
 
 function faceEntity(b, e) {
@@ -212,7 +212,7 @@ function findStand(dim, p) {
 function pay(b, key) {
   const pw = state(b);
   const p = POWERS[key];
-  pw.energy = Math.max(0, pw.energy - p.maliyet);
+  pw.energy = pw.max;   // v0.3.8: enerji harcanmaz
   pw.cd[key] = system.currentTick + p.bekle;
   bar(b, key);
 }
@@ -610,7 +610,7 @@ export function usePower(b, key) {
   const pw = state(b);
   const p = POWERS[key];
   if (!p || pw.cast || p.model > b.model) return false;
-  if (pw.energy < p.maliyet || (pw.cd[key] ?? 0) > system.currentTick) return false;
+  if ((pw.cd[key] ?? 0) > system.currentTick) return false;   // v0.3.8: enerji sınırı yok
   const ctx = analyze(b);
   if (!ctx && key !== "yildirim_kilici" && key !== "kubbe") return false;
   pw.castName = key;

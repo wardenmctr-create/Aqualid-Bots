@@ -96,6 +96,38 @@ function* zoneWalk(b) {
   b.say(ok ? `Bölgeye vardım, ${z.r} blok çevreyi koruyorum.` : "Bölgeye tam ulaşamadım, olduğum yeri koruyorum.");
 }
 
+/** v0.3.8: Kılıçlı eşya toplar: çevredeki yere düşmüş eşyaları alır, sandığına (yoksa yakındaki sandığa) koyar. */
+export function esyaTopla(b, merkez, yaricap = 24) {
+  b.mode = "stay";
+  setProp(b.e, "aq:mode", "stay");
+  safe(() => b.e.triggerEvent("aqualit:mode_stay"));
+  b.setStatus("Eşya topluyor");
+  b.job = toplaIsi(b, merkez, yaricap);
+}
+
+function* toplaIsi(b, merkez, yaricap) {
+  let toplam = 0;
+  const atla = new Set();   // ulaşılamayan eşyalar
+  for (let tur = 0; tur < 40; tur++) {
+    const items = (safe(() => b.dim.getEntities({ type: "minecraft:item", location: merkez, maxDistance: yaricap }), []) ?? [])
+      .filter((it) => safe(() => it.isValid, false) && !atla.has(it.id));
+    if (!items.length) break;
+    items.sort((p, q) => V.dist2(p.location, b.loc) - V.dist2(q.location, b.loc));
+    const hedef = V.floor(items[0].location);
+    const ok = yield* b.goTo(hedef, { range: 1, maxNodes: 1500, radius: yaricap + 8 });
+    const n = b.pickupItems(ok ? 2.5 : 4);
+    toplam += n;
+    if (!ok && !n) atla.add(items[0].id);
+    // çantası dolmaya yaklaşınca sandığa boşalt
+    const dolu = safe(() => b.inv.emptySlotsCount, 99) ?? 99;
+    if (dolu < 3) yield* b.deposit();
+    yield;
+  }
+  if (toplam) yield* b.deposit();
+  b.say(toplam ? `${toplam} eşya topladım, sandığa koydum.` : "Toplanacak eşya bulamadım.");
+  b.setStatus("Bekliyor");
+}
+
 export function kilicliTick(b) {
   const t = system.currentTick;
   powersTick(b);

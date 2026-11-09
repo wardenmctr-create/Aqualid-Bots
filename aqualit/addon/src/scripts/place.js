@@ -144,9 +144,9 @@ export function createRobot(player, dim, pos, data, opts = {}) {
   safe(() => e.getComponent("minecraft:tameable")?.tame(player));
   safe(() => e.triggerEvent(type === "kilicli" ? "aqualit:as_kilicli" : "aqualit:as_worker"));
 
-  // sandık: kayıtlı sandık yoksa yanına yeni sandık koy
+  // sandık: kayıtlı sandık yoksa yanına yeni sandık koy (v0.3.8: Kılıçlı'ya da)
   let chest;
-  if (type !== "kilicli" && !data.chest && opts.makeChest !== false) {
+  if (!data.chest && opts.makeChest !== false) {
     const away = V.sub(pos, V.floor(player.location));
     const order = DIRS4.slice().sort((a, b) => (b.x * away.x + b.z * away.z) - (a.x * away.x + a.z * away.z));
     let cpos = null;
