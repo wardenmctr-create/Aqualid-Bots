@@ -1334,6 +1334,63 @@ if (run("evcil")) {
   for (let i = 0; i < 36; i++) if (player._inv.getItem(i)?.typeId === "aqualit:evcil_portalci") player._inv.setItem(i, undefined);
 }
 
+// ---------------------------------------------------------------- v0.4.0 Portalcı
+if (run("portalci")) {
+  console.log("== Portalcı: yere koy, omuz, portal (Üst Dünya <-> Nether), çırak + Nether'den malzeme");
+  const PC = await import("./scripts/portalci.js");
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+  const nether = world.getDimension("nether");
+  player.teleport({ x: 40.5, y: GROUND + 1, z: 40.5 }, { dimension: ow });
+  player._rot = { x: 0, y: 0 };
+  give("aqualit:robot_portalci", 1, 0);
+  useOn("aqualit:robot_portalci", { x: 40, y: GROUND, z: 42 }, "Up", { comp: "aqualit:robot_item", p: { type: "portalci" } });
+  ticks(3);
+  const pcE = ow.getEntities({ type: PC.PORTALCI })[0];
+  check(pcE && pcE.getDynamicProperty("aq:owner") === player.id && !player._inv.getItem(0), "Portalcı kondu, sahibi oyuncu, eşya eksildi");
+  const ac = async (sec) => { UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex(sec) })); world.beforeEvents.playerInteractWithEntity.fire({ player, target: pcE, cancel: false }); ticks(2); await new Promise((r) => setTimeout(r, 0)); ticks(2); };
+  await ac((b) => b.text.includes("Omzuma gel"));
+  ticks(3);
+  check(pcE.getProperty("aqualit:kucuk") === true && dist(pcE.location, player.location) < 2.2, "omzuna gelince küçülüp omzunda süzülüyor");
+  // portal: önüne iki yönlü portal, Nether'de güvenli yere
+  await ac((b) => b.text.includes("Portal aç"));
+  ticks(260);
+  const p1 = ow.getEntities({ type: PC.PORTAL })[0], p2 = nether.getEntities({ type: PC.PORTAL })[0];
+  check(p1 && p2, "iki yönlü portal açıldı (Üst Dünya + Nether)");
+  check(Math.abs(p2.location.x - p1.location.x / 8) < 14, "Nether ucu 1/8 ölçekli yerde");
+  player.teleport({ ...p1.location }, { dimension: ow });
+  ticks(4);
+  check(player.dimension === nether, "portala yürüyünce Nether'e geçti");
+  const altBlok = nether.getBlock({ x: Math.floor(player.location.x), y: Math.floor(player.location.y) - 1, z: Math.floor(player.location.z) })?.typeId;
+  check(altBlok && altBlok !== "minecraft:air" && altBlok !== "minecraft:lava", "Nether'de güvenli yere çıktı (" + altBlok + ")");
+  ticks(70);
+  player.teleport({ ...p2.location }, { dimension: nether });
+  ticks(4);
+  check(player.dimension === ow, "geri portaldan Üst Dünya'ya döndü");
+  player.teleport({ x: 40.5, y: GROUND + 1, z: 40.5 }, { dimension: ow });
+  // çırak: madenciye yardım eder, onunla Nether'e geçip kuvars getirir
+  give("aqualit:robot_madenci");
+  useOn("aqualit:robot_madenci", { x: 44, y: GROUND, z: 36 }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
+  ticks(5);
+  const mb = myBots().filter((b) => b.type === "madenci").pop();
+  const pr = PC.portalciOf(pcE);
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes("Çırağı yap")) }));
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes(mb.name)) }));
+  world.beforeEvents.playerInteractWithEntity.fire({ player, target: pcE, cancel: false });
+  for (let i = 0; i < 6; i++) { ticks(1); await new Promise((r) => setTimeout(r, 0)); }
+  check(pr.mod === "cirak" && pr.cirak === mb.rid, "Portalcı madencinin çırağı oldu");
+  ticks(10);
+  check(dist(pcE.location, mb.loc) < 3 && pcE.getProperty("aqualit:kucuk"), "çırak robotun omzunda süzülüyor");
+  // Nether'de kuvars cevherleri (varış yerinin yakınına)
+  const nx = Math.floor(mb.loc.x / 8), nz = Math.floor(mb.loc.z / 8);
+  for (let i = 0; i < 12; i++) nether.setBlockType({ x: nx + 3 + (i % 4), y: 70 + Math.floor(i / 4), z: nz + 4 }, "minecraft:quartz_ore");
+  const brain = await import("./scripts/brain.js");
+  brain.startJob(mb, PC.netherIsi(mb, pr, "kuvars", 8), "gorev");
+  const t = ticks(20 * 400, () => { return mb.dim.id === "minecraft:overworld" && pr.mod === "cirak" && mb.jobName !== "gorev"; });
+  const tot = chestTotals(mb.homeChest());
+  check(mb.dim.id === "minecraft:overworld", `robot Nether'den döndü (${Math.round(t / 20)} sn)`);
+  check((tot["minecraft:quartz"] ?? 0) >= 8, `kuvars sandığa kondu (${tot["minecraft:quartz"] ?? 0})`);
+}
+
 // ---------------------------------------------------------------- v0.3.8 Keşif Haritası
 if (run("harita")) {
   console.log("== Keşif Haritası: yürüyünce dolar, yapılar simgeyle, dron ordusu bilineni atlar");

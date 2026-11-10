@@ -3,6 +3,7 @@ import { world, system, ItemStack, BlockPermutation, GameMode } from "@minecraft
 import { radarMenu, hizMenu, otopilotMenu, tirmanMenu } from "./kesif_radar.js";
 import { haritaAc, orduMenu } from "./kesif_harita.js";
 import { evcilKullan } from "./evcil.js";
+import { spawnPortalci } from "./portalci.js";
 import { telefonAc } from "./org_ui.js";
 import { H } from "./kayit.js";
 import { spawnKesif } from "./kesif.js";
@@ -66,6 +67,7 @@ export function useDevice(player, kind, opts = {}) {
       if (!isPlayer(pl) || !debounce(pl, 10)) return;
       const block = e.block, face = e.blockFace, item = e.itemStack;
       if (p.params?.type === "kesif") return system.run(() => safe(() => spawnKesif(pl, block, face)));
+      if (p.params?.type === "portalci") return system.run(() => safe(() => spawnPortalci(pl, block, face)));
       system.run(() => safe(() => spawnRobotFromItem(pl, block, face, p.params ?? {}, item), undefined));
     },
   });

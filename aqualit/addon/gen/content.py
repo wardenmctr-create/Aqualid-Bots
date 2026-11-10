@@ -59,6 +59,7 @@ ROBOTS = [
     ('robot_kesif', 'Keşif Robotu (araçlara dönüşür)', 'robot_kesif', 'kesif', 1, False),
     ('robot_insaatci', 'Mimar Robot (yapı kurar, uçar)', 'robot_insaatci', 'insaatci', 1, False),
     ('robot_toplayici', 'Organizatör Robot (sandıkları yönetir, konuşur, plan yapar)', 'robot_toplayici', 'toplayici', 1, False),
+    ('robot_portalci', 'Portalcı Robot (portal açar, taşır, robotlara Nether çıraklığı yapar)', 'robot_portalci', 'portalci', 1, False),
 ]
 
 DEVICES = [
@@ -163,7 +164,8 @@ shaped('aqualit_chest', ['XXX', 'X#X', 'XXX'], {'X': I(K), '#': I('minecraft:che
 for rid, tool in [('robot_madenci', 'aqualit:aqualit_pickaxe'), ('robot_kurekci', 'aqualit:aqualit_shovel'),
                   ('robot_ciftci', 'aqualit:aqualit_hoe'), ('robot_oduncu', 'aqualit:aqualit_axe'),
                   ('robot_kilicli_1', 'aqualit:aqualit_sword'), ('robot_kesif', 'minecraft:compass'),
-                  ('robot_insaatci', 'minecraft:brick_block'), ('robot_toplayici', 'minecraft:barrel')]:
+                  ('robot_insaatci', 'minecraft:brick_block'), ('robot_toplayici', 'minecraft:barrel'),
+                  ('robot_portalci', 'minecraft:ender_eye')]:
     shaped(rid, [' B ', 'XSX', ' A '], {'B': I('aqualit:aqualit_block'), 'X': I(K), 'S': I('aqualit:aqualit_chest'),
                                        'A': I(tool)}, 'aqualit:' + rid, unlock=[{'item': 'aqualit:aqualit_chest'}])
 for cid, wood in [('chest_miner', 'minecraft:wooden_pickaxe'), ('chest_digger', 'minecraft:wooden_shovel'),
