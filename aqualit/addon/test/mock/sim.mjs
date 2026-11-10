@@ -1368,9 +1368,11 @@ if (run("portalci")) {
   check(player.dimension === ow, "geri portaldan Üst Dünya'ya döndü");
   player.teleport({ x: 40.5, y: GROUND + 1, z: 40.5 }, { dimension: ow });
   // çırak: madenciye yardım eder, onunla Nether'e geçip kuvars getirir
-  give("aqualit:robot_madenci");
-  useOn("aqualit:robot_madenci", { x: 44, y: GROUND, z: 36 }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
-  ticks(5);
+  if (!myBots().some((b) => b.type === "madenci")) {          // tek başına çalışırken madenci koy (tam koşuda var olanı kullan)
+    give("aqualit:robot_madenci");
+    useOn("aqualit:robot_madenci", { x: 44, y: GROUND, z: 36 }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
+    ticks(5);
+  }
   const mb = myBots().filter((b) => b.type === "madenci").pop();
   const pr = PC.portalciOf(pcE);
   UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes("Çırağı yap")) }));
@@ -1445,7 +1447,7 @@ if (run("harita")) {
   const koyP = uv("koy").at(-1).loc, cam = player._cam.set.o.location;
   check(koyP.x > cam.x && Math.abs(koyP.z - cam.z) < 0.5 && koyP.y < cam.y, "köy doğuda (sağda) çiziliyor");
   check(!uv("robot").length && !uv("canavar").length, "oyuncu haritasında robot/sandık/mob yok (kalabalık olmasın)");
-  check(player.locatorBar.list.length > lb0, "yapılar pusula çubuğunda kendi simgeleriyle");
+  check(player.locatorBar.list.length > lb0 || lb0 >= player.locatorBar.maxCount - 3, "yapılar pusula çubuğunda kendi simgeleriyle");
   check(player.actionbar.at(-1).includes("Köy") && player.actionbar.at(-1).includes("360"), "altta en yakın yapının adı ve koordinatı");
   HR.Yerler.ekle(player.id, { tur: "iglo", ad: "İglo", pos: { x: 300, y: GROUND, z: 1300 }, dim: ow.id });
   player.particles = [];

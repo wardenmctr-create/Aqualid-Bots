@@ -1,7 +1,7 @@
 # Aqualit Robotları — Claude Code çalışma rehberi
 
-Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.3.9**
-(Keşif düzeltmeleri, uçan binek sistemi, arazi Tırmanma Modu; 0.3.5: mini tarama dronları; 0.3.2: takip, otopilot, 3B eşyalar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
+Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.4.0**
+(Portalcı, evcil dronlar, Organizatör Yardımcısı ve üssü, yeni vizör, tepeden kamera haritası, uzaktan izleme; 0.3.9: matkap ve cevher dürbünü; Keşif düzeltmeleri, uçan binek sistemi, arazi Tırmanma Modu; 0.3.5: mini tarama dronları; 0.3.2: takip, otopilot, 3B eşyalar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
 Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 
 ## Kullanıcı (kalıcı istekler — her oturumda uy)
@@ -91,6 +91,25 @@ ortam değişkeniyle başka yer gösterilebilir.
 - `dil.js` Türkçe dil anlama, `organizator.js`, `org_ui.js`, `org_uretim.js` Organizatör (v0.4.0'da sürüyor).
 - `ui/` menüler: `forms.js` (menu/modal/confirm), `task.js` Görev Kumandası, `radio.js` Telsiz, `tracker.js` Takip Ekranı,
   `kilicli_ui.js` Komut Çubuğu/Ayar Dişlisi/Bölge Seçici, `canta.js` çanta ekranı.
+
+### v0.4.0 modülleri
+- `kesif_harita.js`: harita = tepeden serbest kamera (kuzey yukarı); işaretler tek parçacık `aqualit:harita_isaret`
+  (atlas `gen/harita_isaret.py`, hücre `v.u/v.v`), kameranın D=8 blok önüne küçültülerek çizilir (arazi örtmez).
+  Yakın/orta/uzak = `YUKSEK`; sis `aqualit:harita_sis`; pusula çubuğu simgeleri `textures/ui/aqualit_yapi/<tür>`.
+  Eski glif haritası kaldırıldı (glif sayfaları yalnız cevher dürbünü için duruyor).
+- `ui/tracker.js`: Takip Ekranı = liste (dokun = canlı izle). Uzak/başka boyuttaki robot: oyuncu seyirci olur, yanına
+  taşınır, dönüşte `aq:izle_geri` ile eski yer ve mod geri gelir.
+- `evcil.js` + `gen/evcil_oyun.py`: tek varlık `aqualit:evcil`, tür `aqualit:tur` (0-9); modeller `tasarim/` dosyalarından.
+  Tarif sonucu dizi (robot + evcil). Cam yarı saydam: `K.SON_UV['cam']` adası alfa 128, malzeme `entity_alphablend`.
+- `portalci.js` + `gen/portalci_oyun.py`: `aqualit:portalci` (dron, binilir, `aqualit:kucuk`), `aqualit:portal`
+  (girdap 8 kare, render controller `uv_anim`). `guvenliYer` tickingarea ile yükletip arar, yoksa obsidyen platform.
+  Çırak seferi `netherIsi` robota `startJob` ile verilir.
+- `yardimci.js` + `gen/yardimci_oyun.py`: Organizatör sandığa yürümez, `yardimciGonder` (Aktarım Bloğu yanındaysa uçmaz).
+  Organizatör'de gezinme yok: `random_stroll` artık `aqualit:gezin` grubunda (`gezin_on/off`).
+- `us.js` + `gen/org_ussu_oyun.py`: `aqualit_firin` (durum `aqualit:yanik` hayir/evet), `aqualit_kablo` (durumlar
+  `aqualit:n/s/w/e/u/d` yok/var, kemik görünürlüğü), `aqualit_aktarim`, platform varlığı `aqualit:org_platform`.
+  Blok durumlarında bool/int şemadan geçmiyor: metin değer kullan.
+- Organizatör vizörü: `robot.py` `vz_*` parçaları; cam `visor_cam` kemiğinde, ayrı render controller (alphablend).
 
 ## Kodlama kuralları
 

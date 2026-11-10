@@ -9,7 +9,7 @@ import { WALK, RUN } from "./bot.js";
 import { readAnswer } from "./messages.js";
 import { mimarJob } from "./mimar.js";
 import { yagmaGorevi } from "./yagma.js";
-import { organizatorIsi } from "./organizator.js";
+import { organizatorIsi, robotIstegi } from "./organizator.js";
 
 const M = (s) => "minecraft:" + s;
 
@@ -325,7 +325,8 @@ export function* smeltAll(bot) {
     yield* bot.fetchFromChests((id) => pick(id) && isFuel(id), Math.ceil((total - fuel) / per));
   }
   if (fuelIn(bot) <= 0) {
-    bot.say("Yakıt bulamadım (kömür, odun...). Eritmeden sandığa koyuyorum.");
+    robotIstegi(bot, "komur", 16);
+    bot.say("Yakıt bulamadım (kömür, odun...). Organizatör'den istedim; şimdilik eritmeden sandığa koyuyorum.");
     return;
   }
   // fırınlara paylaştır
@@ -1162,6 +1163,7 @@ function* makeFarm(bot, crop, plots) {
   cells.sort((a, b) => V.dist2(a, center) - V.dist2(b, center));
   let made = 0;
   if (crop.seed && bot.count(crop.seed) < plots) yield* bot.fetchFromChests((id) => id === crop.seed, plots);
+  if (crop.seed && bot.count(crop.seed) < plots) robotIstegi(bot, crop.seed, plots - bot.count(crop.seed));
   for (const q of cells) {
     if (made >= plots) break;
     if (!tillable(bot, q)) continue;

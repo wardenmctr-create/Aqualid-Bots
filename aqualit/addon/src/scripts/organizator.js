@@ -854,3 +854,20 @@ export function gunOzeti(pl) {
 
 // test kancası
 export const _test = { O, zincirIlerlet, kosulTamam };
+
+// ======================================================================= robotlar Organizatör'den ister
+const sonIstek = new Map();
+/** Bir robot eksik eşyasını Organizatör'den ister (anahtar ya da eşya kimliği). Aynı istek 2 dakikada bir. */
+export function robotIstegi(bot, anahtar, n) {
+  const k = `${bot.id}:${anahtar}`;
+  if (system.currentTick - (sonIstek.get(k) ?? -1e9) < 20 * 120) return false;
+  sonIstek.set(k, system.currentTick);
+  let tanim = ESYA[anahtar] ? { anahtar, ...ESYA[anahtar] } : null;
+  if (!tanim) {
+    const t = Object.entries(ESYA).find(([, e]) => e.id === anahtar || e.ham === anahtar);
+    tanim = t ? { anahtar: t[0], ...t[1] } : { anahtar, ad: anahtar.replace("minecraft:", "").replace(/_/g, " "), id: anahtar };
+  }
+  if (!orgListesi(bot.owner).length) return false;
+  konus(bot.owner, `${bot.name} benden ${n} ${tanim.ad} istedi; getiriyorum.`);
+  return iste(bot.owner, { tanim, n, kim: bot.id });
+}

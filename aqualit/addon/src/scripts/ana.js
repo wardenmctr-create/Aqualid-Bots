@@ -1,5 +1,5 @@
 // Aqualit Robotları — asıl giriş (main.js güvenli açılışla yükler)
-// Sürüm 0.3.9 (matkap: baktığın yöne kazma, cevher dürbünü; 0.3.8: harita, temalar, düzeltmeler)
+// Sürüm 0.4.0 (Portalcı, evcil dronlar, Organizatör Yardımcısı ve üssü, yeni vizör, tepeden harita, uzaktan izleme)
 import { world, system } from "@minecraft/server";
 import "./brain.js";
 import "./items.js";
@@ -17,7 +17,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
   if (!ev.initialSpawn) return;
   const p = ev.player;
   system.runTimeout(() => {
-    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.3.9 yüklendi. Matkap baktığın yöne kazıyor, cevher dürbünü açık!"));
+    safe(() => p.sendMessage("§s§lAqualit Robotları§r §7v0.4.0 yüklendi. Portalcı, evcil dronlar, Organizatör üssü ve tepeden harita geldi!"));
     if (!cleaned) {
       cleaned = true;
       fxCleanup(); // önceki oturumdan kalmış güç efekti varlıkları
