@@ -627,7 +627,7 @@ def robot_rp(skins):
         'minecraft:client_entity': {
             'description': {
                 'identifier': 'aqualit:robot',
-                'materials': {'default': 'entity_alphatest', 'glow': 'copper_golem_eyes'},
+                'materials': {'default': 'entity_alphatest', 'glow': 'copper_golem_eyes', 'cam': 'entity_alphablend'},
                 'textures': textures,
                 'geometry': {'default': 'geometry.aqualit.robot'},
                 'animations': anims,
@@ -638,7 +638,8 @@ def robot_rp(skins):
                                 'move_ctrl', 'act_ctrl', 'act2_ctrl'],
                 },
                 'render_controllers': ['controller.render.aqualit.robot',
-                                       {'controller.render.aqualit.robot_glow': '!v.asleep'}],
+                                       {'controller.render.aqualit.robot_glow': '!v.asleep'},
+                                       {'controller.render.aqualit.robot_cam': 'v.t == 6'}],
                 'enable_attachables': True,
                 'sound_effects': dict(ANIM_EFFECTS),  # vanilla biçimi: kısa ad -> ses olayı (düz metin)
             }
@@ -660,6 +661,7 @@ def robot_render(skins):
         {'hardhat': 'v.t == 5'}, {'toolbelt': 'v.t == 5'}, {'blueprint': 'v.t == 5'},
         {'antenna_ball24': 'v.t == 5 || v.t == 6'},
         {'headset': 'v.t == 6'}, {'cap': 'v.t == 6'}, {'visor': 'v.t == 6'}, {'backpack': 'v.t == 6'},
+        {'visor_cam': False},          # cam yalnız yarı saydam katmanda
     ]
     main = {
         'arrays': {'textures': {'Array.skins': [f'Texture.{s}' for s in skins]}},
@@ -676,9 +678,17 @@ def robot_render(skins):
         'part_visibility': vis,
         'ignore_lighting': True,
     }
+    cam = {
+        'arrays': {'textures': {'Array.skins': [f'Texture.{s}' for s in skins]}},
+        'geometry': 'Geometry.default',
+        'materials': [{'*': 'Material.cam'}],
+        'textures': ['Array.skins[v.skin]'],
+        'part_visibility': [{'*': False}, {'visor_cam': 'v.t == 6'}],
+    }
     return {'format_version': '1.10.0', 'render_controllers': {
         'controller.render.aqualit.robot': main,
         'controller.render.aqualit.robot_glow': glow,
+        'controller.render.aqualit.robot_cam': cam,
     }}
 
 

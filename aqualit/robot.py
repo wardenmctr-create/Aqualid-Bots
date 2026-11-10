@@ -6,6 +6,8 @@ from iso import C30, S30, shade
 
 RP = dict(PAL)
 RP.update({
+    '~': (170, 226, 255), '^': (84, 160, 236), '@': (40, 92, 176), '<': (120, 200, 255), '>': (20, 50, 110),
+    '9': (250, 252, 252), 'ö': (40, 200, 210), 'Ç': (170, 255, 250),
     'e': (88, 168, 56), 'E': (52, 116, 36), 'f': (150, 214, 92),          # yaprak
     'n': (222, 198, 140), 'N': (186, 158, 102), 'B': (140, 112, 66),      # kum
     'w': (236, 206, 120), 'x': (204, 168, 84), 'X': (156, 120, 54),       # hasir
@@ -297,13 +299,33 @@ def robot(kind):
         bt = G(10, 4, '2'); bt[0] = ['1'] * 10; bt[3] = ['P'] * 10
         parts.append(box('cap_brim', (-5, 19, 4.5), (5, 20, 8.5), front=[['P'] * 10], back=[['k'] * 10],
                          left=[['k'] * 4], right=[['k'] * 4], top=bt))
-        # vizör: gözlerin önünde çerçeve (ortası saydam, gözler görünür), mor ışıklı
-        vf = [[' '] * 13 for _ in range(4)]
-        vf[0] = ['P'] * 13; vf[3] = ['p'] * 13
-        for y in range(4): vf[y][0] = 'P'; vf[y][12] = 'p'
-        vf[1][6] = 'Z'
-        parts.append(box('visor', (-6.5, 13, 5), (6.5, 17, 6), front=vf, back=[[' '] * 13 for _ in range(4)],
-                         left=[['P']] * 4, right=[['p']] * 4, top=[['Z'] * 13], bottom=[['p'] * 13]))
+        # v0.4.0 vizör (2. tasarım): filmlerdeki gibi mavi, yarı saydam, kalın cam siperlik; kenarları koyu ve opak.
+        # Cam ayrı kemikte (visor_cam) yarı saydam malzemeyle çizilir.
+        parts.append(box('vz_ust', (-7.5, 17.5, 1.5), (7.5, 18.5, 7.5), base='@',
+                         front=[list('>' + '@' * 13 + '>')], top=[['@'] * 15 for _ in range(6)], bottom=G(15, 6, '>'),
+                         back=G(15, 1, '>'), left=G(6, 1, '>'), right=G(6, 1, '>')))
+        parts.append(box('vz_alt', (-7.5, 11.5, 1.5), (7.5, 12.5, 7.5), base='>', front=[list('>' * 15)],
+                         top=G(15, 6, '>'), bottom=G(15, 6, '>'), back=G(15, 1, '>'), left=G(6, 1, '>'), right=G(6, 1, '>')))
+        for ad, x0 in (('vz_dikme_l', -7.5), ('vz_dikme_r', 6.5)):
+            parts.append(box(ad, (x0, 12.5, 6.5), (x0 + 1, 17.5, 7.5), base='>', front=G(1, 5, '>'), back=G(1, 5, '>'),
+                             left=G(1, 5, '>'), right=G(1, 5, '>'), top=G(1, 1, '>'), bottom=G(1, 1, '>')))
+            parts.append(box(ad + '_arka', (x0, 12.5, 1.5), (x0 + 1, 17.5, 2.5), base='>', front=G(1, 5, '>'),
+                             back=G(1, 5, '>'), left=G(1, 5, '>'), right=G(1, 5, '>'), top=G(1, 1, '>'), bottom=G(1, 1, '>')))
+        for ad, x0 in (('vz_led_l', -8), ('vz_led_r', 7.5)):
+            parts.append(box(ad, (x0, 14, 3), (x0 + 1, 16, 5), base='ö', front=[['Ç'], ['ö']], back=G(1, 2, 'ö'),
+                             left=G(2, 2, 'ö'), right=G(2, 2, 'ö'), top=G(1, 2, 'ö'), bottom=G(1, 2, 'ö')))
+        def _cam(w, h):
+            g = [['~' if y == 0 else ('^' if y == h - 1 else '<') for _ in range(w)] for y in range(h)]
+            for k in range(min(w, h) + 2):
+                x, y = 2 + k, h - 1 - k
+                if 0 <= x < w and 0 <= y < h: g[y][x] = '9'
+                if 0 <= x + 1 < w and 0 <= y < h: g[y][x + 1] = '~'
+            return g
+        parts.append(box('vz_cam_on', (-6.5, 12.5, 6.5), (6.5, 17.5, 7.5), base='<', front=_cam(13, 5), back=G(13, 5, '<'),
+                         left=G(1, 5, '<'), right=G(1, 5, '<'), top=[['~'] * 13], bottom=[['^'] * 13]))
+        for ad, x0 in (('vz_cam_l', -7.5), ('vz_cam_r', 6.5)):
+            parts.append(box(ad, (x0, 12.5, 2.5), (x0 + 1, 17.5, 6.5), base='<', left=_cam(4, 5), right=_cam(4, 5),
+                             front=G(1, 5, '<'), back=G(1, 5, '<'), top=G(1, 4, '~'), bottom=G(1, 4, '^')))
         # kafa üstü kulaklık: şapkanın üstünden geçen bant, yanlarda iniş ve kulak pedleri
         parts.append(box('headband', (-7, 23, -1), (7, 24, 1),
                          front=[['b'] * 14], back=[['b'] * 14], left=[['b', 'b']], right=[['b', 'b']], top=G(14, 2, 'c')))
@@ -314,8 +336,6 @@ def robot(kind):
         for nm, x0 in (('earpad_l', -8), ('earpad_r', 6)):
             parts.append(box(nm, (x0, 12, -1.5), (x0 + 2, 16, 1.5), front=G(2, 4, 'g'), back=G(2, 4, 'g'),
                              left=pad, right=[r[:] for r in pad], top=G(2, 3, 'g')))
-        parts.append(box('mic', (5, 11, 1.5), (6, 12, 6.5), front=[['L']], back=[['g']], left=[['g'] * 5],
-                         right=[['g'] * 5], top=[['g']] * 5))
         parts += antenna(24)
     elif kind == 'kilicli':
         cb = G(8, 8, 'r')

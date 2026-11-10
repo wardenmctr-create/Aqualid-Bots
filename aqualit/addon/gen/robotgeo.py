@@ -42,7 +42,8 @@ BONE_OF = {
     'sand_bag': 'sand_bag', 'cape': 'cape', 'shoulder_l': 'left_shoulder', 'shoulder_r': 'right_shoulder',
     'hat_rim': 'hardhat', 'hat_visor': 'hardhat', 'hat_dome1': 'hardhat', 'hat_dome2': 'hardhat', 'hat_dome3': 'hardhat', 'hat_dome4': 'hardhat', 'cap_top': 'cap',
     'toolbelt': 'toolbelt', 'blueprint': 'blueprint', 'backpack': 'backpack', 'cap': 'cap', 'cap_brim': 'cap',
-    'visor': 'visor', 'earpad_l': 'headset', 'earpad_r': 'headset', 'headband': 'headset', 'band_l': 'headset',
+    'visor': 'visor', **{n: 'visor' for n in ('vz_ust', 'vz_alt', 'vz_dikme_l', 'vz_dikme_r', 'vz_dikme_l_arka', 'vz_dikme_r_arka', 'vz_led_l', 'vz_led_r')},
+    **{n: 'visor_cam' for n in ('vz_cam_on', 'vz_cam_l', 'vz_cam_r')}, 'earpad_l': 'headset', 'earpad_r': 'headset', 'headband': 'headset', 'band_l': 'headset',
     'band_r': 'headset', 'mic': 'headset',
     # çiftçinin 3D Aqualit kovası (yalnızca su numarasında görünür)
     'kova_alt': 'kova', 'kova_govde': 'kova', 'kova_agiz_on': 'kova', 'kova_agiz_arka': 'kova', 'kova_agiz_sol': 'kova',
@@ -55,7 +56,7 @@ PARENT = {
     'helmet': 'head', 'hat': 'head', 'scarf': 'body', 'sand_bag': 'body', 'cape': 'body',
     'right_shoulder': 'right_arm', 'left_shoulder': 'left_arm',
     'antenna_ball19': 'head', 'antenna_ball20': 'head', 'antenna_leaf19': 'head', 'antenna_sprout23': 'head',
-    'hardhat': 'head', 'headset': 'head', 'cap': 'head', 'visor': 'head', 'toolbelt': 'body', 'blueprint': 'body',
+    'hardhat': 'head', 'headset': 'head', 'cap': 'head', 'visor': 'head', 'visor_cam': 'head', 'toolbelt': 'body', 'blueprint': 'body',
     'backpack': 'body', 'antenna_ball24': 'head', 'kova': 'right_arm',
 }
 PIVOT = {
@@ -66,11 +67,11 @@ PIVOT = {
     'cape': [0, 10, 3], 'right_shoulder': [-5, 9.5, 0], 'left_shoulder': [5, 9.5, 0],
     'antenna_ball19': [0, 19, 0], 'antenna_ball20': [0, 20, 0], 'antenna_leaf19': [0, 19, 0],
     'antenna_sprout23': [0, 23, 0],
-    'hardhat': [0, 10, 0], 'headset': [0, 10, 0], 'cap': [0, 19, 0], 'visor': [0, 10, 0],
+    'hardhat': [0, 10, 0], 'headset': [0, 10, 0], 'cap': [0, 19, 0], 'visor': [0, 10, 0], 'visor_cam': [0, 10, 0],
     'antenna_ball24': [0, 24, 0], 'toolbelt': [0, 4, 0], 'blueprint': [0, 8, 3], 'backpack': [0, 9.5, 4],
     'kova': [-5, 4.5, 0],
 }
-ORDER = ['root', 'body', 'head', 'helmet', 'hat', 'hardhat', 'cap', 'visor', 'headset', 'antenna_ball19',
+ORDER = ['root', 'body', 'head', 'helmet', 'hat', 'hardhat', 'cap', 'visor', 'visor_cam', 'headset', 'antenna_ball19',
          'antenna_ball20', 'antenna_ball24', 'antenna_leaf19', 'antenna_sprout23', 'scarf', 'sand_bag', 'cape', 'toolbelt', 'blueprint', 'backpack',
          'right_arm', 'right_shoulder', 'rightItem', 'kova',
          'left_arm', 'left_shoulder', 'right_leg', 'left_leg']
@@ -254,6 +255,8 @@ def glow_mask(kind, p, face, g):
             for xx in list(range(2, 5)) + list(range(7, 10)):
                 if g[yy][xx] not in ('k', 'R', 'M', 'H', 'D'):
                     m[yy][xx] = True
+    if p.name in ('vz_led_l', 'vz_led_r'):
+        return [[True] * len(g[0]) for _ in g]
     if p.name in ('visor', 'cap_brim') and face in ('front', 'top', 'left', 'right', 'bottom'):
         for yy in range(len(g)):
             for xx in range(len(g[0])):
@@ -323,6 +326,17 @@ def build(out_tex_dir, out_geo_path):
             f = styled_faces(kind, model, p)
             draw_net(sheet, glow, uv[key][0], uv[key][1], cubes[key]['size'], f, kind, p)
         nm = kind if kind != 'kilicli' else f'kilicli_{model}'
+        # v0.4.0: Organizatör vizörünün camı yarı saydam (ayrı yarı saydam katmanda çizilir)
+        for key in cubes:
+            if key[0] != 'visor_cam' or kind != 'toplayici':
+                continue
+            w_, h_, d_ = cubes[key]['size']
+            u0, v0 = uv[key]
+            for xx in range(u0, u0 + 2 * (w_ + d_)):
+                for yy in range(v0, v0 + d_ + h_):
+                    r_, g_, b_, a_ = sheet.getpixel((xx, yy))
+                    if a_:
+                        sheet.putpixel((xx, yy), (r_, g_, b_, 120))
         sheet.save(f'{out_tex_dir}/{nm}.png')
         glow.save(f'{out_tex_dir}/{nm}_glow.png')
         names.append(nm)
