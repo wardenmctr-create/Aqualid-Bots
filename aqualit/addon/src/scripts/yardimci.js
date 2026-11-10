@@ -4,6 +4,7 @@
 import { system } from "@minecraft/server";
 import { V, safe } from "./util.js";
 import * as FX from "./fx.js";
+import { aktarimYakin } from "./us.js";
 
 export const YARDIMCI = "aqualit:org_yardimci";
 const HIZ = 0.9;                 // blok/tik
@@ -28,6 +29,17 @@ export function* yardimciGonder(org, hedef, durum = "Yardımcısı sandığa uç
   if (!hedef || safe(() => dim.id) !== org.dim.id) return;
   const ust = { x: hedef.x + 0.5, y: hedef.y + 2.6, z: hedef.z + 0.5 };
   if (V.dist(org.loc, ust) < 4) return;           // yanındaysa gerek yok
+  // Uzaktan Aktarım Bloğu'nun yanındaki sandık: Yardımcı uçmaz, eşya ışınlanır
+  const ak = aktarimYakin(dim, V.floor(hedef));
+  if (ak) {
+    org.setStatus("Uzaktan aktarıyor");
+    for (let i = 0; i < 6; i++) {
+      if (i % 2 === 0) safe(() => FX.cizgi(dim, { x: ak.x + 0.5, y: ak.y + 1, z: ak.z + 0.5 }, { x: hedef.x + 0.5, y: hedef.y + 1, z: hedef.z + 0.5 }, true));
+      yield;
+    }
+    safe(() => dim.playSound("mob.endermen.portal", { x: ak.x, y: ak.y, z: ak.z }, { volume: 0.4, pitch: 1.8 }));
+    return;
+  }
   org.setMove("none");
   org.setStatus(durum);
   org.face?.(hedef);

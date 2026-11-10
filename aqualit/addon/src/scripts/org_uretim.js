@@ -3,6 +3,7 @@
 // kömür yoksa madenciye toplatır ya da kütükten odun kömürü eritir. Planı oyuncuya gösterir, sonra uygular:
 // sandıklardan malzemeyi alır, çalışma masasında üretir, Aqualit Fırın'da (yalnız Organizatör kullanır, çok hızlı) eritir.
 import { yardimciGonder } from "./yardimci.js";
+import { gucluMu } from "./us.js";
 import { world, ItemStack, BlockVolume } from "@minecraft/server";
 import { V, safe, wait } from "./util.js";
 import { UnitContainer, acikMi, standSpot, getSandik } from "./sandik.js";
@@ -366,8 +367,9 @@ export function* uretIsi(org, hedefId, n, kim) {
     } else {
       const f = yield* firinHazirla(org);
       if (!f) return false;
-      org.setStatus(`Aqualit Fırın'da ${esyaAd(a.girdi)} eritiyor`);
-      yield* org.travelTo(f, { near: 2 });
+      const guclu = gucluMu(org.dim, f);
+      org.setStatus(`Aqualit Fırın'da ${esyaAd(a.girdi)} eritiyor${guclu ? "" : " (güç yok: yavaş)"}`);
+      yield* yardimciGonder(org, f, "Yardımcısı fırına taşıyor");
       org.face(f);
       const alinan = org.take(a.girdi, a.kez);
       if (alinan < a.kez) {
@@ -376,8 +378,12 @@ export function* uretIsi(org, hedefId, n, kim) {
         return false;
       }
       firinYak(org.dim, f, true);
-      // çok hızlı elektrikli fırın: 4 eşya / tik
-      for (let i = 0; i < a.kez; i += 4) {
+      // çok hızlı elektrikli fırın: 4 eşya / tik; güç yoksa (Aqualit Bloğu'na bağlı değil) 1 eşya / 4 tik
+      if (!guclu && !org._gucUyari) {
+        org._gucUyari = true;
+        ORG.konus(owner, "Fırına güç gelmiyor; bir Aqualit Bloğu'na doğrudan ya da Aqualit Kablo ile bağlarsan çok hızlı eritirim.", org);
+      }
+      for (let i = 0; i < a.kez * (guclu ? 1 : 16); i += 4) {
         if (i % 16 === 0) safe(() => org.dim.playSound("block.furnace.lit", f, { volume: 0.5, pitch: 1.6 }));
         yield;
       }
@@ -434,7 +440,7 @@ function* firinHazirla(org) {
 export function firinYak(dim, p, yan) {
   const b = safe(() => dim.getBlock(p));
   if (!b || b.typeId !== FIRIN) return;
-  safe(() => b.setPermutation(b.permutation.withState("aqualit:yanik", yan)));
+  safe(() => b.setPermutation(b.permutation.withState("aqualit:yanik", yan ? "evet" : "hayir")));
 }
 
 // ======================================================================= komut bağlantısı

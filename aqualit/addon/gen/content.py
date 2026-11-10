@@ -75,6 +75,8 @@ DEVICES = [
     # v0.3.8: devasa Keşif Haritası (oyuncu da kullanır) ve yalnız yaratıcıdan alınan dron ordusu
     ('kesif_haritasi', 'Keşif Haritası (basılı tut)', 'kesif_haritasi', 'harita', 'Haritayı aç'),
     ('dron_ordusu', 'Keşif Dron Ordusu Çağırma (basılı tut: 25 dron)', 'dron_ordusu', 'ordu', 'Ordu gönder'),
+    # v0.4.0: Organizatör Platformu (9x9 tek parça; yere bas: kurulur, panele dokun: üs menüsü)
+    ('org_platform', 'Organizatör Platformu (9x9, dokunmatik panelli üs)', 'org_platform', 'platform', 'Kur'),
 ]
 
 # v0.4.0: evcil mini dronlar (basılı tut: omzunda süzülür; dokun: eşyaya döner). id, ad, ikon, tür
@@ -217,6 +219,12 @@ LANG_EXTRA = {
     'action.interact.aqualit.kit': 'Onar',
     'action.interact.aqualit.kesif': 'Menü',
     'tile.aqualit.kapali_robot.name': 'Kapalı Robot',
+    'tile.aqualit.aqualit_firin.name': 'Aqualit Fırın (elektrikli, yalnız Organizatör kullanır)',
+    'tile.aqualit:aqualit_firin.name': 'Aqualit Fırın',
+    'tile.aqualit.aqualit_kablo.name': 'Aqualit Kablo',
+    'tile.aqualit:aqualit_kablo.name': 'Aqualit Kablo',
+    'tile.aqualit.aqualit_aktarim.name': 'Uzaktan Aktarım Bloğu (yanındaki sandıklara Organizatör uzaktan ışınlar)',
+    'tile.aqualit:aqualit_aktarim.name': 'Uzaktan Aktarım Bloğu',
     'tile.aqualit:kapali_robot.name': 'Kapalı Robot',
 }
 
@@ -242,3 +250,12 @@ for _rid, _tur in _RE.items():
 shaped_cok('evcil_yardimci', ['IAI', 'RSR', 'AIA'],
            {'R': I('minecraft:redstone'), 'I': I('minecraft:iron_ingot'), 'A': I(K), 'S': I('aqualit:robot_toplayici')},
            ['aqualit:evcil_yardimci', 'aqualit:robot_toplayici'], unlock=[{'item': 'aqualit:robot_toplayici'}])
+
+# v0.4.0 Organizatör üssü: oyuncu da yapabilir (Organizatör kendisi de üretir: org_uretim.js)
+shaped('aqualit_kablo', ['XCX'], {'X': I(K), 'C': I('minecraft:copper_ingot')}, 'aqualit:aqualit_kablo', count=8)
+shaped('aqualit_firin', ['XIX', 'IFI', 'XRX'], {'X': I(K), 'I': I('minecraft:iron_ingot'), 'F': I('minecraft:furnace'),
+                                               'R': I('minecraft:redstone')}, 'aqualit:aqualit_firin')
+shaped('aqualit_aktarim', ['XRX', 'RER', 'XRX'], {'X': I(K), 'R': I('minecraft:redstone'), 'E': I('minecraft:ender_pearl')},
+       'aqualit:aqualit_aktarim')
+shaped('org_platform', ['XXX', 'XPX', 'XXX'], {'X': I('aqualit:aqualit_block'), 'P': I('minecraft:glass_pane')},
+       'aqualit:org_platform')

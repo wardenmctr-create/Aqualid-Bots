@@ -1391,6 +1391,32 @@ if (run("portalci")) {
   check((tot["minecraft:quartz"] ?? 0) >= 8, `kuvars sandığa kondu (${tot["minecraft:quartz"] ?? 0})`);
 }
 
+// ---------------------------------------------------------------- v0.4.0 Organizatör üssü
+if (run("us")) {
+  console.log("== Organizatör üssü: kablo bağlanır, fırın güçlü/güçsüz, aktarım bloğu, platform");
+  const US = await import("./scripts/us.js");
+  const y = GROUND + 1;
+  ow.setBlockType({ x: 60, y, z: 60 }, "aqualit:aqualit_block");
+  for (const x of [61, 62, 63]) {
+    ow.setBlockType({ x, y, z: 60 }, "aqualit:aqualit_kablo");
+    world.afterEvents.playerPlaceBlock.fire({ player, block: ow.getBlock({ x, y, z: 60 }) });
+  }
+  ow.setBlockType({ x: 64, y, z: 60 }, "aqualit:aqualit_firin");
+  world.afterEvents.playerPlaceBlock.fire({ player, block: ow.getBlock({ x: 64, y, z: 60 }) });
+  ticks(2);
+  const k = ow.getBlock({ x: 62, y, z: 60 }).permutation;
+  check(k.getState("aqualit:w") === "var" && k.getState("aqualit:e") === "var" && k.getState("aqualit:n") === "yok", "kablo komşularına bağlandı");
+  check(US.gucluMu(ow, { x: 64, y, z: 60 }), "fırın kabloyla Aqualit Bloğu'na bağlı: güçlü");
+  ow.setBlockType({ x: 62, y, z: 60 }, "minecraft:air");
+  check(!US.gucluMu(ow, { x: 64, y, z: 60 }), "kablo kopunca fırın güçsüz");
+  ow.setBlockType({ x: 70, y, z: 60 }, "aqualit:aqualit_aktarim");
+  check(!!US.aktarimYakin(ow, { x: 71, y, z: 61 }), "sandığın yanındaki Uzaktan Aktarım Bloğu bulunuyor");
+  give("aqualit:org_platform");
+  US.platformKur(player, ow.getBlock({ x: 80, y: GROUND, z: 80 }));
+  ticks(2);
+  check(ow.getEntities({ type: US.PLATFORM }).length === 1 && !player._inv.getItem(0), "Organizatör Platformu kuruldu");
+}
+
 // ---------------------------------------------------------------- v0.3.8 Keşif Haritası
 if (run("harita")) {
   console.log("== Keşif Haritası: yürüyünce dolar, yapılar simgeyle, dron ordusu bilineni atlar");

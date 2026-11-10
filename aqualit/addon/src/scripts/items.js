@@ -4,6 +4,7 @@ import { radarMenu, hizMenu, otopilotMenu, tirmanMenu } from "./kesif_radar.js";
 import { haritaAc, orduMenu } from "./kesif_harita.js";
 import { evcilKullan } from "./evcil.js";
 import { spawnPortalci } from "./portalci.js";
+import { platformKur } from "./us.js";
 import { telefonAc } from "./org_ui.js";
 import { H } from "./kayit.js";
 import { spawnKesif } from "./kesif.js";
@@ -50,6 +51,7 @@ export function useDevice(player, kind, opts = {}) {
         case "telefon": return fire(() => telefonAc(player));
         case "harita": return fire(() => haritaAc(player));
         case "ordu": return fire(() => orduMenu(player));
+        case "platform": return player.sendMessage("§7Platformu kurmak için yere bas (geniş, düz bir yer seç: 9x9).");
       }
     } catch (e) {
       log("cihaz hatası", kind, e, e?.stack);
@@ -85,6 +87,11 @@ export function useDevice(player, kind, opts = {}) {
       const kind = p.params?.kind;
       const pl = e.source;
       if (!isPlayer(pl)) return;
+      if (kind === "platform") {
+        if (!debounce(pl, 10)) return;
+        const b = e.block;
+        return system.run(() => platformKur(pl, b));
+      }
       if (kind === "zone") {
         if (!debounce(pl, 6)) return;
         const b = e.block;

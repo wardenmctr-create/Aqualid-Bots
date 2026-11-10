@@ -29,6 +29,7 @@ import harita_isaret as HI    # noqa: E402
 import evcil_oyun as EO       # noqa: E402
 import portalci_oyun as PO    # noqa: E402
 import yardimci_oyun as YO    # noqa: E402
+import org_ussu_oyun as OUO   # noqa: E402
 
 OUT = os.path.join(HERE, 'out')
 GEN = os.path.join(HERE, 'build_gen')
@@ -257,6 +258,7 @@ def blocks():
         td[tex] = {'textures': f'textures/blocks/{tex}'}
         sounds[f'aqualit:{bid}'] = {'sound': sound}
     statue_block(td, sounds)
+    OUO.build(RP, BP, wj, td, sounds, GEN)
     E3.sandik_bloklari(BP, RP, wj, C.CHESTS, td, sounds, None)
     wj(f'{RP}/textures/terrain_texture.json', {'resource_pack_name': 'aqualit', 'texture_name': 'atlas.terrain',
                                               'padding': 8, 'num_mip_levels': 4, 'texture_data': td})
@@ -547,7 +549,7 @@ def main():
         if os.path.exists(d):
             shutil.rmtree(d)
     os.makedirs(BP); os.makedirs(RP); os.makedirs(GEN)
-    manifests(); EO.build(RP, BP, wj, GEN); PO.build(RP, BP, wj, GEN); YO.build(RP, BP, wj); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); HI.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
+    manifests(); EO.build(RP, BP, wj, GEN); PO.build(RP, BP, wj, GEN); YO.build(RP, BP, wj); OUO.platform_build(RP, BP, wj, GEN); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); HI.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
     addon = package()
     print('paket:', addon)
 
