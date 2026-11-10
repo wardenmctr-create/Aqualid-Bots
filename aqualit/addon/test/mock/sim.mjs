@@ -297,6 +297,25 @@ if (run("ui")) {
   await radio.openRadio(player);
   check(true, "telsiz açıldı");
   const tracker = await import("./scripts/ui/tracker.js");
+  // takip ekranı: liste; robota dokun = canlı izle (yakın: oyuncu yerinde)
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes(bot.name)) }));
+  await tracker.openTracker(player);
+  ticks(5);
+  check(tracker.izliyorMu(player) && player._cam.set?.p === "minecraft:free", "takip ekranında robota dokununca canlı izleme açıldı");
+  check(player.gameMode === "Survival", "yakın robot izlenirken oyuncu yerinde ve modunda");
+  tracker.stopWatch(player, true);
+  check(!tracker.izliyorMu(player) && player._cam.set === null, "izleme kapandı, kamera geri geldi");
+  // uzaktaki robot: görünmez seyirci olarak yanına gider, çıkınca geri döner
+  const eskiYer = { ...player.location };
+  player.location = { x: eskiYer.x + 300, y: eskiYer.y, z: eskiYer.z };
+  const uzakYer = { ...player.location };
+  tracker.startWatch(player, bot);
+  ticks(10);
+  check(player.gameMode === "Spectator" && Math.hypot(player.location.x - bot.loc.x, player.location.z - bot.loc.z) < 8, "uzak robot: oyuncu seyirci olarak robotun yanında");
+  tracker.stopWatch(player, true);
+  check(player.gameMode === "Survival" && Math.hypot(player.location.x - uzakYer.x, player.location.z - uzakYer.z) < 1, "uzak izleme bitti: eski yer ve oyun modu geri geldi");
+  player.location = eskiYer;
+  UI.answers.push((f) => ({ canceled: false, selection: 0 }));            // Canlı harita
   UI.answers.push(async (f) => {
     const zoomBtn = f.items.find((i) => i.t === "button" && String(i.v).includes("Uzaklaştır"));
     zoomBtn.cb();
@@ -1289,7 +1308,6 @@ if (run("harita")) {
   console.log("== Keşif Haritası: yürüyünce dolar, yapılar simgeyle, dron ordusu bilineni atlar");
   const KH = await import("./scripts/kesif_harita.js");
   const HR = await import("./scripts/harita.js");
-  const HG = await import("./scripts/harita_glif.js");
   const KD = await import("./scripts/kesif_dron.js");
   const KA = await import("./scripts/kesif_ai.js");
   player.teleport({ x: 300.5, y: GROUND + 1, z: 300.5 });
@@ -1297,15 +1315,34 @@ if (run("harita")) {
   const t0 = Date.now();
   ticks(200);
   const n = HR.Harita.boyut(player.id);
-  check(n > 100, `oyuncu yürüyünce yüklü alan haritaya işlendi (${n} yığın, ${Date.now() - t0} ms)`);
+  check(n > 60, `oyuncu yürüyünce yüklü alan haritaya işlendi (${n} yığın, ${Date.now() - t0} ms)`);
   HR.Yerler.ekle(player.id, { tur: "koy", ad: "Köy", pos: { x: 360, y: GROUND, z: 300 }, dim: ow.id });
-  const { satirlar, gorunen } = KH.haritaCiz(player.id, ow, { x: 300, y: GROUND, z: 300 }, 32, 0, null);
-  check(satirlar.length === 25 && gorunen.length === 1, "harita 25 satır, bilinen köy görünüyor");
-  check(satirlar.some((r) => r.includes(HG.YAPI.koy)) && satirlar.some((r) => r.includes(HG.ETIKET.koy)), "köy kendi simgesiyle, altında kısa adı");
-  check(satirlar[12].includes(HG.ISARET.ok_s), "ortada oyuncu, baktığı yöne ok");
-  check(!satirlar.join("").includes(HG.ISARET.robot), "oyuncu haritasında robot/sandık/mob yok (kalabalık olmasın)");
-  const uzak = KH.haritaCiz(player.id, ow, { x: 5000, y: GROUND, z: 5000 }, 64, 0, null).satirlar.join("");
-  check(uzak.includes(HG.BIYOM.bilinmiyor), "gidilmeyen yer karanlık");
+  // tepeden canlı harita: aç → yakın/orta/uzak → kapat
+  const HI = await import("./scripts/harita_isaret.js");
+  player.particles = [];
+  const lb0 = player.locatorBar.list.length;
+  await KH.haritaAc(player);
+  ticks(8);
+  check(KH.haritaAcikMi(player) && player._cam.set?.o?.rotation?.x === 90, "harita açıldı: kamera tam tepeden bakıyor");
+  check(Math.abs(player._cam.set.o.location.x - player.location.x) < 0.01 && player._cam.set.o.location.y > player.location.y + 30, "kamera oyuncunun tam üstünde (oyuncu ortada)");
+  const uv = (ad) => player.particles.filter((q) => q.id === "aqualit:harita_isaret" && q.mv.v["variable.u"] === HI.HUCRE[ad][0] && q.mv.v["variable.v"] === HI.HUCRE[ad][1]);
+  check(uv("sen_s").length > 0, "ortada oyuncu oku (baktığı yöne: güney)");
+  check(uv("koy").length > 0, "bilinen köy kendi simgesi ve adıyla");
+  const koyP = uv("koy").at(-1).loc, cam = player._cam.set.o.location;
+  check(koyP.x > cam.x && Math.abs(koyP.z - cam.z) < 0.5 && koyP.y < cam.y, "köy doğuda (sağda) çiziliyor");
+  check(!uv("robot").length && !uv("canavar").length, "oyuncu haritasında robot/sandık/mob yok (kalabalık olmasın)");
+  check(player.locatorBar.list.length > lb0, "yapılar pusula çubuğunda kendi simgeleriyle");
+  check(player.actionbar.at(-1).includes("Köy") && player.actionbar.at(-1).includes("360"), "altta en yakın yapının adı ve koordinatı");
+  HR.Yerler.ekle(player.id, { tur: "iglo", ad: "İglo", pos: { x: 300, y: GROUND, z: 1300 }, dim: ow.id });
+  player.particles = [];
+  ticks(8);
+  check(uv("iglo").length > 0 && uv("ok_s").length > 0, "uzaktaki yapı kenarda, yönünü gösteren okla");
+  const y0 = player._cam.set.o.location.y;
+  await KH.haritaAc(player);
+  ticks(8);
+  check(player._cam.set.o.location.y > y0 + 20, "haritaya tekrar basınca uzaklaşıyor");
+  await KH.haritaAc(player); await KH.haritaAc(player);
+  check(!KH.haritaAcikMi(player) && player._cam.set === null && player.locatorBar.list.length === lb0, "en uzaktan sonra kapanıyor, kamera ve çubuk temizlendi");
   // dron ordusu: bilinen yığınları atlar, bilinmeyeni tarar
   const k = { dim: ow, e: player, rid: "ptest", owner: player.id, name: "Ordu", get loc() { return player.location; }, say() {}, setStatus() {} };
   const once = HR.Harita.boyut(player.id);

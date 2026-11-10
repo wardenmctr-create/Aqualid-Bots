@@ -1052,7 +1052,7 @@ export async function anaMenu(pl, e) {
   btns.push({ text: "§lYapı bul§r\n§7Köy, tapınak, deneme odası...", icon: ICON("filled_map"), v: "yapi" });
   btns.push({ text: "§lBiyom bul§r\n§7Çöl, kiraz bahçesi, mantar adası...", icon: ICON("compass"), v: "biyom" });
   btns.push({ text: "§lÇevreyi keşfet§r\n§7Harita çıkarır, yoldaki yapıları kaydeder", icon: ICON("filled_map"), v: "kesfet" });
-  btns.push({ text: "§lHaritam§r\n§7Biyomlar, yapılar, sandıklar, moblar, robotlar", icon: "textures/items/kesif_haritasi", v: "harita" });
+  btns.push({ text: "§lHaritam§r\n§7Tepeden canlı: yapılar, robotlar, sandıklar, moblar", icon: "textures/items/kesif_haritasi", v: "harita" });
   btns.push({ text: "§lDron ordusu gönder§r\n§725 dron haritanın keşfedilmemiş yerlerine", icon: "textures/items/dron_ordusu", v: "ordu" });
   const otoOrdu = safe(() => e.getDynamicProperty("aq:oto_ordu"), true) !== false;
   btns.push({ text: `Otomatik dron ordusu: ${otoOrdu ? "§2AÇIK" : "§cKAPALI"}§r\n§7Boştayken 15 dakikada bir kendisi gönderir`, icon: ICON("clock"), v: "otoordu" });

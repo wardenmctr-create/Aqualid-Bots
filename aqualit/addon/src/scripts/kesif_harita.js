@@ -1,161 +1,201 @@
-// Aqualit Robotları — Keşif Haritası (v0.3.8)
-// Devasa harita (en uzakta 1600x1600 blok, normal haritanın 100 katından fazla). Menü gövdesinde özel glif kareleriyle
-// (kaynak paketi font/glyph_E1/E2.png, gen/harita_glif.py) kare kare çizilir; oyuncu hep ortadadır.
-// Oyuncu haritası: yalnız biyomlar ve yapılar (kalabalık olmasın). Keşif'in haritası: + sandıklar, moblar, robotlar.
-// Oyuncu yürüdükçe oyunun yüklediği bütün alan bir seferde haritaya işlenir; uzağı dron ordusu doldurur.
-import { world, system } from "@minecraft/server";
+// Aqualit Robotları — Keşif Haritası (v0.4.0)
+// Minecraft haritası gibi: dünyayı tam tepeden görürsün (kuzey yukarıda), sen ortadasın ve yürüdükçe harita seninle
+// kayar. Gerçek araziyi oyunun kendisi çizer; üstüne Minecraft haritası işaretleri gibi küçük piksel simgeler konur:
+// beyaz ok = sen, yapılar kendi simgesi ve altında adıyla. Ekrana sığmayan yapılar kenarda, yönünü gösteren okla durur;
+// adresleri (koordinat, uzaklık) ekranın altında yazar ve pusula çubuğunda kendi simgeleriyle görünür.
+// Oyuncu haritası: yalnız yapılar. Keşif'in haritası: + robotlar, sandıklar, Keşif, canavarlar, hayvanlar, köylüler.
+// Haritayı kullan: aç → yakın / orta / uzak → kapat. Eğil: kapat. Eğilip kullan: bildiğin bütün yapıların listesi.
+import { world, system, MolangVariableMap, LocationWaypoint } from "@minecraft/server";
 import { safe, V } from "./util.js";
 import { menu } from "./ui/forms.js";
 import { Harita, Yerler } from "./harita.js";
-import { BIYOM, YAPI as YG, ISARET, ETIKET, BIYOM_ESLESME } from "./harita_glif.js";
+import { HUCRE, AD } from "./harita_isaret.js";
 import { YAPI } from "./yapi_bilgi.js";
 import { dronTara } from "./kesif_dron.js";
 import { bots } from "./brain.js";
 import { getJSON } from "./store.js";
 
-const N = 25;                    // harita N x N kare
-const YARI = (N - 1) / 2;
-const OLCEK = [16, 32, 64];      // blok/kare: 400, 800, 1600 blok
-const YON8 = ["ok_s", "ok_sw", "ok_w", "ok_nw", "ok_n", "ok_ne", "ok_e", "ok_se"];   // oyun yaw 0 = güney
+const YUKSEK = [40, 85, 150];          // kamera yüksekliği: yakın, orta, uzak
+const ADLAR = ["yakın", "orta", "uzak"];
+const D = 8;                           // işaretler kameranın 8 blok önüne (küçültülmüş) çizilir: arazi örtmez
+const BOY = 1.6;                       // işaret hücresinin yarı genişliği (D uzaklıkta; ekran yüksekliğinin ~%27si)
+const GORUS = 0.55;                    // ekranda güvenle görünen yarıçap (yükseklik katı)
+const YON8 = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
 const PUSULA = ["K", "KD", "D", "GD", "G", "GB", "B", "KB"];
+const SIS = "aq_harita";
+const acik = new Map();                // oyuncu kimliği -> durum
 
-// biyom kimliği -> karakter (en uzun eşleşen parça kazanır: "deep_frozen_ocean" donuk okyanus olur)
-const BK = new Map();
-function biyomKar(id) {
-  if (!id) return BIYOM.bilinmiyor;
-  let c = BK.get(id);
-  if (c) return c;
-  const s = String(id).replace("minecraft:", "");
-  let best = "ova", bl = 0;
-  for (const [ad, parcalar] of BIYOM_ESLESME) {
-    for (const p of parcalar) if (s.includes(p) && p.length > bl) { best = ad; bl = p.length; }
+function aci(dx, dz) {                 // kuzey 0, saat yönünde derece
+  return ((((Math.atan2(dx, -dz) * 180) / Math.PI) % 360) + 360) % 360;
+}
+function yon8(a) { return Math.round(a / 45) % 8; }
+function pusula(dx, dz) { return PUSULA[yon8(aci(dx, dz))]; }
+function ad(y) { return y.ad ?? YAPI[y.tur]?.ad ?? y.tur; }
+
+/** Haritadaki bir işaretin ekrandaki yeri (kameranın D blok önünde, küçültülmüş) ve hücresi. Test için dışarı açık. */
+export function isaretler(st, pl) {
+  const p = pl.location;
+  const H = YUKSEK[st.olcek];
+  const R = H * GORUS;
+  const dim = pl.dimension;
+  const liste = [];
+  const ekle = (hucre, dx, dz, alfa = 1, boy = BOY) => liste.push({ hucre, dx, dz, alfa, boy });
+  // yapılar: görünüyorsa yerinde, görünmüyorsa kenarda (yarı soluk) + dışa bakan ok
+  const yapilar = [];
+  for (const y of Yerler.list(st.owner)) {
+    if (y.dim !== dim.id || !HUCRE[y.tur]) continue;
+    const dx = y.pos.x - p.x, dz = y.pos.z - p.z;
+    yapilar.push({ y, dx, dz, d: Math.hypot(dx, dz) });
   }
-  c = BIYOM[best] ?? BIYOM.ova;
-  BK.set(id, c);
-  return c;
-}
-
-function pusula(dx, dz) {
-  const a = (Math.atan2(dx, -dz) * 180) / Math.PI;      // kuzey 0, saat yönü
-  return PUSULA[Math.round(((a % 360) + 360) % 360 / 45) % 8];
-}
-
-/** Harita ızgarası (satırlar) ve görünen yapılar. kesif: Keşif katmanı (sandık, mob, robot). */
-export function haritaCiz(owner, dim, merkez, olcek, oyuncuYaw, kesif) {
-  const s = olcek;
-  const g = [];
-  for (let r = 0; r < N; r++) {
-    const satir = [];
-    for (let c = 0; c < N; c++) {
-      const x = merkez.x + (c - YARI) * s, z = merkez.z + (r - YARI) * s;
-      // kare birkaç yığın kaplıyorsa bilinen ilk yığının biyomu
-      let b;
-      const adim = Math.max(1, s / 16);
-      for (let i = 0; i < Math.min(adim, 2) && !b; i++) {
-        for (let j = 0; j < Math.min(adim, 2) && !b; j++) b = Harita.bak(owner, dim.id, { x: x + i * 16 * (adim / 2), z: z + j * 16 * (adim / 2) });
-      }
-      satir.push(biyomKar(b?.biome));
+  yapilar.sort((a, b) => a.d - b.d);
+  let kenar = 0;
+  for (const { y, dx, dz, d } of yapilar) {
+    if (d <= R) ekle(y.tur, dx, dz);
+    else if (kenar++ < 10) {
+      const k = (R * 0.88) / d;
+      ekle(y.tur, dx * k, dz * k, 0.75, BOY * 0.8);
+      const k2 = (R * 0.97) / d;
+      ekle("ok_" + YON8[yon8(aci(dx, dz))], dx * k2, dz * k2, 1, BOY * 0.7);
     }
-    g.push(satir);
   }
-  const kare = (p) => ({ c: Math.round((p.x - merkez.x) / s + YARI), r: Math.round((p.z - merkez.z) / s + YARI) });
-  const icinde = (q) => q.c >= 0 && q.c < N && q.r >= 0 && q.r < N;
-  // Keşif katmanı: robotlar, sandıklar, moblar (önce, yapılar üstüne yazılır)
-  if (kesif) {
+  // Keşif katmanı
+  if (st.kesif) {
     for (const b of bots.values()) {
-      if (b.owner !== owner || safe(() => b.dim.id) !== dim.id) continue;
-      const q = kare(b.loc);
-      if (icinde(q)) g[q.r][q.c] = ISARET.robot;
+      if (b.owner !== st.owner || safe(() => b.dim.id) !== dim.id) continue;
+      const l = b.loc;
+      if (Math.hypot(l.x - p.x, l.z - p.z) <= R) ekle("robot", l.x - p.x, l.z - p.z, 1, BOY * 0.6);
     }
     for (const k of safe(() => world.getDynamicPropertyIds(), []) ?? []) {
       if (!k.startsWith("aq:su:")) continue;
       const u = safe(() => getJSON(world, k, null));
-      if (!u || u.owner !== owner || u.dim !== dim.id || !u.blocks?.[0]) continue;
-      const q = kare(u.blocks[0]);
-      if (icinde(q)) g[q.r][q.c] = ISARET.sandik;
+      const q = u?.blocks?.[0];
+      if (!q || u.owner !== st.owner || u.dim !== dim.id || Math.hypot(q.x - p.x, q.z - p.z) > R) continue;
+      ekle("sandik", q.x - p.x, q.z - p.z, 1, BOY * 0.6);
     }
-    const yaricap = (s * N) / 2;
-    const ents = safe(() => dim.getEntities({ location: { x: merkez.x, y: merkez.y ?? 64, z: merkez.z }, maxDistance: yaricap }), []) ?? [];
     let n = 0;
-    for (const e of ents) {
-      if (n > 150) break;
-      const fam = safe(() => e.getComponent("minecraft:type_family"));
+    for (const e of safe(() => dim.getEntities({ location: p, maxDistance: R }), []) ?? []) {
+      if (n > 60) break;
       const t = safe(() => e.typeId, "");
-      let isaret = null;
-      if (t === "aqualit:kesif") isaret = ISARET.kesif;
-      else if (t === "minecraft:villager_v2" || t === "minecraft:villager" || t === "minecraft:wandering_trader") isaret = ISARET.koylu;
-      else if (safe(() => fam?.hasTypeFamily("monster"), false)) isaret = ISARET.canavar;
-      else if (safe(() => fam?.hasTypeFamily("animal"), false) || safe(() => fam?.hasTypeFamily("mob"), false)) isaret = ISARET.hayvan;
-      if (!isaret) continue;
-      const q = kare(e.location);
-      if (icinde(q)) { g[q.r][q.c] = isaret; n++; }
+      const fam = safe(() => e.getComponent("minecraft:type_family"));
+      let h = null;
+      if (t === "aqualit:kesif") h = "kesif";
+      else if (t === "minecraft:villager_v2" || t === "minecraft:villager" || t === "minecraft:wandering_trader") h = "koylu";
+      else if (safe(() => fam?.hasTypeFamily("monster"), false)) h = "canavar";
+      else if (safe(() => fam?.hasTypeFamily("animal"), false)) h = "hayvan";
+      if (!h) continue;
+      const l = e.location;
+      ekle(h, l.x - p.x, l.z - p.z, 1, BOY * 0.5);
+      n++;
     }
   }
-  // yapılar: kendi rozeti + altında kısa adı (3 kare)
-  const gorunen = [];
-  for (const y of Yerler.list(owner)) {
-    if (y.dim !== dim.id || !YG[y.tur]) continue;
-    const q = kare(y.pos);
-    if (!icinde(q)) continue;
-    g[q.r][q.c] = YG[y.tur];
-    const et = ETIKET[y.tur];
-    if (et && q.r + 1 < N) for (let k = 0; k < 3; k++) if (q.c - 1 + k >= 0 && q.c - 1 + k < N) g[q.r + 1][q.c - 1 + k] = et[k];
-    gorunen.push(y);
-  }
-  // sen: ortada, baktığın yöne ok
-  const yi = Math.round((((oyuncuYaw ?? 0) % 360) + 360) % 360 / 45) % 8;
-  if (kesif?.oyuncu !== false) g[YARI][YARI] = ISARET[YON8[yi]];
-  return { satirlar: g.map((r) => "§f" + r.join("")), gorunen };
+  // sen: ortada, baktığın yöne beyaz ok (oyun yaw 180 = kuzey)
+  const yaw = safe(() => pl.getRotation().y, 0);
+  ekle("sen_" + YON8[yon8((((yaw - 180) % 360) + 360) % 360)], 0, 0, 1, BOY * 0.9);
+  return { liste, yapilar, R, H };
 }
 
-/** Haritayı açar. o: { kesif: Keşif (katmanlı harita), olcek, merkez } */
-export async function haritaAc(pl, o = {}) {
-  let olcekNo = o.olcekNo ?? 1;
-  let merkez = null;
-  const k = o.kesif;
-  for (;;) {
-    const dim = pl.dimension;
-    const sen = pl.location;
-    const m = { ...(merkez ?? { x: Math.floor(sen.x), z: Math.floor(sen.z) }), y: Math.floor(sen.y) };
-    const s = OLCEK[olcekNo];
-    const owner = k?.owner ?? pl.id;
-    // haritaya bakılan yerin biyomlarını hemen işle (yüklü olanlar)
-    yakinlariIsle(pl, 6);
-    const { satirlar, gorunen } = haritaCiz(owner, dim, m, s, safe(() => pl.getRotation().y, 0), k ? { oyuncu: true } : null);
-    const genislik = s * N;
-    const liste = gorunen
-      .map((y) => ({ y, d: V.hdist(y.pos, sen) }))
-      .sort((a, b) => a.d - b.d)
-      .slice(0, 10)
-      .map(({ y, d }) => `${YG[y.tur]} §l${y.ad ?? YAPI[y.tur]?.ad ?? y.tur}§r §7${y.pos.x}, ${y.pos.y}, ${y.pos.z} · ${Math.round(d)} blok ${pusula(y.pos.x - sen.x, y.pos.z - sen.z)}`);
-    const baslik = `§71 kare = ${s} blok · ${genislik}x${genislik} blok · merkez ${m.x}, ${m.z}`;
-    const aciklama = k ? `§7${ISARET.robot} robot  ${ISARET.sandik} sandık  ${ISARET.kesif} Keşif  ${ISARET.canavar} canavar  ${ISARET.hayvan} hayvan  ${ISARET.koylu} köylü`
-      : "§7Karanlık yerler henüz keşfedilmedi. Keşif'in dronları ya da sen gezdikçe dolar.";
-    const govde = [baslik, ...satirlar, aciklama, "", gorunen.length ? "§lBu haritadaki yapılar:" : "§7Bu alanda bilinen yapı yok.", ...liste].join("\n");
-    const btns = [
-      { text: "▲ Kuzey", v: "n" }, { text: "▼ Güney", v: "s" }, { text: "◀ Batı", v: "w" }, { text: "▶ Doğu", v: "e" },
-      { text: olcekNo > 0 ? "+ Yakınlaştır" : "§8+ Yakınlaştır", v: "in" }, { text: olcekNo < OLCEK.length - 1 ? "- Uzaklaştır" : "§8- Uzaklaştır", v: "out" },
-      { text: "◎ Beni ortala", v: "c" },
-    ];
-    if (k) btns.push({ text: "§lDron ordusu gönder§r\n§725 dron keşfedilmemiş yerlere", icon: "textures/items/dron_ordusu", v: "ordu" });
-    btns.push({ text: "§cKapat", v: "x" });
-    const r = await menu(pl, k ? `§l${k.name} · Haritam` : "§lKeşif Haritası", govde, btns);
-    if (!r || r.v === "x") return;
-    const kay = s * 8;
-    if (r.v === "n") merkez = { x: m.x, z: m.z - kay };
-    else if (r.v === "s") merkez = { x: m.x, z: m.z + kay };
-    else if (r.v === "w") merkez = { x: m.x - kay, z: m.z };
-    else if (r.v === "e") merkez = { x: m.x + kay, z: m.z };
-    else if (r.v === "in") olcekNo = Math.max(0, olcekNo - 1);
-    else if (r.v === "out") olcekNo = Math.min(OLCEK.length - 1, olcekNo + 1);
-    else if (r.v === "c") merkez = null;
-    else if (r.v === "ordu") {
-      const ai = await import("./kesif_ai.js");
-      ai.basla(k, ai.orduIsi(k), "25 dronluk ordumu haritanın keşfedilmemiş yerlerine gönderiyorum!");
-      return;
-    }
+function cizim(pl, st) {
+  const p = pl.location;
+  const { liste, yapilar, H } = isaretler(st, pl);
+  const cam = { x: p.x, y: p.y + H, z: p.z };
+  safe(() => pl.camera.setCamera("minecraft:free", {
+    location: cam, rotation: { x: 90, y: 180 }, easeOptions: { easeTime: 0.12, easeType: "Linear" },
+  }));
+  const k = D / H;
+  for (const m of liste) {
+    const h = HUCRE[m.hucre];
+    if (!h) continue;
+    const mv = new MolangVariableMap();
+    mv.setFloat("variable.u", h[0]);
+    mv.setFloat("variable.v", h[1]);
+    mv.setFloat("variable.boy", m.boy);
+    mv.setFloat("variable.alfa", m.alfa);
+    safe(() => pl.spawnParticle("aqualit:harita_isaret", { x: cam.x + m.dx * k, y: cam.y - D, z: cam.z + m.dz * k }, mv));
+  }
+  // altta: en yakın 3 yapının adresi
+  const yazi = yapilar.slice(0, 3).map(({ y, dx, dz, d }) =>
+    `§f${ad(y)} §7${y.pos.x}, ${y.pos.z} · §e${Math.round(d)}m ${pusula(dx, dz)}`);
+  const ust = `§lHarita§r §7(${ADLAR[st.olcek]}) · ${Math.round(p.x)}, ${Math.round(p.z)} · haritaya bas: ${st.olcek < YUKSEK.length - 1 ? "uzaklaştır" : "kapat"} · eğil: kapat`;
+  safe(() => pl.onScreenDisplay.setActionBar([ust, ...(yazi.length ? yazi : ["§7Bu boyutta bildiğin yapı yok: gez, ya da Keşif'in dronlarını gönder."])].join("\n")));
+}
+
+function igneler(pl, st) {
+  const lb = safe(() => pl.locatorBar);
+  if (!lb) return;
+  const max = Math.max(0, (safe(() => lb.maxCount, 16) ?? 16) - safe(() => lb.count, 0) - 2);
+  const dim = pl.dimension, p = pl.location;
+  const yak = Yerler.list(st.owner).filter((y) => y.dim === dim.id)
+    .sort((a, b) => V.hdist(a.pos, p) - V.hdist(b.pos, p)).slice(0, Math.min(12, max));
+  for (const y of yak) {
+    const wp = safe(() => new LocationWaypoint({ dimension: dim, x: y.pos.x + 0.5, y: y.pos.y + 1, z: y.pos.z + 0.5 },
+      { textureBoundsList: [{ lowerBound: 0, texture: { path: `textures/ui/aqualit_yapi/${y.tur}`, iconWidth: 12, iconHeight: 12 } }] }));
+    if (wp && safe(() => (lb.addWaypoint(wp), true), false)) st.igne.push(wp);
   }
 }
+
+/** Harita açık mı? */
+export function haritaAcikMi(pl) { return acik.has(pl.id); }
+
+/** Haritayı kapatır, kamerayı ve sisi geri verir. */
+export function haritaKapat(pl, sessiz = false) {
+  const st = acik.get(pl.id);
+  if (!st) return;
+  acik.delete(pl.id);
+  system.clearRun(st.run);
+  safe(() => pl.camera.clear());
+  safe(() => pl.runCommand(`fog @s remove ${SIS}`));
+  for (const wp of st.igne) { safe(() => pl.locatorBar.removeWaypoint(wp)); safe(() => wp.remove()); }
+  if (!sessiz) safe(() => pl.onScreenDisplay.setActionBar("§7Harita kapandı."));
+}
+
+/** Haritayı açar; açıksa bir kademe uzaklaştırır, en uzaktaysa kapatır. o: { kesif } (Keşif'in haritası) */
+export async function haritaAc(pl, o = {}) {
+  const st = acik.get(pl.id);
+  if (st) {
+    if (st.olcek < YUKSEK.length - 1) { st.olcek++; return; }
+    return haritaKapat(pl);
+  }
+  if (pl.isSneaking && !o.kesif) return yapiListesi(pl, pl.id);
+  const k = o.kesif;
+  const yeni = { owner: k?.owner ?? pl.id, kesif: !!k, olcek: 0, igne: [], run: 0 };
+  yeni.run = system.runInterval(() => {
+    if (!safe(() => pl.isValid, false)) { system.clearRun(yeni.run); acik.delete(pl.id); return; }
+    cizim(pl, yeni);
+  }, 4);
+  acik.set(pl.id, yeni);
+  safe(() => pl.runCommand(`fog @s push aqualit:harita_sis ${SIS}`));
+  safe(() => pl.camera.fade({ fadeTime: { fadeInTime: 0.15, holdTime: 0.05, fadeOutTime: 0.3 }, fadeColor: { red: 0.85, green: 0.78, blue: 0.6 } }));
+  igneler(pl, yeni);
+  yakinlariIsle(pl, 10);
+  cizim(pl, yeni);
+}
+
+/** Bildiğin bütün yapılar: ad, koordinat, uzaklık, yön. */
+export async function yapiListesi(pl, owner) {
+  const p = pl.location, dim = pl.dimension;
+  const l = Yerler.list(owner).filter((y) => y.dim === dim.id).map((y) => ({ y, d: V.hdist(y.pos, p) })).sort((a, b) => a.d - b.d);
+  if (!l.length) return safe(() => pl.sendMessage("§7Bu boyutta bildiğin yapı yok. Gezdikçe ya da Keşif'in dronlarıyla bulunur."));
+  const btns = l.slice(0, 40).map(({ y, d }) => ({ text: `§l${ad(y)}§r\n§7${y.pos.x}, ${y.pos.y}, ${y.pos.z} · ${Math.round(d)} blok ${pusula(y.pos.x - p.x, y.pos.z - p.z)}`,
+    icon: `textures/ui/aqualit_yapi/${y.tur}` }));
+  await menu(pl, "§lBildiğin yapılar", `§7${l.length} yapı. Haritayı aç: hepsi kendi simgesiyle görünür.`, btns);
+}
+
+// eğil: harita kapanır
+world.afterEvents.entityStartSneaking?.subscribe((ev) => {
+  if (acik.has(safe(() => ev.entity.id))) haritaKapat(ev.entity);
+});
+world.afterEvents.playerLeave?.subscribe((ev) => {
+  const st = acik.get(ev.playerId);
+  if (st) system.clearRun(st.run);
+  acik.delete(ev.playerId);
+});
+world.afterEvents.playerDimensionChange?.subscribe((ev) => {
+  const st = acik.get(ev.player.id);
+  if (!st) return;
+  for (const wp of st.igne) { safe(() => ev.player.locatorBar.removeWaypoint(wp)); safe(() => wp.remove()); }
+  st.igne = [];
+  igneler(ev.player, st);
+});
 
 // ======================================================================= yürürken haritayı doldur
 const SPIRAL = [];
@@ -192,8 +232,8 @@ function yakinlariIsle(pl, n) {
 }
 
 system.runInterval(() => {
-  for (const pl of world.getAllPlayers()) safe(() => yakinlariIsle(pl, 3));
-}, 2);
+  for (const pl of world.getAllPlayers()) safe(() => yakinlariIsle(pl, 4));
+}, 10);
 
 // ======================================================================= dron ordusu (oyuncu, yaratıcı eşyası)
 const ordular = new Set();

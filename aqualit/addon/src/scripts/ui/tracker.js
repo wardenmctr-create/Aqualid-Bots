@@ -78,7 +78,27 @@ function fitZoom(player, st) {
   return ZOOMS.length - 1;
 }
 
+/** Takip Ekranı: robot listesi. Robota dokun = canlı izle (uzaktan). Üstte canlı harita. */
 export async function openTracker(player) {
+  const list = robotsFor(player);
+  if (!list.length) return player.sendMessage("§7Takip edilecek robot yok.");
+  const btns = [{ text: "§lCanlı harita§r\n§7Robotlar, sandıklar, sen", icon: "textures/items/robot_tracker", harita: true }];
+  for (const x of list) {
+    const same = x.dim === player.dimension.id;
+    const yon = direction(player.location, x.pos);
+    const d = same ? `${Math.round(V.dist(player.location, x.pos))} blok ${yon.arrow} ${yon.name}` : dimName(x.dim);
+    btns.push({ text: `${x.r.name}\n§7${x.status} · ${d}`, icon: robotIcon(x.r.type, x.r.model), x });
+  }
+  const c = await menu(player, "§lTakip Ekranı", "§7Bir robota dokun: §suzaktan canlı izle§7 (çıkmak için eğil).", btns);
+  if (!c) return;
+  if (c.harita) return trackerMap(player);
+  const b = botByRid(c.x.r.rid);
+  if (b) startWatch(player, b);
+  else player.sendMessage(`§7${c.x.r.name} şu an yüklü değil. Son konumu: ${fmtPos(c.x.pos)}`);
+}
+
+/** Canlı dijital harita (zoom, kaydırma); robot düğmesi direkt canlı izlemeyi açar. */
+export async function trackerMap(player) {
   const st = {
     robots: robotsFor(player),
     cx: Math.floor(player.location.x),
@@ -117,24 +137,19 @@ export async function openTracker(player) {
     form.button("Beni ortala", () => { st.cx = Math.floor(player.location.x); st.cz = Math.floor(player.location.z); redraw(); });
     form.divider();
     for (const x of st.robots) {
-      form.button(`${x.r.name} §8(${TYPE_NAME[x.r.type] ?? ""})`, () => {
-        st.sel = x.r.rid;
-        if (x.dim === player.dimension.id) {
-          st.cx = Math.floor(x.pos.x);
-          st.cz = Math.floor(x.pos.z);
+      form.button(`§s▶ ${x.r.name}§r §8(${TYPE_NAME[x.r.type] ?? ""}) canlı izle`, () => {
+        const b = botByRid(x.r.rid);
+        if (!b) {
+          st.sel = x.r.rid;
+          if (x.dim === player.dimension.id) { st.cx = Math.floor(x.pos.x); st.cz = Math.floor(x.pos.z); }
+          redraw();
+          player.sendMessage(`§7${x.r.name} şu an yüklü değil. Son konumu: ${fmtPos(x.pos)}`);
+          return;
         }
-        redraw();
+        safe(() => form.close());
+        system.run(() => startWatch(player, b));
       });
     }
-    form.button("§sSeçili robotu canlı izle", () => {
-      const b = st.sel ? botByRid(st.sel) : undefined;
-      if (!b) {
-        player.sendMessage("§7Önce listeden yüklü bir robot seç.");
-        return;
-      }
-      form.close();
-      system.run(() => startWatch(player, b));
-    });
     form.closeButton();
     const timer = system.runInterval(() => {
       if (!safe(() => form.isShowing(), false)) return;
@@ -144,8 +159,8 @@ export async function openTracker(player) {
     await form.show();
     system.clearRun(timer);
   } catch (e) {
-    log("takip ekranı (canlı) açılamadı, liste gösteriliyor", e);
-    return trackerList(player);
+    log("takip ekranı (canlı harita) açılamadı", e);
+    player.sendMessage("§7Canlı harita bu cihazda açılamadı; robot listesini kullan.");
   }
 }
 
@@ -166,11 +181,31 @@ export async function trackerList(player) {
 }
 
 // ------------------------------------------------------------------ canlı izleme
-const watching = new Map(); // oyuncu kimliği -> {bot, run}
+// Robot yakındaysa oyuncu yerinde kalır, kamera robotun arkasına geçer. Robot uzaktaysa (ya da başka boyuttaysa)
+// oyuncunun ekranı o yeri yükleyemez; bu yüzden oyuncu görünmez seyirci olarak robotun yanına taşınır ve
+// izleme bitince eski yerine, eski oyun moduna döner (oyundan çıkıp girerse de geri döner).
+const watching = new Map(); // oyuncu kimliği -> {bot, run, geri}
+const YAKIN = 40;
+const GERI_KEY = "aq:izle_geri";
+
+function geriDon(player, g) {
+  if (!g) return;
+  safe(() => player.teleport(g.pos, { dimension: world.getDimension(g.dim), rotation: g.rot }));
+  safe(() => player.setGameMode(g.mod));
+  safe(() => player.setDynamicProperty(GERI_KEY, undefined));
+}
 
 export function startWatch(player, bot) {
   stopWatch(player, false);
   if (!bot || !bot.valid) return player.sendMessage("§cRobot şu an yüklü değil.");
+  const uzak = safe(() => bot.dim.id) !== player.dimension.id || V.dist(player.location, bot.loc) > YAKIN;
+  let geri = null;
+  if (uzak) {
+    geri = { pos: { ...player.location }, dim: player.dimension.id, rot: safe(() => player.getRotation(), { x: 0, y: 0 }),
+      mod: safe(() => player.getGameMode(), "Survival") };
+    safe(() => player.setDynamicProperty(GERI_KEY, JSON.stringify(geri)));
+    safe(() => player.setGameMode("Spectator"));
+  }
   const run = system.runInterval(() => {
     if (!safe(() => player.isValid, false) || !bot.valid) {
       stopWatch(player, true);
@@ -179,16 +214,23 @@ export function startWatch(player, bot) {
     const l = bot.loc;
     const yaw = (safe(() => bot.e.getRotation().y, 0) * Math.PI) / 180;
     const cam = { x: l.x + Math.sin(yaw) * 2.6, y: l.y + 1.7, z: l.z - Math.cos(yaw) * 2.6 };
+    if (geri) {
+      // seyirci oyuncu robotun biraz üstünde durur: o yer yüklü kalır, kamera düzgün çizilir
+      const p = player.location;
+      if (safe(() => player.dimension.id) !== safe(() => bot.dim.id) || V.dist(p, l) > 6) {
+        safe(() => player.teleport({ x: l.x, y: l.y + 3, z: l.z }, { dimension: bot.dim }));
+      }
+    }
     safe(() => player.camera.setCamera("minecraft:free", {
       location: cam,
       facingLocation: { x: l.x, y: l.y + 0.7, z: l.z },
       easeOptions: { easeTime: 0.25, easeType: "Linear" },
     }));
-    safe(() => player.onScreenDisplay.setActionBar(`§sCanlı izleme · ${bot.name}§r §7${bot.status} · çıkmak için eğil`));
-  }, 5);
-  watching.set(player.id, { bot, run });
+    safe(() => player.onScreenDisplay.setActionBar(`§sCanlı izleme · ${bot.name}§r §7${bot.status} · ${Math.round(V.dist(geri?.pos ?? player.location, l))} blok · çıkmak için eğil`));
+  }, 4);
+  watching.set(player.id, { bot, run, geri });
   safe(() => player.camera.fade({ fadeTime: { fadeInTime: 0.2, holdTime: 0.1, fadeOutTime: 0.3 }, fadeColor: { red: 0.02, green: 0.25, blue: 0.22 } }));
-  player.sendMessage(`§s${bot.name}§r canlı izleniyor. Çıkmak için eğil.`);
+  player.sendMessage(`§s${bot.name}§r canlı izleniyor${uzak ? " §7(uzaktan: sen görünmez seyircisin, çıkınca yerine dönersin)" : ""}. Çıkmak için eğil.`);
 }
 
 export function stopWatch(player, notify = true) {
@@ -197,7 +239,27 @@ export function stopWatch(player, notify = true) {
   system.clearRun(w.run);
   watching.delete(player.id);
   safe(() => player.camera.clear());
+  geriDon(player, w.geri);
   if (notify) safe(() => player.onScreenDisplay.setActionBar("§7Canlı izleme kapandı."));
 }
 
-world.afterEvents.playerLeave?.subscribe((ev) => watching.delete(ev.playerId));
+export function izliyorMu(player) {
+  return watching.has(player.id);
+}
+
+world.afterEvents.playerLeave?.subscribe((ev) => {
+  const w = watching.get(ev.playerId);
+  if (w) system.clearRun(w.run);
+  watching.delete(ev.playerId);
+});
+// izlerken oyundan çıktıysa: girince eski yerine ve moduna dön
+world.afterEvents.playerSpawn.subscribe((ev) => {
+  const pl = ev.player;
+  const ham = safe(() => pl.getDynamicProperty(GERI_KEY));
+  if (typeof ham !== "string" || watching.has(pl.id)) return;
+  system.runTimeout(() => geriDon(pl, safe(() => JSON.parse(ham))), 20);
+});
+// seyircide eğilme olayı gelmeyebilir: "aşağı in / eğil" düğmesine basmak da izlemeyi kapatır
+world.afterEvents.playerButtonInput?.subscribe((ev) => {
+  if (ev.button === "Sneak" && ev.newButtonState === "Pressed" && watching.has(ev.player.id)) system.run(() => stopWatch(ev.player, true));
+});
