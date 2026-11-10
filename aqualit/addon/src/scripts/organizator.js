@@ -14,6 +14,7 @@ import { YAPI } from "./yapi_bilgi.js";
 import { sendMessage } from "./messages.js";
 import { Yerler } from "./harita.js";
 import * as B from "./blocks.js";
+import { yardimciGonder } from "./yardimci.js";
 
 export const ORG = "toplayici";
 const AD = "Organizatör";
@@ -34,7 +35,7 @@ export function sinifOf(id) {
 }
 
 // ======================================================================= kayıt
-const O = { istekler: new Map(), zincir: new Map(), dizin: new Map(), son: new Map(), gecmis: new Map() };
+const O = { istekler: new Map(), zincir: new Map(), dizin: new Map(), son: new Map(), gecmis: new Map(), sonEksik: new Map() };
 const kayitAnahtar = (owner) => `aq:org:${owner}`;
 function hafiza(owner) {
   return getJSON(world, kayitAnahtar(owner), { zincir: [], son: null, gecmis: [], ozet: 0, uyari: {} });
@@ -216,7 +217,7 @@ function* istekIsi(org, ist) {
     const h = getSandik(s.cid);
     if (!h) continue;
     org.setStatus(`${ist.tanim.ad} almaya gidiyor`);
-    yield* org.travelTo(standSpot(h) ?? h.location, { near: 2 });
+    yield* yardimciGonder(org, h.location);
     const k = new UnitContainer(s.cid);
     for (let L = 0; L < k.size && kalan > 0; L++) {
       const it = k.getItem(L);
@@ -314,7 +315,7 @@ export function* duzenleIsi(org, sessiz = false) {
       tasinacak.push({ L, it, hedef });
     }
     if (tasinacak.length) {
-      yield* org.travelTo(standSpot(h) ?? h.location, { near: 2 });
+      yield* yardimciGonder(org, h.location);
       org.setAct("carry");
       const kk = new UnitContainer(s.cid);
       const yuk = [];
@@ -334,7 +335,7 @@ export function* duzenleIsi(org, sessiz = false) {
       for (const [cid, items] of gruplar) {
         const hh = getSandik(cid);
         if (!hh) continue;
-        yield* org.travelTo(standSpot(hh) ?? hh.location, { near: 2 });
+        yield* yardimciGonder(org, hh.location);
         const hk = new UnitContainer(cid);
         for (const it of items) {
           const rest = acikMi(cid) ? it : hk.addItem(it);
@@ -402,7 +403,7 @@ export function* sandigaKoy(org) {
   for (const [cid, ids] of gruplar) {
     const h = getSandik(cid);
     if (!h) continue;
-    yield* org.travelTo(standSpot(h) ?? h.location, { near: 2 });
+    yield* yardimciGonder(org, h.location);
     const k = new UnitContainer(cid);
     for (const id of ids) {
       let m = org.count(id);
@@ -425,6 +426,7 @@ export function* sandigaKoy(org) {
 
 // ======================================================================= Organizatör'ün işi (jobs.js çağırır)
 export function* organizatorIsi(org) {
+  safe(() => org.e.triggerEvent("aqualit:gezin_off"));
   org.say("Organizatör hazır! Telefondan ya da bana dokunup yazıyla görev verebilirsin.", { force: false });
   let sonDuzen = system.currentTick;
   for (;;) {
@@ -467,14 +469,24 @@ export function* organizatorIsi(org) {
       org.setStatus("Yerdeki eşyaları topluyor");
       for (const it of yerde.slice(0, 6)) {
         if (!safe(() => it.isValid, false)) continue;
-        yield* org.travelTo(V.floor(it.location), { near: 1 });
-        org.pickupItems(3);
+        // Organizatör yürümez: Yardımcısı uçup eşyayı ışınlar
+        yield* yardimciGonder(org, V.floor(it.location), "Yardımcısı yerdeki eşyayı alıyor");
+        const st = safe(() => it.getComponent("minecraft:item")?.itemStack);
+        if (!st || !safe(() => it.isValid, false)) continue;
+        const rest = org.addStack(st);
+        if (!rest) safe(() => it.remove());
       }
       yield* sandigaKoy(org);
       continue;
     }
     if (org.contents().size) {
       yield* sandigaKoy(org);
+    }
+    // 5) boş zaman: azalan temel eşyaları boştaki robotlara toplat (birden çok Organizatör varsa yalnız biri yapar)
+    if (system.currentTick - (O.sonEksik.get(org.owner) ?? -1e9) > 20 * 240 && ilkOrg(org)) {
+      O.sonEksik.set(org.owner, system.currentTick);
+      const n = eksikleriDagit(org);
+      if (n) continue;
     }
     org.setStatus("Hazır, görev bekliyor");
     org.setMove("none");
@@ -791,6 +803,32 @@ system.runInterval(() => {
 }, 1);
 
 const AZ_UYARI = [["komur", 16], ["demir", 8], ["yemek", 8], ["mesale", 8]];
+// boş zamanda tamamlanacak temel stok: anahtar, en az, bir seferde toplatılan
+const STOK = [["komur", 16, 32], ["demir", 8, 16], ["bugday", 16, 32], ["odun", 16, 32], ["tas", 32, 64], ["kum", 16, 32]];
+/** Birden çok Organizatör varsa işleri bölüşürler: ortak işleri en eski (listede ilk) olan yapar. */
+function ilkOrg(org) {
+  const l = [...bots.values()].filter((b) => b.valid && b.owner === org.owner && b.type === ORG).sort((a, b) => String(a.rid).localeCompare(String(b.rid)));
+  return !l.length || l[0] === org;
+}
+/** Sandıklarda azalan temel eşyaları boştaki robotlara toplatır. Verilen görev sayısı. */
+export function eksikleriDagit(org) {
+  const owner = org.owner;
+  let n = 0;
+  const verilen = [];
+  for (const [k, en, al] of STOK) {
+    const t = ESYA[k];
+    if (!t?.kaynak) continue;
+    if (say(owner, t) >= en) continue;
+    const [tur, key] = t.kaynak;
+    const b = [...bots.values()].find((x) => x.valid && x.owner === owner && x.type === tur && bosta(x));
+    if (!b) continue;
+    gorevVer(b, key, al);
+    verilen.push(`${b.name}: ${al} ${t.ad}`);
+    n++;
+  }
+  if (verilen.length) konus(owner, `Boş zamanımızda eksikleri tamamlıyoruz: ${verilen.join(", ")}.`, org);
+  return n;
+}
 export function gunOzeti(pl) {
   const owner = pl.id;
   const d = dizin(owner, true);

@@ -2479,6 +2479,17 @@ if (run("organizator")) {
   const mesale = [sg, sm, so, sc].reduce((n, h) => n + sayC(h, "minecraft:torch"), 0);
   if (process.env.DBG4) console.log(player.messages.join("\n"), org.status);
   check(mesale >= 15 && sayC(so, "minecraft:oak_log") < meseOnce, `"10 meşale yap" planlandı ve üretildi (meşale ${mesale}, mesajlar: ${player.messages.slice(-2).join(" / ").slice(0, 120)})`);
+  // v0.4.0: boş zamanda eksikleri robotlara toplatır; Organizatör sandıklara yürümez (Yardımcı uçar)
+  {
+    const ORGm = await import("./scripts/organizator.js");
+    const orgB = myBots().find((b) => b.type === "toplayici");
+    const madenciler = myBots().filter((b) => b.type === "madenci");
+    if (orgB && madenciler.length) {
+      for (const m of madenciler) { m.task = null; brain.startJob(m, (function* () { for (;;) yield; })(), "bekleme"); m.jobName = "bekleme"; }
+      const n = ORGm.eksikleriDagit(orgB);
+      check(n >= 1 && madenciler.some((m) => m.task && !m.task.done), `boş zamanda eksik için robota görev verildi (${n})`);
+    } else console.log("  (Organizatör ya da madenci yok, eksik dağıtma atlandı)");
+  }
 }
 
 if (run("kit")) {

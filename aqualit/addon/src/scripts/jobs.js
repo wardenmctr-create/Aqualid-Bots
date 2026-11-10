@@ -89,6 +89,8 @@ export function* idleJob(bot) {
   bot.setMove("none");
   bot.setAct("none");
   safe(() => bot.e.triggerEvent("aqualit:tick_off"));
+  // v0.4.0: Organizatör boşta gezinmez; öteki robotlar çevrede biraz dolaşabilir
+  safe(() => bot.e.triggerEvent(bot.type === "toplayici" ? "aqualit:gezin_off" : "aqualit:gezin_on"));
   let t = 0;
   for (;;) {
     yield* wait(20);

@@ -60,6 +60,9 @@ def robot_bp():
                  'deals_damage': 'no'},
             ] + [{'cause': c, 'deals_damage': 'no'} for c in ['fall', 'suffocation', 'drowning', 'falling_block', 'fly_into_wall']]},
             'minecraft:behavior.float': {'priority': 0},
+        },
+        # v0.4.0: boşta gezinme ayrı grupta; Organizatör'e hiç verilmez (sebepsiz dolaşmasın)
+        'aqualit:gezin': {
             'minecraft:behavior.random_stroll': {'priority': 9, 'speed_multiplier': 0.7, 'xz_dist': 4},
         },
         # savaş davranışları ayrı grupta: canı azalınca kaldırılıp yerine geri çekilme konur
@@ -132,6 +135,8 @@ def robot_bp():
         'aqualit:mode_guard': {'sequence': [
             {'remove': {'component_groups': ['aqualit:k_follow', 'aqualit:k_guard']}},
             {'add': {'component_groups': ['aqualit:k_guard']}}]},
+        'aqualit:gezin_on': {'add': {'component_groups': ['aqualit:gezin']}},
+        'aqualit:gezin_off': {'remove': {'component_groups': ['aqualit:gezin']}},
         'aqualit:mode_stay': {'remove': {'component_groups': ['aqualit:k_follow', 'aqualit:k_guard']}},
         'aqualit:tick_on': {'add': {'component_groups': ['aqualit:ticking']}},
         'aqualit:fly_on': {'add': {'component_groups': ['aqualit:flyer']}},

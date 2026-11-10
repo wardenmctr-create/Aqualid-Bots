@@ -2,6 +2,7 @@
 // "10 meşale yap" → stoğa bakar: meşale yoksa çubuk + kömür gerekir; çubuk yoksa tahtadan, tahta yoksa kütükten yapar;
 // kömür yoksa madenciye toplatır ya da kütükten odun kömürü eritir. Planı oyuncuya gösterir, sonra uygular:
 // sandıklardan malzemeyi alır, çalışma masasında üretir, Aqualit Fırın'da (yalnız Organizatör kullanır, çok hızlı) eritir.
+import { yardimciGonder } from "./yardimci.js";
 import { world, ItemStack, BlockVolume } from "@minecraft/server";
 import { V, safe, wait } from "./util.js";
 import { UnitContainer, acikMi, standSpot, getSandik } from "./sandik.js";
@@ -278,7 +279,7 @@ function* malzemeAl(org, al) {
     const h = getSandik(cid);
     if (!h) continue;
     org.setStatus("Malzeme alıyor");
-    yield* org.travelTo(standSpot(h) ?? h.location, { near: 2 });
+    yield* yardimciGonder(org, h.location);
     const k = new UnitContainer(cid);
     for (let L = 0; L < k.size; L++) {
       const it = k.getItem(L);
