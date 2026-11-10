@@ -1303,6 +1303,37 @@ if (run("tema")) {
   for (const e of [kn, ke, ko]) e.remove();
 }
 
+// ---------------------------------------------------------------- v0.4.0 evcil dronlar
+if (run("evcil")) {
+  console.log("== Evcil dronlar: basılı tut → omuzda; dokun → eşya; ölünce envantere; tarif robotu geri verir");
+  const EV = await import("./scripts/evcil.js");
+  give("aqualit:evcil_kilicli", 1, 3);
+  comps.item["aqualit:device"].onUse({ source: player, itemStack: player._inv.getItem(3) }, { params: { kind: "evcil", tur: "kilicli" } });
+  ticks(3);
+  const a = EV.evcilOf(player);
+  check(a && a.e.typeId === "aqualit:evcil" && a.e.getProperty("aqualit:tur") === EV.TURLER.indexOf("kilicli"), "Kılıçlı evcil dronu çıktı (doğru tür)");
+  check(!player._inv.getItem(3), "eşya eksildi");
+  player.teleport({ x: player.location.x + 5, y: player.location.y, z: player.location.z });
+  ticks(2);
+  const om = EV.omuz(player);
+  check(Math.hypot(a.e.location.x - om.x, a.e.location.y - om.y, a.e.location.z - om.z) < 0.1, "dron omzunda süzülüyor (yürüyünce peşinden)");
+  world.beforeEvents.playerInteractWithEntity.fire({ player, target: a.e, cancel: false });
+  ticks(2);
+  const say = () => { let n = 0; for (let i = 0; i < 36; i++) if (player._inv.getItem(i)?.typeId === "aqualit:evcil_kilicli") n++; return n; };
+  check(!EV.evcilOf(player) && !a.e.isValid && say() === 1, "drona dokununca eşyaya döndü");
+  // ölünce envantere
+  for (let i = 0; i < 36; i++) if (player._inv.getItem(i)?.typeId === "aqualit:evcil_kilicli") player._inv.setItem(i, undefined);
+  give("aqualit:evcil_portalci", 1, 4);
+  EV.evcilKullan(player, "portalci", 4);
+  check(EV.evcilOf(player)?.tur === "portalci", "Portalcı evcil dronu çıktı");
+  world.afterEvents.entityDie.fire({ deadEntity: player, damageSource: {} });
+  world.afterEvents.playerSpawn.fire({ player, initialSpawn: false });
+  ticks(15);
+  let p = 0; for (let i = 0; i < 36; i++) if (player._inv.getItem(i)?.typeId === "aqualit:evcil_portalci") p++;
+  check(!EV.evcilOf(player) && p === 1, "ölünce dron envantere döndü");
+  for (let i = 0; i < 36; i++) if (player._inv.getItem(i)?.typeId === "aqualit:evcil_portalci") player._inv.setItem(i, undefined);
+}
+
 // ---------------------------------------------------------------- v0.3.8 Keşif Haritası
 if (run("harita")) {
   console.log("== Keşif Haritası: yürüyünce dolar, yapılar simgeyle, dron ordusu bilineni atlar");

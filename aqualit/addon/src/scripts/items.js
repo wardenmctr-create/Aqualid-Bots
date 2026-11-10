@@ -2,6 +2,7 @@
 import { world, system, ItemStack, BlockPermutation, GameMode } from "@minecraft/server";
 import { radarMenu, hizMenu, otopilotMenu, tirmanMenu } from "./kesif_radar.js";
 import { haritaAc, orduMenu } from "./kesif_harita.js";
+import { evcilKullan } from "./evcil.js";
 import { telefonAc } from "./org_ui.js";
 import { H } from "./kayit.js";
 import { spawnKesif } from "./kesif.js";
@@ -70,6 +71,12 @@ export function useDevice(player, kind, opts = {}) {
   });
   reg.registerCustomComponent("aqualit:device", {
     onUse(e, p) {
+      if (p.params?.kind === "evcil") {
+        const pl = e.source;
+        if (!isPlayer(pl) || !debounce(pl, 10)) return;
+        const slot = pl.selectedSlotIndex;
+        return system.run(() => evcilKullan(pl, p.params.tur, slot));
+      }
       useDevice(e.source, p.params?.kind);
     },
     onUseOn(e, p) {

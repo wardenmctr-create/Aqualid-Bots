@@ -76,6 +76,13 @@ DEVICES = [
     ('dron_ordusu', 'Keşif Dron Ordusu Çağırma (basılı tut: 25 dron)', 'dron_ordusu', 'ordu', 'Ordu gönder'),
 ]
 
+# v0.4.0: evcil mini dronlar (basılı tut: omzunda süzülür; dokun: eşyaya döner). id, ad, ikon, tür
+EVCIL_TURLER = ['mimar', 'kesif', 'madenci', 'kurekci', 'ciftci', 'oduncu', 'kilicli', 'organizator', 'portalci', 'yardimci']
+EVCIL_AD = {'mimar': 'Mimar', 'kesif': 'Keşif', 'madenci': 'Madenci', 'kurekci': 'Kürekçi', 'ciftci': 'Çiftçi',
+            'oduncu': 'Oduncu', 'kilicli': 'Kılıçlı', 'organizator': 'Organizatör', 'portalci': 'Portalcı',
+            'yardimci': 'Organizatör Yardımcısı'}
+EVCIL = [(f'evcil_{t}', f'Evcil {EVCIL_AD[t]} Dronu (basılı tut: omzunda süzülür)', f'evcil_{t}', t) for t in EVCIL_TURLER]
+
 # Keşif'e binince oyuncuya verilen eşyalar (inince geri alınır; yaratıcı menüde yok): id, ad, ikon, tür
 KESIF_ESYA = [
     ('kesif_radar', 'Yer Bulucu Radar (basılı tut)', 'kesif_radar', 'radar'),
@@ -126,6 +133,11 @@ RECIPES = []
 
 def shaped(rid, pattern, key, result, count=1, unlock=None):
     RECIPES.append(('shaped', rid, {'pattern': pattern, 'key': key, 'result': {'item': result, 'count': count},
+                                    'unlock': unlock or [{'item': 'aqualit:aqualit_ingot'}]}))
+
+def shaped_cok(rid, pattern, key, results, unlock=None):
+    """Birden çok sonuçlu tarif (ör. robot geri verilir + evcil dronu)."""
+    RECIPES.append(('shaped', rid, {'pattern': pattern, 'key': key, 'result': [{'item': r, 'count': 1} for r in results],
                                     'unlock': unlock or [{'item': 'aqualit:aqualit_ingot'}]}))
 
 def shapeless(rid, ingredients, result, count=1, unlock=None):
@@ -209,7 +221,7 @@ LANG_EXTRA = {
 
 def lang_lines():
     out = {}
-    for iid, name, *_ in (MATERIALS + TOOLS + CHESTS + SANDIK_MARKERS + ROBOTS + DEVICES + KESIF_ESYA + STATUE_ITEMS + [REPAIR_KIT] + BARKS + BARK_ARMORS
+    for iid, name, *_ in (MATERIALS + TOOLS + CHESTS + SANDIK_MARKERS + ROBOTS + DEVICES + KESIF_ESYA + EVCIL + STATUE_ITEMS + [REPAIR_KIT] + BARKS + BARK_ARMORS
                           + STONE_ARMORS + AQ_ARMORS + BOOKS):
         out[f'item.aqualit.{iid}.name'] = name
     for bid, name, *_ in BLOCKS:
@@ -217,3 +229,14 @@ def lang_lines():
         out[f'tile.aqualit:{bid}.name'] = name
     out.update(LANG_EXTRA)
     return out
+
+# v0.4.0: evcil dron tarifleri — ortada robot, robot geri verilir + o robotun evcil dronu
+from evcil_oyun import ROBOT_EVCIL as _RE    # noqa: E402
+for _rid, _tur in _RE.items():
+    shaped_cok(f'evcil_{_tur}_{_rid}', ['RIR', 'ASA', 'RIR'],
+               {'R': I('minecraft:redstone'), 'I': I('minecraft:iron_ingot'), 'A': I(K), 'S': I(f'aqualit:{_rid}')},
+               [f'aqualit:evcil_{_tur}', f'aqualit:{_rid}'], unlock=[{'item': f'aqualit:{_rid}'}])
+# Organizatör Yardımcısı'nın evcil hâli: 3 demir + 3 Aqualit + 2 kızıltaş, ortada Organizatör
+shaped_cok('evcil_yardimci', ['IAI', 'RSR', 'AIA'],
+           {'R': I('minecraft:redstone'), 'I': I('minecraft:iron_ingot'), 'A': I(K), 'S': I('aqualit:robot_toplayici')},
+           ['aqualit:evcil_yardimci', 'aqualit:robot_toplayici'], unlock=[{'item': 'aqualit:robot_toplayici'}])
