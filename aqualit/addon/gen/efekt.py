@@ -249,6 +249,14 @@ def particles():
                 'uv': {**tex, 'uv': [48, 0], 'uv_size': [16, 16]}},
             'minecraft:particle_appearance_tinting': {'color': renk + ['math.min(1, (1 - variable.particle_age / variable.particle_lifetime) * 4)']},
         }
+    # v0.4.2: Mimar hologram noktası (renk: variable.renk), kısa ömürlü, hep tam parlak
+    P['holo'] = {**once,
+        'minecraft:emitter_shape_point': {'offset': [0, 0, 0]},
+        'minecraft:particle_lifetime_expression': {'max_lifetime': 0.2},
+        'minecraft:particle_appearance_billboard': {
+            'size': ['variable.boy', 'variable.boy'], 'facing_camera_mode': 'rotate_xyz', 'uv': {**tex, 'uv': [48, 0], 'uv_size': [16, 16]}},
+        'minecraft:particle_appearance_tinting': {'color': ['variable.renk.r', 'variable.renk.g', 'variable.renk.b', 0.85]},
+    }
     # v0.4.1: arazi aracı tekerlek tozu (renk zemine göre: variable.r/g/b; miktar: variable.n)
     P['toz'] = {**once,
         'minecraft:emitter_rate_instant': {'num_particles': 'variable.n'},
@@ -279,4 +287,5 @@ PARTICLE_VARS = {
     'kivilcim': [], 'kubbe_parilti': [], 'golge_duman': [],
     'cerceve': ['yon', 'uzun'], 'cerceve_on': ['yon', 'uzun'],
     'toz': ['n', 'r', 'g', 'b'],
+    'holo': ['renk', 'boy'],
 }

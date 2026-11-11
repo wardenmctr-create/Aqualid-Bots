@@ -1,6 +1,6 @@
 // Aqualit Robotları — Mimar: yapı kütüphanesi, yer seçme, uçarak inşa, mini dron mimarlar
 // Yapılar paketin yapı dosyalarında (aqualit:<kimlik>); bloklar structureManager ile tek tek okunur.
-import { world, system, BlockPermutation, ItemStack } from "@minecraft/server";
+import { world, system, BlockPermutation, ItemStack, MolangVariableMap } from "@minecraft/server";
 import { V, wait, safe, yawOf, clamp } from "./util.js";
 import { YAPILAR, KATEGORI, BLOK_DURUM, ALTERNATIF, BLOK_ESYA } from "./yapi_data.js";
 import { eksikleriIste, sandigaKoy, orgListesi } from "./organizator.js";
@@ -722,6 +722,7 @@ export async function mimarMenu(player, bot, startTask) {
     let card;
     for (;;) {
       card = await cardMenu(player, picked, degis);
+      if (card?.v === "onizle") { await hologram(player, picked); continue; }
       if (card?.v !== "mal") break;
       await malzemeMenu(player, picked, degis);
     }
@@ -835,6 +836,7 @@ async function cardMenu(player, y, degis = {}) {
     { text: "\n\n§lMalzeme:§r" }, ...matLines(y, degis),
   ] };
   const btns = [{ text: "§l§2Yer seç ▶§r\n§7Malzemeyi sandıklardan toplar", icon: ICON(y.id), v: { free: false } }];
+  btns.push({ text: "§l§bÖnizle (3B hologram)§r\n§7Önünde 10 sn kendi etrafında döner", icon: "textures/items/ender_eye", v: { v: "onizle" } });
   if (y.bloklar) btns.push({ text: `§lMalzemeyi değiştir§r\n§7${Object.keys(degis).length ? `${Object.keys(degis).length} blok değişti` : "Zor bulunanları kolaylarla değiştir"}`,
     icon: "textures/items/book_writable", v: { v: "mal" } });
   if (isCreative(player)) btns.push({ text: "§l§bMalzemesiz yap§r\n§7Yaratıcı: hiçbir şey harcamaz", icon: "textures/items/nether_star", v: { free: true } });
@@ -844,6 +846,52 @@ async function cardMenu(player, y, degis = {}) {
 }
 
 const BAKMA = 100;                 // panel kapalıyken yer seçme süresi (tik): 5 sn
+
+// ======================================================================= dönen 3B hologram önizleme (v0.4.2)
+// Yapı dosyasından dış yüzeydeki bloklar örneklenir (en çok ~350 nokta); oyuncunun önünde küçültülmüş, yarı saydam
+// turkuaz-renkli noktalardan oluşan model 10 sn kendi etrafında döner. Renk bloğun cinsinden (ahşap, taş, cam...).
+const HOLO_RENK = [[/glass/, [0.6, 0.9, 1]], [/log|wood|planks|stairs|slab|door|fence/, [0.95, 0.7, 0.4]], [/stone|cobble|brick|andesite|deepslate/, [0.75, 0.8, 0.85]],
+  [/leaves|grass|moss|vine/, [0.45, 0.95, 0.5]], [/wool|carpet|terracotta|concrete/, [1, 0.6, 0.85]], [/gold|lantern|torch|glowstone/, [1, 0.9, 0.4]]];
+export function hologramNoktalari(st, maxN = 700) {
+  const { x: W, y: H, z: D } = st.size;
+  const dolu = (x, y, z) => x >= 0 && y >= 0 && z >= 0 && x < W && y < H && z < D && !!safe(() => st.getBlockPermutation({ x, y, z }));
+  const nok = [];
+  for (let y = 0; y < H; y++) for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
+    const perm = safe(() => st.getBlockPermutation({ x, y, z }));
+    if (!perm) continue;
+    const t = safe(() => perm.type.id, "") ?? "";
+    if (t === "minecraft:air" || t === "minecraft:structure_void") continue;
+    if (dolu(x + 1, y, z) && dolu(x - 1, y, z) && dolu(x, y + 1, z) && dolu(x, y - 1, z) && dolu(x, y, z + 1) && dolu(x, y, z - 1)) continue;
+    nok.push({ x: x - W / 2 + 0.5, y, z: z - D / 2 + 0.5, c: (HOLO_RENK.find(([re]) => re.test(t)) ?? [0, [0.3, 1, 0.9]])[1] });
+  }
+  if (nok.length <= maxN) return { nok, W, H, D };
+  const adim = nok.length / maxN;
+  return { nok: Array.from({ length: maxN }, (_, i) => nok[Math.floor(i * adim)]), W, H, D };
+}
+export async function hologram(player, y) {
+  const st = structureOf(y.id);
+  if (!st) return safe(() => player.sendMessage("§cYapı dosyası okunamadı."));
+  const { nok, W, H, D } = hologramNoktalari(st);
+  const boy = 3.2 / Math.max(W, H, D, 1);                      // 3,2 blokluk maket
+  const v = player.getViewDirection();
+  const l = player.location;
+  const merkez = { x: l.x + v.x * 3.5, y: l.y + 0.3, z: l.z + v.z * 3.5 };
+  safe(() => player.onScreenDisplay.setActionBar(`§b${y.ad}§7 · hologram önizleme (10 sn)`));
+  safe(() => player.playSound("beacon.activate", { pitch: 1.6, volume: 0.6 }));
+  let t = 0;
+  const run = system.runInterval(() => {
+    t += 3;
+    const a = (t / 200) * Math.PI * 2;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    for (const p of nok) {
+      const mv = new MolangVariableMap();
+      mv.setColorRGB("variable.renk", { red: p.c[0], green: p.c[1], blue: p.c[2] });
+      mv.setFloat("variable.boy", boy * 0.55);                // nokta boyu ~ blok boyu (dolu görünsün)
+      safe(() => player.spawnParticle("aqualit:holo", { x: merkez.x + (p.x * ca - p.z * sa) * boy, y: merkez.y + p.y * boy, z: merkez.z + (p.x * sa + p.z * ca) * boy }, mv));
+    }
+    if (t >= 200) system.clearRun(run);
+  }, 3);
+}
 
 /** Baktığın yer: bloğun üstü (yoksa 6 blok önün). */
 function bakilanYer(player) {

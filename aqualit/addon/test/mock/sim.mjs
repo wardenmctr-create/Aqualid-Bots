@@ -2118,6 +2118,18 @@ if (run("mimar")) {
   const YD = await import("./scripts/yapi_data.js");
   check(YD.YAPILAR.length >= 200, `kütüphanede ${YD.YAPILAR.length} yapı (en az 200)`);
   check(YD.YAPILAR.every((y) => world.structureManager.get(`aqualit:${y.id}`)), "her yapının dosyası pakette");
+  // v0.4.2: dönen 3B hologram önizleme
+  {
+    const y0 = YD.YAPILAR.find((y) => y.id) ;
+    player.particles = [];
+    await MI.hologram(player, y0);
+    ticks(30);
+    const holo = player.particles.filter((q) => q.id === "aqualit:holo");
+    check(holo.length > 20, `hologram önizleme çiziliyor (${holo.length} nokta, ${y0.ad})`);
+    ticks(200);
+    const n0 = player.particles.length; ticks(10);
+    check(player.particles.length === n0, "hologram 10 sn sonra bitti");
+  }
   const G = GROUND;
   const base = { x: 300, y: G, z: 300 };
   player.teleport({ x: base.x + 0.5, y: G + 1, z: base.z - 3.5 });
