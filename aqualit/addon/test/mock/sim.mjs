@@ -2645,6 +2645,18 @@ if (run("organizator")) {
       const n = ORGm.eksikleriDagit(orgB);
       check(n >= 1 && madenciler.some((m) => m.task && !m.task.done), `boş zamanda eksik için robota görev verildi (${n})`);
     } else console.log("  (Organizatör ya da madenci yok, eksik dağıtma atlandı)");
+    if (orgB) {
+      const U = await import("./scripts/org_uretim.js");
+      const sk = orgB.homeChest();
+      const c = sk?.getComponent("minecraft:inventory")?.container;
+      if (c) {
+        c.addItem(new ItemStack("minecraft:raw_iron", 12));
+        ORGm.dizin(player.id, true);
+        const gen = U.bosZamanUret(orgB);
+        gen.next();
+        check(player.messages.some((m) => /12 Ham demir|12 .*eritiyorum/.test(m)) || player.messages.slice(-3).some((m) => m.includes("eritiyorum")), "boş zamanda sandıktaki ham demiri eritmeye başladı");
+      }
+    }
   }
 }
 

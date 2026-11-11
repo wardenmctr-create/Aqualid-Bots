@@ -474,3 +474,28 @@ export function uretimKomutu(pl, a) {
   (org._isler ??= []).push(function* (o) { yield* uretIsi(o, id, n, a.yer === "ben" || a.bana ? pl.id : null); });
   return [];
 }
+
+// ======================================================================= boş zaman üretimi (v0.4.2)
+const HAMLAR = ["minecraft:raw_iron", "minecraft:raw_gold", "minecraft:raw_copper", "aqualit:raw_aqualit"];
+const ERIT_HEDEF = { "minecraft:raw_iron": "minecraft:iron_ingot", "minecraft:raw_gold": "minecraft:gold_ingot",
+  "minecraft:raw_copper": "minecraft:copper_ingot", "aqualit:raw_aqualit": "aqualit:aqualit_ingot" };
+/** Organizatör boşta: sandıklarda 8+ ham cevher varsa eritir; meşale 8'den azsa (malzeme varsa) 16 meşale yapar. */
+export function* bosZamanUret(org) {
+  const s = stok(org.owner, org);
+  for (const ham of HAMLAR) {
+    const n = s.get(ham) ?? 0;
+    if (n < 8) continue;
+    const cikti = ERIT_HEDEF[ham];
+    ORG.konus(org.owner, `Boş zamanımda sandıklardaki ${n} ${esyaAd(ham)} eritiyorum.`, org);
+    return yield* uretIsi(org, cikti, n, null);
+  }
+  if ((s.get("minecraft:torch") ?? 0) < 8) {
+    const P = planla("minecraft:torch", 16, s);
+    if (!Object.keys(P.eksik).length) {
+      ORG.konus(org.owner, "Meşaleler azalmış; boş zamanımda 16 meşale yapıyorum.", org);
+      return yield* uretIsi(org, "minecraft:torch", 16, null);
+    }
+  }
+  return false;
+}
+ORG.BOS_IS.push(bosZamanUret);

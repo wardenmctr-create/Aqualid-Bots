@@ -36,7 +36,7 @@ export function sinifOf(id) {
 }
 
 // ======================================================================= kayıt
-const O = { istekler: new Map(), zincir: new Map(), dizin: new Map(), son: new Map(), gecmis: new Map(), sonEksik: new Map() };
+const O = { istekler: new Map(), zincir: new Map(), dizin: new Map(), son: new Map(), gecmis: new Map(), sonEksik: new Map(), sonUretim: new Map() };
 const kayitAnahtar = (owner) => `aq:org:${owner}`;
 function hafiza(owner) {
   return getJSON(world, kayitAnahtar(owner), { zincir: [], son: null, gecmis: [], ozet: 0, uyari: {} });
@@ -489,6 +489,15 @@ export function* organizatorIsi(org) {
       const n = eksikleriDagit(org);
       if (n) continue;
     }
+    // 6) boş zaman üretimi: sandıktaki ham cevherleri Aqualit Fırın'da erit, meşale azsa yap (3 dakikada bir)
+    if (system.currentTick - (O.sonUretim.get(org.owner) ?? -1e9) > 20 * 180 && ilkOrg(org)) {
+      O.sonUretim.set(org.owner, system.currentTick);
+      let yapti = false;
+      for (const is of BOS_IS) {
+        try { if (yield* is(org)) { yapti = true; break; } } catch (e) { /* bir sonraki sefere */ }
+      }
+      if (yapti) continue;
+    }
     org.setStatus("Hazır, görev bekliyor");
     org.setMove("none");
     yield* wait(40);
@@ -808,6 +817,8 @@ system.runInterval(() => {
 
 const AZ_UYARI = [["komur", 16], ["demir", 8], ["yemek", 8], ["mesale", 8]];
 // boş zamanda tamamlanacak temel stok: anahtar, en az, bir seferde toplatılan
+/** Boş zaman üretim işleri (org_uretim.js doldurur: ham cevher eritme, meşale yapma). Her biri: function* (org) -> bool */
+export const BOS_IS = [];
 const STOK = [["komur", 16, 32], ["demir", 8, 16], ["bugday", 16, 32], ["odun", 16, 32], ["tas", 32, 64], ["kum", 16, 32]];
 /** Birden çok Organizatör varsa işleri bölüşürler: ortak işleri en eski (listede ilk) olan yapar. */
 function ilkOrg(org) {

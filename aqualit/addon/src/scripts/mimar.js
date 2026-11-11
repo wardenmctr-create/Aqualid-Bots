@@ -3,7 +3,8 @@
 import { world, system, BlockPermutation, ItemStack } from "@minecraft/server";
 import { V, wait, safe, yawOf, clamp } from "./util.js";
 import { YAPILAR, KATEGORI, BLOK_DURUM, ALTERNATIF, BLOK_ESYA } from "./yapi_data.js";
-import { eksikleriIste, sandigaKoy } from "./organizator.js";
+import { eksikleriIste, sandigaKoy, orgListesi } from "./organizator.js";
+import { YARDIMCI } from "./yardimci.js";
 import { getJSON, setJSON, setProp } from "./store.js";
 import { menu, modal, confirm } from "./ui/forms.js";
 import { idleJob } from "./jobs.js";
@@ -473,6 +474,15 @@ export function* mimarJob(bot) {
   const nd = dronCount(Y.blok);
   bot.say(`Bareti açıyorum: ${nd} mini dron mimar yardıma geliyor.`);
   yield* releaseDrones(bot, nd);
+  // v0.4.2: sahibin Organizatör'ü varsa Organizatör Yardımcısı da gelir, blokları turkuaz ışınla uzaktan koyar
+  if (safe(() => orgListesi(bot.owner).length, 0)) {
+    const ye = safe(() => bot.dim.spawnEntity(YARDIMCI, { x: bot.loc.x, y: bot.loc.y + 3, z: bot.loc.z }));
+    if (ye) {
+      live.add(ye.id);
+      bot.drones.push({ e: ye, job: null, cool: 10, act: "none", actT: 0, yard: true });
+      bot.say("Organizatör'ün Yardımcısı da geldi; blokları ışınlayarak yardım ediyor.");
+    }
+  }
   // 4) kat kat inşa
   const missing = {};
   let done = P.done ?? 0;
@@ -612,11 +622,12 @@ export function* mimarJob(bot) {
         if (dr.job) live.add(safe(() => dr.e.id));
       }
       if (!dr.job) continue;
-      const tgt = { x: dr.job.p.x + 0.5, y: dr.job.p.y + 1.1, z: dr.job.p.z + 0.5 };
+      // Yardımcı bloğun 4 blok üstüne kadar gelir, oradan ışınlar
+      const tgt = { x: dr.job.p.x + 0.5, y: dr.job.p.y + (dr.yard ? 4.5 : 1.1), z: dr.job.p.z + 0.5 };
       const l = dr.e.location;
       const dv = V.sub(tgt, l);
       const n = V.len(dv);
-      if (n > 1.2) {
+      if (n > (dr.yard ? 3 : 1.2)) {
         safe(() => dr.e.teleport(V.add(l, V.mul(dv, Math.min(1, DRON_STEP / n))), { facingLocation: tgt }));
         continue;
       }
@@ -628,8 +639,10 @@ export function* mimarJob(bot) {
         continue;
       }
       done++;
+      if (dr.yard) safe(() => FX.cizgi(bot.dim, { x: l.x, y: l.y - 0.4, z: l.z }, { x: dr.job.p.x + 0.5, y: dr.job.p.y + 0.5, z: dr.job.p.z + 0.5 }, true));
       dr.job = null;
-      dr.cool = DRON_COOL;
+      dr.cool = dr.yard ? 1 : DRON_COOL;
+      if (dr.yard) continue;
       dr.act = "place";
       dr.actT = 8;
       safe(() => dr.e.setProperty("aqualit:dact", "place"));
