@@ -40,8 +40,10 @@ const kayit = (e) => {
   p.e = e;
   return p;
 };
-function modAyarla(p, mod, cirak) {
+function modAyarla(p, mod, cirak, elle = false) {
   p.mod = mod;
+  p.elle = elle && mod === "serbest";
+  p.modBas = system.currentTick;
   safe(() => p.e.setDynamicProperty("aq:pc_mod", mod));
   if (cirak !== undefined) {
     p.cirak = cirak;
@@ -204,6 +206,8 @@ system.runInterval(() => {
       if (safe(() => e.dimension.id) !== pl.dimension.id || V.dist(e.location, h) > 0.05)
         safe(() => e.teleport(h, { dimension: pl.dimension, rotation: { x: 0, y: safe(() => pl.getRotation().y, 0) } }));
     } else {
+      // boşken (15 sn işi yoksa) küçülüp omzuna gelir; "Yanımda uç" seçildiyse gelmez
+      if (p.mod === "serbest" && !p.elle && system.currentTick - (p.modBas ?? 0) > 20 * 15) { modAyarla(p, "omuz"); continue; }
       safe(() => e.setProperty("aqualit:kucuk", false));
       const yaw = (safe(() => pl.getRotation().y, 0) * Math.PI) / 180;
       const h = { x: pl.location.x + Math.sin(yaw) * 1.6 + Math.cos(yaw) * 1.2, y: pl.location.y + 2.3, z: pl.location.z - Math.cos(yaw) * 1.6 + Math.sin(yaw) * 1.2 };
@@ -373,7 +377,7 @@ async function pcMenu(pl, p) {
     const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
     const it = new ItemStack("aqualit:robot_portalci", 1);
     if (safe(() => inv.addItem(it), it)) safe(() => pl.dimension.spawnItem(it, pl.location));
-  } else modAyarla(p, r.v);
+  } else modAyarla(p, r.v, undefined, true);
 }
 
 world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
@@ -405,3 +409,31 @@ system.runInterval(() => {
     for (const e of safe(() => world.getDimension(d).getEntities({ type: PORTAL }), []) ?? []) if (!portallar.has(e.id)) safe(() => e.remove());
   }
 }, 100);
+
+// ======================================================================= kendiliğinden Nether seferi
+const MALZEME_OF = new Map();
+for (const [k, m] of Object.entries(MALZEME)) {
+  if (m.esya) MALZEME_OF.set(m.esya, k);
+  for (const b of m.bloklar) MALZEME_OF.set(b, k);
+}
+MALZEME_OF.set("minecraft:glowstone", "isiltas");
+MALZEME_OF.set("minecraft:gold_ingot", "altin");
+/** Bir robotun (ya da sahibin) eksiği Nether malzemesiyse, çırağı olan boştaki robot Portalcısıyla sefere çıkar.
+ *  need: { eşyaKimliği: adet }. Üstlenilen eşya kimlikleri döner. */
+export function netherIhtiyaci(owner, need) {
+  const alinan = [];
+  for (const [id0, n] of Object.entries(need ?? {})) {
+    const id = id0.includes(":") ? id0 : `minecraft:${id0}`;
+    const k = MALZEME_OF.get(id);
+    if (!k) continue;
+    const p = [...pcs.values()].find((x) => x.owner === owner && x.mod === "cirak" && safe(() => x.e.isValid, false));
+    const b = p && botByRid(p.cirak);
+    if (!b || !b.valid || (b.jobName && b.jobName !== "bekleme")) continue;
+    const adet = Math.min(64, Math.max(16, id === "minecraft:gold_ingot" ? n * 9 : n));
+    startJob(b, netherIsi(b, p, k, adet), "gorev");
+    b.say(`${MALZEME[k].ad} lazımmış; Portalcım ile Nether'den ${adet} tane getiriyorum.`);
+    alinan.push(id0);
+    break;                                   // bir seferde bir sefer
+  }
+  return alinan;
+}

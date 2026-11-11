@@ -151,4 +151,19 @@ export function rampa(pl, v, d) {
   }
   // havada: 6 saniyeden uzun kalırsa süzülme biter (sonsuz uçmasın)
   if (t - u.bas > (u.suzul ?? 120)) safe(() => v.removeEffect("slow_falling"));
+  if (u.ucus) havadaYonlendir(pl, v, vel);
+}
+
+/** Rampa uçuşunda havada yönlendirme: araç baktığın yöne döner, yatay hızı (momentum) o yöne kıvrılır.
+ *  İleri bas: biraz hızlanır; geri bas: yavaşlar. Yukarı-aşağı yönlendirme yok (vagon gibi kendi yayını çizer). */
+export function havadaYonlendir(pl, v, vel) {
+  const yaw = safe(() => pl.getRotation().y, 0) ?? 0;
+  const r = (yaw * Math.PI) / 180;
+  const ileri = { x: -Math.sin(r), z: Math.cos(r) };
+  const mv = safe(() => pl.inputInfo.getMovementVector(), { x: 0, y: 0 }) ?? { x: 0, y: 0 };
+  const yatay = Math.hypot(vel.x, vel.z);
+  const hedefHiz = Math.max(0.15, Math.min(1.6, yatay * (1 + mv.y * 0.06)));
+  const k = 0.35;                                          // dönüş yumuşaklığı
+  safe(() => v.setRotation({ x: 0, y: yaw }));
+  safe(() => v.applyImpulse({ x: (ileri.x * hedefHiz - vel.x) * k, y: 0, z: (ileri.z * hedefHiz - vel.z) * k }));
 }

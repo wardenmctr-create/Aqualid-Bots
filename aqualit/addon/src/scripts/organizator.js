@@ -15,6 +15,7 @@ import { sendMessage } from "./messages.js";
 import { Yerler } from "./harita.js";
 import * as B from "./blocks.js";
 import { yardimciGonder } from "./yardimci.js";
+import { netherIhtiyaci } from "./portalci.js";
 
 export const ORG = "toplayici";
 const AD = "Organizatör";
@@ -761,6 +762,9 @@ export function ekler() {
 // ======================================================================= Mimar ve diğer robotlar Organizatör'den ister
 /** need: {eşya kimliği: adet} — sandıklarda olmayanlar için uygun robota toplatır. */
 export function eksikleriIste(owner, need, kimden) {
+  // v0.4.2: Nether malzemesi eksikse Portalcı çırağı olan robot kendiliğinden sefere çıkar
+  const nether = new Set(safe(() => netherIhtiyaci(owner, need), []) ?? []);
+  if (nether.size) need = Object.fromEntries(Object.entries(need).filter(([id]) => !nether.has(id)));
   const tanimla = (id) => Object.entries(ESYA).find(([, e]) => e.id === id || e.ham === id || (e.ids ?? []).some((k) => (typeof k === "string" ? k === id : false)));
   const notlar = [];
   for (const [id, n] of Object.entries(need)) {
@@ -867,6 +871,7 @@ export function robotIstegi(bot, anahtar, n) {
     const t = Object.entries(ESYA).find(([, e]) => e.id === anahtar || e.ham === anahtar);
     tanim = t ? { anahtar: t[0], ...t[1] } : { anahtar, ad: anahtar.replace("minecraft:", "").replace(/_/g, " "), id: anahtar };
   }
+  if (safe(() => netherIhtiyaci(bot.owner, { [tanim.id ?? anahtar]: n }), []).length) return true;
   if (!orgListesi(bot.owner).length) return false;
   konus(bot.owner, `${bot.name} benden ${n} ${tanim.ad} istedi; getiriyorum.`);
   return iste(bot.owner, { tanim, n, kim: bot.id });

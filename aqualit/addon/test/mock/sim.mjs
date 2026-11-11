@@ -1357,6 +1357,15 @@ if (run("hiz")) {
   ke.getVelocity = () => ({ x: 0, y: 0.4, z: 0.6 });
   SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
   const kisa = ke.getEffect("levitation")?.duration ?? 0;
+  // havada yönlendirme: oyuncu doğuya (yaw 270) bakınca araç döner, yatay hız doğuya kıvrılır
+  {
+    const SUm = await import("./scripts/surus.js");
+    const once = player._rot; player._rot = { x: 0, y: 270 };
+    let imp = null; const eski = ke.applyImpulse; ke.applyImpulse = (i) => { imp = i; };
+    SUm.havadaYonlendir(player, ke, { x: 0, y: 0.1, z: 0.6 });
+    ke.applyImpulse = eski; player._rot = once;
+    check(imp && imp.x > 0.1 && imp.z < 0 && Math.abs((ke.getRotation().y ?? 0) - 270) < 1, "havada süzülürken baktığın yöne dönüyor");
+  }
   check(kisa > 0 && ke.getEffect("slow_falling"), "uzun rampadan hızla çıkınca araç havalandı, süzülüyor");
   ticks(36);
   ke.isOnGround = true;
@@ -1500,6 +1509,14 @@ if (run("portalci")) {
   brain.startJob(mb, PC.netherIsi(mb, pr, "kuvars", 8), "gorev");
   const t = ticks(20 * 400, () => { return mb.dim.id === "minecraft:overworld" && pr.mod === "cirak" && mb.jobName !== "gorev"; });
   const tot = chestTotals(mb.homeChest());
+  // v0.4.2: Mimar/robot Nether malzemesi isteyince çırak kendiliğinden sefere çıkar
+  {
+    const ORGm = await import("./scripts/organizator.js");
+    mb.jobName = "bekleme";
+    ORGm.eksikleriIste(player.id, { "minecraft:quartz": 20 }, mb);
+    check(mb.jobName === "gorev" && pr.mod === "cirak", "Nether malzemesi lazım olunca çırak kendiliğinden sefere çıktı");
+    brain.startJob(mb, (function* () {})(), "bekleme"); ticks(2);
+  }
   check(mb.dim.id === "minecraft:overworld", `robot Nether'den döndü (${Math.round(t / 20)} sn)`);
   check((tot["minecraft:quartz"] ?? 0) >= 8, `kuvars sandığa kondu (${tot["minecraft:quartz"] ?? 0})`);
 }
