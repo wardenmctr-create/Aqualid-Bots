@@ -1405,46 +1405,61 @@ if (run("hiz")) {
   ke._rot = { x: 0, y: (ke._rot?.y ?? 0) + 25 };
   const b = SU.surusDurumu(ke, { yaw: a.yaw, hiz: 0.9 });
   check(Math.abs(b.dn) > 20 && b.drift > 5 && b.fren > 0.3, "sürüş motoru drifti ve sert freni tanıyor");
-  // rampa uçuşu: hızla yukarı doğru yerden ayrılınca kalkar, süzülür, inince süre yazar
+  // rampa uçuşu (v0.4.4): rampadan hızla ayrılınca tek itkiyle FIRLAR (süzülme yok), yerçekimiyle düşer
   ke.isOnGround = true;
   ke.getVelocity = () => ({ x: 0, y: 0, z: 0.6 });
+  const itkiler = [];
+  const asilItki = ke.applyImpulse.bind(ke);
+  ke.applyImpulse = (i) => { itkiler.push(i); asilItki(i); };
+  const kalkisY = () => itkiler.filter((i) => i.y > 0.05).map((i) => i.y).pop() ?? 0;
   // tek blokluk basamak: uçmaz
   SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
   ke.location = { ...ke.location, y: ke.location.y + 1 }; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
   ke.isOnGround = false; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
-  check(!ke.getEffect("levitation"), "tek blokluk basamakta uçmuyor");
+  check(!kalkisY(), "tek blokluk basamakta fırlamıyor");
   ke.isOnGround = true; ticks(2); SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
-  // uzun rampa: 2 saniye boyunca yokuş çıkıp hızla ayrılınca uçar
-  for (let i = 0; i < 20; i++) { ke.location = { ...ke.location, y: ke.location.y + 0.25 }; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 }); }
+  // 0,4 sn rampa: yetmez
+  for (let i = 0; i < 4; i++) { ke.location = { ...ke.location, y: ke.location.y + 0.25 }; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 }); }
+  ke.isOnGround = false; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  check(!kalkisY(), "0,4 sn rampada fırlamıyor");
+  ke.isOnGround = true; SU.rampa(player, ke, { hiz: 0.2, yaw: 0 }); SU.rampa(player, ke, { hiz: 0.2, yaw: 0 });
+  for (let i = 0; i < 5; i++) SU.rampa(player, ke, { hiz: 0.2, yaw: 0 });
+  // 0,5 sn rampa: fırlar
+  for (let i = 0; i < 5; i++) { ke.location = { ...ke.location, y: ke.location.y + 0.25 }; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 }); }
   ke.isOnGround = false;
   ke.getVelocity = () => ({ x: 0, y: 0.4, z: 0.6 });
   SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
-  const kisa = ke.getEffect("levitation")?.duration ?? 0;
+  const kisa = kalkisY();
+  check(kisa > 0 && !ke.getEffect("slow_falling") && !ke.getEffect("levitation"), "0,5 sn rampadan hızla çıkınca araç itkiyle fırladı (süzülme yok)");
   // havada yönlendirme: oyuncu doğuya (yaw 270) bakınca araç döner, yatay hız doğuya kıvrılır
   {
-    const SUm = await import("./scripts/surus.js");
     const once = player._rot; player._rot = { x: 0, y: 270 };
     let imp = null; const eski = ke.applyImpulse; ke.applyImpulse = (i) => { imp = i; };
-    SUm.havadaYonlendir(player, ke, { x: 0, y: 0.1, z: 0.6 });
+    SU.havadaYonlendir(player, ke, { x: 0, y: 0.1, z: 0.6 });
     ke.applyImpulse = eski; player._rot = once;
-    check(imp && imp.x > 0.1 && imp.z < 0 && Math.abs((ke.getRotation().y ?? 0) - 270) < 1, "havada süzülürken baktığın yöne dönüyor");
+    check(imp && imp.x > 0.1 && imp.z < 0 && Math.abs((ke.getRotation().y ?? 0) - 270) < 1, "havada baktığın yöne dönüyor");
   }
-  check(kisa > 0 && ke.getEffect("slow_falling"), "uzun rampadan hızla çıkınca araç havalandı, süzülüyor");
+  // itki işlemezse: 2 tik sonra hâlâ yükselmiyorsa kısa sert kaldırma (süzülme değil)
+  ke.getVelocity = () => ({ x: 0, y: 0, z: 0.6 });
+  ticks(3); SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  const lev = ke.getEffect("levitation");
+  check(lev && lev.amplifier >= 10 && lev.duration < 20, "itki tutmadıysa kısa ve sert kaldırma (vagon gibi, balon gibi değil)");
   ticks(36);
   ke.isOnGround = true;
   SU.rampa(player, ke, { hiz: 0.5, yaw: 0 });
-  check(!ke.getEffect("slow_falling") && /Uçuş: .*sn/.test(player.actionbar.at(-1) ?? "") && player.getDynamicProperty("aq:ucus_rekor") > 0,
-    "inince süzülme bitti, uçuş süresi ve rekor yazdı");
-  // daha hızlı: daha uzun kaldırma (daha yükseğe/uzağa)
+  check(!ke.getEffect("levitation") && /Uçuş: .*sn/.test(player.actionbar.at(-1) ?? "") && player.getDynamicProperty("aq:ucus_rekor") > 0,
+    "inince uçuş süresi ve rekor yazdı");
+  // daha hızlı: daha güçlü fırlama
   for (let i = 0; i < 20; i++) { ke.location = { ...ke.location, y: ke.location.y + 0.25 * (1.0 / 0.6) }; SU.rampa(player, ke, { hiz: 1.0, yaw: 0 }); }
   ke.isOnGround = false; SU.rampa(player, ke, { hiz: 1.0, yaw: 0 });
-  check((ke.getEffect("levitation")?.duration ?? 0) > kisa, "daha hızlı çıkınca daha yükseğe uçuyor");
-  const hizli = ke.getEffect("levitation")?.duration ?? 0;
+  const hizli = kalkisY();
+  check(hizli > kisa, "daha hızlı çıkınca daha yükseğe fırlıyor");
   ke.isOnGround = true; SU.rampa(player, ke, { hiz: 0.2, yaw: 0 }); SU.rampa(player, ke, { hiz: 0.2, yaw: 0 });
   // aynı hız ve eğim, iki kat yüksek rampa: daha yükseğe
   for (let i = 0; i < 40; i++) { ke.location = { ...ke.location, y: ke.location.y + 0.25 * (1.0 / 0.6) }; SU.rampa(player, ke, { hiz: 1.0, yaw: 0 }); }
   ke.isOnGround = false; SU.rampa(player, ke, { hiz: 1.0, yaw: 0 });
-  check((ke.getEffect("levitation")?.duration ?? 0) > hizli && (ke.getEffect("slow_falling")?.duration ?? 0) > 0, "daha yüksek rampadan daha yükseğe ve uzağa uçuyor");
+  check(kalkisY() > hizli, "daha yüksek rampadan daha yükseğe fırlıyor");
+  ke.applyImpulse = asilItki;
   ke.isOnGround = true; SU.rampa(player, ke, { hiz: 0.2, yaw: 0 });
   const t0 = player.particles?.length ?? 0;
   delete ke.getVelocity;
@@ -2915,6 +2930,45 @@ if (run("kit")) {
     return KA.robotYolcuMu(mc.id);
   });
   check(hizli && KA.robotYolcuMu(mc.id), `madenci koşarak geldi ve bindi (${Math.round(sure / 20)} sn)`);
+}
+
+// ---------------------------------------------------------------- v0.4.4 bölge koruma ayrıntıları
+if (run("koruma")) {
+  console.log("== Bölge koruma: türe göre tepki (haber ver / dışarı it / saldır), arkadaş listesi");
+  const KR = await import("./scripts/koruma.js");
+  const K = await import("./scripts/kilicli.js");
+  const G = GROUND + 1;
+  player.teleport({ x: 80.5, y: G, z: -80.5 });
+  give("aqualit:robot_kilicli_3");
+  ticks(12);
+  useOn("aqualit:robot_kilicli_3", { x: 82, y: GROUND, z: -80 }, "Up", { comp: "aqualit:robot_item", p: { type: "kilicli", model: 3 } });
+  ticks(5);
+  const bot = myBots().filter((b) => b.type === "kilicli" && b.model === 3).pop();
+  check(!!bot, "seviye 3 kılıçlı doğdu");
+  UI.answers.push(() => ({ canceled: false, formValues: [1, 2, 3, "Dost"] }));
+  const ayar = await KR.korumaAyarMenu(player, [bot]);
+  check(ayar && ayar.oyuncu === "haber" && ayar.hayvan === "it" && ayar.canavar === "saldir" && ayar.arkadas[0] === "Dost", "ayar formu: oyuncu haber, hayvan it, canavar saldır, arkadaş Dost");
+  K.guardZone(bot, { x: 90, y: GROUND + 1, z: -80 }, 8);
+  ticks(20 * 15, () => !bot.job);
+  check(!bot.job && bot.mode === "guard", "robot bölgeye vardı");
+  player.teleport({ x: 120.5, y: G, z: -80.5 });
+  const yab = MC.__makePlayer("Yabanci", ow, { x: 93.5, y: G, z: -78.5 });
+  const dost = MC.__makePlayer("Dost", ow, { x: 88.5, y: G, z: -82.5 });
+  const once = player.messages.length;
+  ticks(25);
+  const m = player.messages.slice(once).join("\n");
+  check(/Yabanci/.test(m) && !/Dost/.test(m), "yabancı oyuncu girince haber verdi, arkadaşa dokunmadı");
+  const inek = ow.spawnEntity("minecraft:cow", { x: 92.5, y: G, z: -80.5 });
+  ticks(20 * 8, () => inek._kb.length > 0);
+  check(inek._kb.length > 0 && !(inek._damage > 0), "hayvanı vurmadan bölge dışına itti");
+  inek.remove();
+  UI.answers.push(() => ({ canceled: false, formValues: [3, 0, 3, "Dost"] }));
+  await KR.korumaAyarMenu(player, [bot]);
+  ticks(20 * 8, () => (yab._damage ?? 0) > 0);
+  check((yab._damage ?? 0) > 0 && !(dost._damage > 0), "ayar 'saldır' olunca yabancıya saldırdı, arkadaşa saldırmadı");
+  yab.remove(); dost.remove();
+  K.setMode(bot, "follow", true);
+  player.teleport({ x: 0.5, y: G, z: -3.5 });
 }
 
 // ---------------------------------------------------------------- v0.4.4 Kılıçlı Robot Kostümü

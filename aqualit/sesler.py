@@ -513,12 +513,20 @@ def kesif():
 
     # arazi aracı: motor kükremesi
     def rover(d, steady=False):
+        # v0.4.4: yumuşak motor uğultusu (eski: 80 Hz testere + gürültü, osuruk gibiydi). Ateşleme frekansının
+        # harmonikleri, hafif nabız, ince elektrik motoru vınlaması; alçak gürültü yok.
+        r = np.random.default_rng(44)
         t = T(d)
-        f = np.interp(t, [0, 0.6, d], [40, 120, 85]) if not steady else np.full(len(t), 80.0)
-        y = lp(bl(f, d, 'saw', 30), 1300) + lp(noise(d), 160) * 0.7
+        f = np.interp(t, [0, 0.5, d], [70, 150, 125]) if not steady else np.full(len(t), 125.0)
+        ph = phase(f, len(t))
+        y = sum(a * np.sin(k * ph) for k, a in ((1, 1.0), (2, 0.55), (3, 0.3), (4, 0.18), (6, 0.08)))
+        y = y * (1 + 0.12 * np.sin(ph / 2))
+        y = y + 0.18 * np.sin(phase(f * 7.3, len(t)))
+        y = y + 0.06 * bp(r.standard_normal(len(t)), 500, 1600)
+        y = hp(lp(y, 1400), 70)
         return y * (np.minimum(1, t / 0.12) if not steady else 1)
-    save('kesif_arazi', rover(1.6))
-    save('kesif_arazi_dongu', loopify(rover(1.05, True)), loop=True)
+    save('kesif_arazi', rover(1.6), peak=0.6)
+    save('kesif_arazi_dongu', loopify(rover(1.0, True)), peak=0.5, loop=True)
 
     # matkap: dönme sesi ve öğütme
     def drill(d, steady=False):

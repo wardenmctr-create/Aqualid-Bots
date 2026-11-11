@@ -34,8 +34,8 @@ DEFS = {
     'aqualit.kesif.boat_loop': (['kesif_gemi_dongu'], 0.6, 28),
     'aqualit.kesif.sonar': (['kesif_sonar'], 0.8, 28),
     'aqualit.kesif.sub_loop': (['kesif_denizalti_dongu'], 0.5, 20),
-    'aqualit.kesif.rover': (['kesif_arazi'], 0.9, 28),
-    'aqualit.kesif.rover_loop': (['kesif_arazi_dongu'], 0.6, 28),
+    'aqualit.kesif.rover': (['kesif_arazi'], 0.6, 24),
+    'aqualit.kesif.rover_loop': (['kesif_arazi_dongu'], 0.35, 20),
     'aqualit.kesif.drill': (['kesif_matkap'], 0.9, 28),
     'aqualit.kesif.drill_loop': (['kesif_matkap_dongu'], 0.6, 28),
 }

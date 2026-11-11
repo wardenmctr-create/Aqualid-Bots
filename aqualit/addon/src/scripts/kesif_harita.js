@@ -129,7 +129,7 @@ function igneler(pl, st) {
     .sort((a, b) => V.hdist(a.pos, p) - V.hdist(b.pos, p)).slice(0, Math.min(12, max));
   for (const y of yak) {
     const wp = safe(() => new LocationWaypoint({ dimension: dim, x: y.pos.x + 0.5, y: y.pos.y + 1, z: y.pos.z + 0.5 },
-      { textureBoundsList: [{ lowerBound: 0, texture: { path: `textures/ui/aqualit_yapi/${y.tur}`, iconWidth: 12, iconHeight: 12 } }] }));
+      { textureBoundsList: [{ lowerBound: 0, texture: { path: `textures/ui/aqualit_harita/${y.tur}`, iconWidth: 12, iconHeight: 12 } }] }));
     if (wp && safe(() => (lb.addWaypoint(wp), true), false)) st.igne.push(wp);
   }
 }
@@ -177,7 +177,7 @@ export async function yapiListesi(pl, owner) {
   const l = Yerler.list(owner).filter((y) => y.dim === dim.id).map((y) => ({ y, d: V.hdist(y.pos, p) })).sort((a, b) => a.d - b.d);
   if (!l.length) return safe(() => pl.sendMessage("§7Bu boyutta bildiğin yapı yok. Gezdikçe ya da Keşif'in dronlarıyla bulunur."));
   const btns = l.slice(0, 40).map(({ y, d }) => ({ text: `§l${ad(y)}§r\n§7${y.pos.x}, ${y.pos.y}, ${y.pos.z} · ${Math.round(d)} blok ${pusula(y.pos.x - p.x, y.pos.z - p.z)}`,
-    icon: `textures/ui/aqualit_yapi/${y.tur}` }));
+    icon: `textures/ui/aqualit_harita/${y.tur}` }));
   await menu(pl, "§lBildiğin yapılar", `§7${l.length} yapı. Haritayı aç: hepsi kendi simgesiyle görünür.`, btns);
 }
 

@@ -195,9 +195,9 @@ def build(RP, scripts_dir):
     with open(f'{RP}/fogs/aqualit_harita_sis.json', 'w') as fh:
         json.dump(sis(), fh, indent=1)
     # pusula çubuğu (locator bar) simgeleri: yapı başına ayrı küçük resim
-    os.makedirs(f'{RP}/textures/ui/aqualit_yapi', exist_ok=True)
+    os.makedirs(f'{RP}/textures/ui/aqualit_harita', exist_ok=True)
     for tur in YAPILAR:
-        yapi_simgesi(tur).save(f'{RP}/textures/ui/aqualit_yapi/{tur}.png')
+        yapi_simgesi(tur).save(f'{RP}/textures/ui/aqualit_harita/{tur}.png')
     js_yaz(hucre, os.path.join(scripts_dir, 'harita_isaret.js'))
     return img, hucre
 

@@ -28,6 +28,7 @@ export async function openRod(player) {
   if (!list.length) return player.sendMessage("§7Yüklü bir kılıçlı robotun yok.");
   const btns = MODES.map((m) => ({ ...m, all: true }));
   btns.push({ text: "§lYanıma gel§r\n§7Hepsi seni takip etmeye başlar", icon: "textures/items/compass_item", act: "come" });
+  btns.push({ text: "§lKoruma ayarları§r\n§7Bölgeye kim girerse ne yapsınlar", icon: "textures/items/zone_selector", act: "koruma" });
   for (const b of list) {
     btns.push({ text: `${b.name} §8· Seviye ${b.model}\n§7${b.status}`, icon: robotIcon("kilicli", b.model), b });
   }
@@ -35,6 +36,7 @@ export async function openRod(player) {
   if (!c) return;
   if (c.b) return rodRobot(player, c.b);
   if (c.act === "come") return rodComeHere(player);
+  if (c.act === "koruma") return (await import("../koruma.js")).korumaAyarMenu(player, list);
   return applyMode(player, list, c.v);
 }
 
@@ -51,6 +53,7 @@ export async function rodRobot(player, b) {
   btns.push({ text: "Tamir kiti ver", icon: "textures/items/tamir_kiti", act: "kits" });
   btns.push({ text: "Çantası", icon: "textures/items/aqualit_chest", act: "bag" });
   btns.push({ text: "İsim ver", icon: "textures/items/name_tag", act: "name" });
+  btns.push({ text: "Koruma ayarları\n§7Bölgeye kim girerse ne yapsın, arkadaşlar", icon: "textures/items/zone_selector", act: "koruma" });
   btns.push({ text: "Kostüm olarak giy\n§7Bu Kılıçlı sen olursun (envanter boş olmalı)", icon: "textures/items/kostum_guc", act: "kostum" });
   const c = await menu(player, `§l${b.name}`, body, btns);
   if (!c) return;
@@ -67,6 +70,7 @@ export async function rodRobot(player, b) {
   if (c.act === "bag") return bagMenu(player, { title: `§l${b.name} · çanta`, container: () => b.inv,
     canEdit: () => V.dist(player.location, b.loc) <= EDIT_RANGE });
   if (c.act === "name") return renameRobot(player, b);
+  if (c.act === "koruma") return (await import("../koruma.js")).korumaAyarMenu(player, [b]);
   if (c.act === "kostum") return (await import("../kostum.js")).kostumGiy(player, b);
   return applyMode(player, [b], c.v);
 }
@@ -86,7 +90,8 @@ async function applyMode(player, list, mode) {
       center = V.floor(player.location);
       radius = v[0];
     }
-    for (const b of list) guardZone(b, center, radius);
+    const KR = await import("../koruma.js");
+    for (const b of list) { guardZone(b, center, radius); KR.varsayilaniUygula(b, player.id); }
     return player.sendMessage(`§s${list.length} kılıçlı§r ${fmtPos(center)} çevresini (${radius} blok) korumaya gidiyor.`);
   }
   for (const b of list) setMode(b, mode, list.length > 1);

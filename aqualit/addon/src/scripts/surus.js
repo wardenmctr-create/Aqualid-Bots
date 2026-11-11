@@ -12,7 +12,7 @@ const ucus = new Map();      // araç kimliği -> { havada, bas, x, z, yer: kaç
 // rampa: araç en az YOKUS_MIN tik (örnekleme 2 tikte bir) yokuş çıkıp (burnu yukarıda) hızla yerden ayrılınca uçar.
 // Tek blokluk basamak sayılmaz. Minecraft vagonu gibi: hız, rampa eğimi ve rampa yüksekliği ne kadarsa o kadar
 // yükseğe ve uzağa.
-export const UCUS = { HIZ: 0.3, MIN_SURE: 8, YOKUS_MIN: 10 };   // YOKUS_MIN: en az 0,5 sn (10 tik) rampada
+export const UCUS = { HIZ: 0.3, MIN_SURE: 8, YOKUS_MIN: 10 };   // YOKUS_MIN: rampada en az 0,5 sn (10 tik) olmalı
 const RENK = [
   [/sand|sandstone/, [0.86, 0.79, 0.55]],
   [/snow|ice/, [0.95, 0.97, 1]],
@@ -74,8 +74,8 @@ system.runInterval(() => {
       const on = (s) => ({ x: l.x + ileri.x * 1.4 + sag.x * s, y: l.y + 0.15, z: l.z + ileri.z * 1.4 + sag.z * s });
       toz(dim, on(1), 3, c); toz(dim, on(-1), 3, c);
     }
-    if ((d.drift > 3.5 || d.fren > 0.1) && system.currentTick % 6 === 0)
-      safe(() => dim.playSound("step.gravel", l, { volume: 0.8, pitch: 0.6 + Math.random() * 0.3 }));
+    if ((d.drift > 3.5 || d.fren > 0.1) && system.currentTick % 10 === 0)
+      safe(() => dim.playSound("step.gravel", l, { volume: 0.35, pitch: 0.7 + Math.random() * 0.3 }));
   }
 }, 2);
 
@@ -96,7 +96,6 @@ export function rampa(pl, v, d) {
     else u.yokus = Math.max(0, u.yokus - 1);
     if (u.havada) {                                        // iniş
       u.havada = false;
-      safe(() => v.removeEffect("slow_falling"));
       safe(() => v.removeEffect("levitation"));
       const sure = t - u.bas;
       if (u.ucus && sure >= UCUS.MIN_SURE) {
@@ -107,8 +106,8 @@ export function rampa(pl, v, d) {
         for (const [fx, sx] of [[1.4, 1], [1.4, -1], [-1.5, 1], [-1.5, -1]]) {
           toz(v.dimension, { x: l.x - Math.sin(r) * fx - Math.cos(r) * sx, y: l.y + 0.15, z: l.z + Math.cos(r) * fx - Math.sin(r) * sx }, 5, c);
         }
-        safe(() => v.dimension.playSound("mob.irongolem.walk", l, { volume: 1, pitch: 0.6 }));
-        safe(() => v.dimension.playSound("step.gravel", l, { volume: 1, pitch: 0.5 }));
+        safe(() => v.dimension.playSound("mob.irongolem.walk", l, { volume: 0.55, pitch: 0.6 }));
+        safe(() => v.dimension.playSound("step.gravel", l, { volume: 0.5, pitch: 0.5 }));
         const sn = (sure / 20).toFixed(1);
         const rekor = Number(safe(() => pl.getDynamicProperty("aq:ucus_rekor"), 0) ?? 0);
         const yeni = sure > rekor;
@@ -127,42 +126,53 @@ export function rampa(pl, v, d) {
     u.x = v.location.x;
     u.z = v.location.z;
     if (u.yokus >= UCUS.YOKUS_MIN && d.hiz >= UCUS.HIZ) {
-      // vagon gibi: rampanın eğimi ve hızla fırlar. Kalkış dikey hızı = hız x sin(eğim); tepe yüksekliği v²/2g
-      // (oyunun yerçekimi 0.08 blok/tik²), biraz abartılı (x1.6). Kaldırma: havalanma etkisi (amp 3 ≈ 0.2 blok/tik).
+      // v0.4.4: vagon gibi FIRLAR (süzülme yok): rampanın eğimi, hız ve rampa yüksekliğiyle tek bir itki verilir,
+      // sonra oyunun yerçekimiyle (0.08 blok/tik²) yay çizip düşer. Tepe yüksekliği H = v²/2g (biraz abartılı).
       const egim = (u.yDy ?? 0) / Math.max(0.1, u.yDx ?? 0);
       const vy0 = d.hiz * (egim / Math.sqrt(1 + egim * egim));
-      // rampanın yüksekliği: tırmanırken Y koordinatının ne kadar arttığı (tırmanış başı -> kalkış anı).
-      // Yüksek rampa = daha yükseğe ve (uzun süzülmeyle) daha uzağa
+      // rampanın yüksekliği: tırmanırken Y koordinatının ne kadar arttığı (tırmanış başı -> kalkış anı)
       const rampaY = Math.max(0, v.location.y - (u.yBas ?? v.location.y));
-      const H = Math.min(30, (vy0 * vy0) / (2 * 0.08) * 1.6 + rampaY * 0.4 + 0.8);
-      const sure = Math.max(3, Math.round(H / 0.2));
+      const H = Math.min(24, (vy0 * vy0) / (2 * 0.08) * 1.6 + rampaY * 0.35 + 0.8);
+      const vyHedef = Math.sqrt(2 * 0.08 * H) * 1.08;           // hava sürtünmesi payı
+      const yatayHedef = Math.min(1.8, d.hiz * (1.15 + rampaY / 25));
+      const r = (d.yaw * Math.PI) / 180;
+      const ileri = { x: -Math.sin(r), z: Math.cos(r) };
       u.tepe = H;
-      safe(() => v.addEffect("levitation", sure, { amplifier: 3, showParticles: false }));
-      // süzülme süresi: hız ve rampa yüksekliğiyle uzar (en çok 6 sn) — uzaklığı belirler
-      const hizK = Math.min(1, Math.max(0, (d.hiz - UCUS.HIZ) / 0.7));
-      u.suzul = Math.round(20 * Math.min(6, 1.5 + hizK * 2.5 + rampaY / 6));
-      safe(() => v.addEffect("slow_falling", u.suzul, { amplifier: 0, showParticles: false }));
-      safe(() => v.dimension.playSound("mob.horse.jump", v.location, { volume: 0.8, pitch: 0.8 }));
+      u.vyHedef = vyHedef;
+      u.yatay = yatayHedef;
+      u.kontrol = t + 2;
+      safe(() => v.applyImpulse({ x: ileri.x * yatayHedef - vel.x, y: vyHedef - vel.y, z: ileri.z * yatayHedef - vel.z }));
+      safe(() => v.dimension.playSound("mob.horse.jump", v.location, { volume: 0.5, pitch: 0.9 }));
       u.ucus = true;
     } else u.ucus = false;
     u.yokus = 0; u.yDy = 0; u.yDx = 0;
     u.yer = 0;
     return;
   }
-  // havada: 6 saniyeden uzun kalırsa süzülme biter (sonsuz uçmasın)
-  if (t - u.bas > (u.suzul ?? 120)) safe(() => v.removeEffect("slow_falling"));
-  if (u.ucus) havadaYonlendir(pl, v, vel);
+  if (!u.ucus) return;
+  // itki binilen araçta işlemediyse (kalkıştan 2 tik sonra hâlâ yükselmiyorsa) kısa ve sert bir kaldırma: yavaş
+  // süzülme değil, birkaç tikte tepeye çıkar, sonra normal yerçekimiyle düşer
+  if (u.kontrol && t >= u.kontrol) {
+    u.kontrol = 0;
+    if (vel.y < u.vyHedef * 0.4) {
+      const sure = Math.max(2, Math.round(u.tepe / 0.9));
+      safe(() => v.addEffect("levitation", sure, { amplifier: 19, showParticles: false }));
+    }
+  }
+  havadaYonlendir(pl, v, vel, u.yatay);
 }
 
 /** Rampa uçuşunda havada yönlendirme: araç baktığın yöne döner, yatay hızı (momentum) o yöne kıvrılır.
  *  İleri bas: biraz hızlanır; geri bas: yavaşlar. Yukarı-aşağı yönlendirme yok (vagon gibi kendi yayını çizer). */
-export function havadaYonlendir(pl, v, vel) {
+export function havadaYonlendir(pl, v, vel, yatayHiz) {
   const yaw = safe(() => pl.getRotation().y, 0) ?? 0;
   const r = (yaw * Math.PI) / 180;
   const ileri = { x: -Math.sin(r), z: Math.cos(r) };
   const mv = safe(() => pl.inputInfo.getMovementVector(), { x: 0, y: 0 }) ?? { x: 0, y: 0 };
   const yatay = Math.hypot(vel.x, vel.z);
-  const hedefHiz = Math.max(0.15, Math.min(1.6, yatay * (1 + mv.y * 0.06)));
+  // yatay hız korunur (vagon gibi momentum); ileri basınca biraz artar, geri basınca azalır
+  const temel = Math.max(yatay, (yatayHiz ?? yatay) * 0.97);
+  const hedefHiz = Math.max(0.15, Math.min(1.8, temel * (1 + mv.y * 0.06)));
   const k = 0.35;                                          // dönüş yumuşaklığı
   safe(() => v.setRotation({ x: 0, y: yaw }));
   safe(() => v.applyImpulse({ x: (ileri.x * hedefHiz - vel.x) * k, y: 0, z: (ileri.z * hedefHiz - vel.z) * k }));

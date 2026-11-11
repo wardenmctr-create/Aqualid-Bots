@@ -575,7 +575,7 @@ function drive(v, pl, t) {
   const cur = safe(() => v.getProperty("aqualit:egim"), 0) ?? 0;
   if (Math.abs(cur - tilt) > 3) safe(() => v.setProperty("aqualit:egim", Math.round(tilt)));
   const moving = Math.hypot(tgt.x, tgt.y, tgt.z) > 0.03;
-  if (moving && t % 20 === 0 && form !== "matkap") snd(dim, LOOP[form], v.location, { volume: 0.6 });
+  if (moving && t % 20 === 0 && form !== "matkap") snd(dim, LOOP[form], v.location, { volume: form === "arazi" ? 0.4 : 0.6 });
 }
 
 system.runInterval(() => {

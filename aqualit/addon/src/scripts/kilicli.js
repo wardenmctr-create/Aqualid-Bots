@@ -8,6 +8,7 @@ import "./powers2.js";
 import "./powers3.js";
 import "./powers4.js";
 import { teamTick } from "./takim.js";
+import { korumaTick, bolgeKaydet } from "./koruma.js";
 
 const BASE_HEALTH = 20; // aqualit:kilicli bileşen grubundaki temel can
 
@@ -81,6 +82,7 @@ export function setMode(b, mode, silent = false) {
 export function guardZone(b, center, radius) {
   setProp(b.e, "aq:zone", { x: center.x, y: center.y, z: center.z, r: radius });
   b.zone = { x: center.x, y: center.y, z: center.z, r: radius };
+  bolgeKaydet(b, b.zone);
   b.mode = "guard";
   setProp(b.e, "aq:mode", "guard");
   safe(() => b.e.triggerEvent("aqualit:mode_stay"));
@@ -144,6 +146,7 @@ export function kilicliTick(b) {
     if (r.done) b.job = null;
     return;
   }
+  if (t % 10 === 0) korumaTick(b);   // v0.4.4: bölgeye girenlere türüne göre tepki
   if (t % 100 === 0) {
     // sağlık takviyesi düşmüşse yenile
     const has = safe(() => b.e.getEffect("health_boost"), undefined);
