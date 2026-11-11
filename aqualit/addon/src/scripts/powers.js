@@ -77,9 +77,23 @@ function enemiesAround(b, center, r) {
 const weightOf = (e) => WEIGHT[e.typeId] ?? 8;
 
 /** Durumu değerlendirir: düşmanlar, tehdit, sahibin ve robotun canı. */
+/** v0.5.0: yer altındaki (ya da duvar ardındaki) görünmeyen düşmanlar sayılmaz: 3 bloktan fazla aşağı/yukarıdaysa
+ *  robotun gözünden düşmana çizgi çekilir; arada katı blok varsa yok sayılır. */
+function gorunur(b, e) {
+  const dy = e.location.y - b.loc.y;
+  if (Math.abs(dy) <= 3) return true;
+  const g = { x: b.loc.x, y: b.loc.y + 1.6, z: b.loc.z };
+  const h = { x: e.location.x, y: e.location.y + 0.9, z: e.location.z };
+  const uz = Math.hypot(h.x - g.x, h.y - g.y, h.z - g.z);
+  if (uz < 1) return true;
+  const hit = safe(() => b.dim.getBlockFromRay(g, { x: (h.x - g.x) / uz, y: (h.y - g.y) / uz, z: (h.z - g.z) / uz },
+    { maxDistance: uz - 0.6, includeLiquidBlocks: false, includePassableBlocks: false }));
+  return !hit?.block;
+}
+
 export function analyze(b) {
   const loc = b.loc;
-  const enemies = enemiesAround(b, loc, 16);
+  const enemies = enemiesAround(b, loc, 16).filter((e) => gorunur(b, e));
   if (!enemies.length) return null;
   let threat = 0;
   for (const e of enemies) {

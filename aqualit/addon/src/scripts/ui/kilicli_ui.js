@@ -61,6 +61,13 @@ export async function rodRobot(player, b) {
     const v = await modal(player, "Eşya topla", [
       { type: "slider", label: "Senin çevrende kaç blok?", min: 8, max: 48, step: 4, value: 24 }], "Topla");
     if (!v) return;
+    if (b.dim.id !== player.dimension.id) {          // v0.5.0: başka boyuttaysa kendi portalıyla gelir, sonra toplar
+      const KE = await import("../kilicli_ek.js");
+      KE.boyutaGec(b, player);
+      const merkez = { ...player.location }, r = v[0];
+      system.runTimeout(() => esyaTopla(b, merkez, r), 30);
+      return player.sendMessage(`§s${b.name}§r portalla yanına geliyor, sonra eşyaları toplayacak.`);
+    }
     esyaTopla(b, player.location, v[0]);
     return player.sendMessage(`§s${b.name}§r çevredeki eşyaları toplayıp sandığına koyacak.`);
   }

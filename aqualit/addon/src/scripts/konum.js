@@ -128,6 +128,16 @@ export function sendLocation(bot, why) {
   if (lb && barOn(player)) {
     const icon = `textures/ui/aqualit_bas/pin_${skinOf(bot.type, bot.model)}`;
     const wp = safe(() => new LocationWaypoint({ dimension: bot.dim, x: pos.x + 0.5, y: pos.y + 1, z: pos.z + 0.5 }, selector(icon)));
+    // v0.5.0: çubuk doluysa (çok robot) iğneye yer aç: en uzaktaki robot işaretini kaldır (sonra yine gelir)
+    if (wp && safe(() => lb.count >= lb.maxCount, false)) {
+      let uzak = null, ud = -1;
+      for (const [rid, w] of s.wps) {
+        const r = Robots.get(player.id, rid);
+        const d = r?.pos ? Math.hypot(r.pos.x - player.location.x, r.pos.z - player.location.z) : 1e9;
+        if (d > ud) { ud = d; uzak = rid; }
+      }
+      if (uzak) { removeWp(player, s.wps.get(uzak).wp); s.wps.delete(uzak); }
+    }
     if (wp && safe(() => (lb.addWaypoint(wp), true), false)) {
       s.pins.push({ wp, pos, dim: bot.dim.id, until: system.currentTick + PIN_LIFE, name: bot.name, rid: bot.rid });
     }

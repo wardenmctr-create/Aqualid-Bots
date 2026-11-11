@@ -99,6 +99,7 @@ system.beforeEvents.startup.fire({
 });
 world.afterEvents.worldLoad.fire({});
 const brain = await import("./scripts/brain.js");
+__store = await import("./scripts/store.js");
 const Kaynak = () => kaynakMod.Kaynak;
 const kaynakMod = await import("./scripts/kaynak.js");
 const store = await import("./scripts/store.js");
@@ -114,7 +115,21 @@ function give(id, n = 1, slot = 0) {
   player._inv.setItem(slot, new ItemStack(id, n));
   player.selectedSlotIndex = slot;
 }
+var __store;
+function yerAc() {
+  // toplu çalıştırmada 40 robot sınırına takılmasın: en eski, işsiz robotlardan birkaçını kaldır
+  const liste = __store.Robots.list(player.id);
+  if (liste.length < 36) return;
+  const canli = [...brain.bots.values()].filter((b) => b.owner === player.id);
+  for (const r of liste.slice(0, 6)) {
+    const b = canli.find((x) => x.rid === r.rid);
+    if (b && (b.job || b.type === "insaatci" || b.type === "organizator")) continue;
+    if (b) { brain.bots.delete(b.e.id); b.e.remove(); }
+    __store.Robots.remove(player.id, r.rid);
+  }
+}
 function useOn(itemId, block, face = "Up", params) {
+  if ((params?.comp ?? "aqualit:robot_item") === "aqualit:robot_item" && __store) yerAc();
   const item = player._inv.getItem(player.selectedSlotIndex) ?? new ItemStack(itemId, 1);
   const name = { "aqualit:robot_madenci": "aqualit:robot_item" }[itemId];
   const compName = Object.keys(comps.item).find((k) => k === (params?.comp ?? "aqualit:robot_item"));
@@ -837,7 +852,7 @@ function timedTicks(n, until) {
     system.tick();
     const dt = performance.now() - t0;
     total += dt;
-    if (dt > worst) worst = dt;
+    if (dt > worst) { worst = dt; if (process.env.PROF && dt > 30) console.log("   PROF yavaş tik", dt.toFixed(1), "ms:", system._enYavas?.ms?.toFixed(1), system._enYavas?.src); }
     if (until && i % 20 === 0 && until()) return { worst, avg: total / (i + 1), n: i + 1 };
   }
   return { worst, avg: total / n, n };
@@ -1073,12 +1088,14 @@ if (run("konum")) {
   check(!!mine, "robot konum çubuğunda işaret olarak göründü");
   check(JSON.stringify(mine?.textureSelector).includes("textures/ui/aqualit_bas/bas_oduncu"), "işaret robotun kafa resmi");
   KN.sendLocation(b, "Buradayım!");
-  const pins = player.locatorBar.getAllWaypoints().filter((w) => JSON.stringify(w.textureSelector).includes("pin_oduncu"));
-  check(pins.length === 1, "robot konum gönderince çubukta iğne çıktı");
+  // yalnız bu robotun iğnesi (toplu çalıştırmada başka oduncuların iğneleri de olabilir)
   const sentAt = { ...b.e.location };
+  const benim = (w) => JSON.stringify(w.textureSelector).includes("pin_oduncu") && w._dl && Math.abs(w._dl.x - (Math.floor(sentAt.x) + 0.5)) < 0.01 && Math.abs(w._dl.z - (Math.floor(sentAt.z) + 0.5)) < 0.01;
+  const pins = player.locatorBar.getAllWaypoints().filter(benim);
+  check(pins.length === 1, "robot konum gönderince çubukta iğne çıktı");
   player.teleport({ x: sentAt.x + 1, y: sentAt.y, z: sentAt.z });
   ticks(45);
-  check(!player.locatorBar.getAllWaypoints().some((w) => JSON.stringify(w.textureSelector).includes("pin_oduncu")), "konuma varınca iğne kalktı");
+  check(!player.locatorBar.getAllWaypoints().some(benim), "konuma varınca iğne kalktı");
   KN.setBar(player, false);
   check(player.locatorBar.getAllWaypoints().length === 0, "telsizden kapatınca çubuktan kalktılar");
   KN.setBar(player, true);
@@ -3071,6 +3088,50 @@ if (run("kostum")) {
   const sonra = [...Array(36).keys()].map((i) => player._inv.getItem(i)?.typeId).filter(Boolean);
   check(!player._effects.invisibility && !sonra.length && !ow.getEntities({ type: "aqualit:kostum" }).length, "oyuncu eski haline döndü, eşyalar ve kostüm silindi");
   check(!bot.e._effects?.invisibility && bot.mode === "follow" && V3dist(bot.e.location, player.location) < 2, "robot yanında belirdi, takip ediyor");
+}
+
+// ---------------------------------------------------------------- v0.5.0 Kılıçlı ekleri
+if (run("kilicli2")) {
+  console.log("== Kılıçlı ekleri: sahibine vurana saldırır, yer altını boş verir, sahibinin boyutuna portalla geçer");
+  const P = await import("./scripts/powers.js");
+  const K = await import("./scripts/kilicli.js");
+  await import("./scripts/kilicli_ek.js");
+  const G = GROUND + 1;
+  player.teleport({ x: 150.5, y: G, z: 150.5 });
+  give("aqualit:robot_kilicli_3");
+  ticks(12);
+  useOn("aqualit:robot_kilicli_3", { x: 152, y: GROUND, z: 150 }, "Up", { comp: "aqualit:robot_item", p: { type: "kilicli", model: 3 } });
+  ticks(5);
+  const b = myBots().filter((x) => x.type === "kilicli" && x.model === 3).pop();
+  check(!!b, "kılıçlı doğdu");
+  K.applyStats(b, { ...K.getStats(b), guc: false }, false);
+  K.setMode(b, "follow", true);
+  // 1 kalp ya da az: tepki yok
+  const z = ow.spawnEntity("minecraft:zombie", { x: 147.5, y: G, z: 150.5 });
+  world.afterEvents.entityHurt.fire({ hurtEntity: player, damage: 2, damageSource: { cause: "entityAttack", damagingEntity: z } });
+  check(b.jobName !== "sahip_koruma", "1 kalp vurana hemen saldırmıyor");
+  world.afterEvents.entityHurt.fire({ hurtEntity: player, damage: 4, damageSource: { cause: "entityAttack", damagingEntity: z } });
+  check(b.jobName === "sahip_koruma", "sahibine 1 kalpten fazla vurana saldırıya geçti");
+  ticks(20 * 10, () => (z._damage ?? 0) > 0);
+  check((z._damage ?? 0) > 0, "saldırganı vurdu");
+  z.remove();
+  b.job = null; b.jobName = "";
+  // yer altı: 10 blok aşağıda taşın içindeki mob güç seçiminde sayılmaz
+  const alt = ow.spawnEntity("minecraft:zombie", { x: 152.5, y: G - 10, z: 150.5 });
+  for (let y = G - 9; y < G - 1; y++) ow.setBlockType({ x: 152, y, z: 150 }, "minecraft:stone");
+  check(!P.analyze(b), "yer altındaki görünmeyen mobla uğraşmıyor");
+  alt.remove();
+  // sahibi Nether'e geçti: takip eden Kılıçlı portalla gelir
+  const nd = world.getDimension("nether");
+  for (let x = 17; x <= 21; x++) for (let zz = 17; zz <= 21; zz++) nd.setBlockType({ x, y: 69, z: zz }, "minecraft:netherrack");
+  player.teleport({ x: 19.5, y: 70, z: 19.5 }, { dimension: nd });
+  ticks(20 * 8, () => b.dim.id === "minecraft:nether");
+  check(b.dim.id === "minecraft:nether" && V3dist(b.loc, player.location) < 4, "sahibi Nether'e geçince kendi portalıyla yanına geldi");
+  player.teleport({ x: 150.5, y: G, z: 150.5 }, { dimension: ow });
+  ticks(20 * 8, () => b.dim.id === "minecraft:overworld");
+  check(b.dim.id === "minecraft:overworld", "dönüşte de geldi");
+  K.setMode(b, "stay", true);
+  player.teleport({ x: 0.5, y: G, z: -3.5 });
 }
 
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");

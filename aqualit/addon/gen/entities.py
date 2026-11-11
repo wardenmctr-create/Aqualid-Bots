@@ -81,7 +81,10 @@ def robot_bp():
                     {'test': 'is_family', 'subject': 'other', 'value': 'monster'},
                     {'test': 'is_family', 'subject': 'other', 'operator': '!=', 'value': 'creeper'},
                     # Warden'a asla saldırmaz (antik şehirde herkesi öldürür)
-                    {'test': 'is_family', 'subject': 'other', 'operator': '!=', 'value': 'warden'}]},
+                    {'test': 'is_family', 'subject': 'other', 'operator': '!=', 'value': 'warden'},
+                    # v0.5.0: robot yer üstündeyken yer altındaki moblarla uğraşmasın
+                    {'none_of': [{'all_of': [{'test': 'is_underground', 'subject': 'other', 'value': True},
+                                             {'test': 'is_underground', 'subject': 'self', 'value': False}]}]}]},
                     'max_dist': 16}]},
         },
         'aqualit:k_retreat': {
