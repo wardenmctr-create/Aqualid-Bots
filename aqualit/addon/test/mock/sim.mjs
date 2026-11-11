@@ -670,9 +670,9 @@ if (run("guc")) {
   ticks(5);
   const bot = myBots().filter((b) => b.type === "kilicli").pop();
   check(bot && bot.model === 5, "seviye 5 kılıçlı doğdu");
-  await import("./scripts/powers2.js");
+  await import("./scripts/powers2.js"); await import("./scripts/powers3.js");
   check(P.unlocked(1).length === 0 && P.unlocked(2).length === 2 && P.unlocked(3).length === 4
-    && P.unlocked(4).length === 9 && P.unlocked(5).length === 23, `güçler seviyelere göre açılıyor (${[1, 2, 3, 4, 5].map((m) => P.unlocked(m).length).join("/")})`);
+    && P.unlocked(4).length === 13 && P.unlocked(5).length === 50, `güçler seviyelere göre açılıyor (${[1, 2, 3, 4, 5].map((m) => P.unlocked(m).length).join("/")})`);
   player.teleport({ x: 41.5, y: G, z: 41.5 });
   const st0 = K.getStats(bot);
   K.applyStats(bot, { ...st0, guc: false }, false); // elle denemeler: kendi başına güç kullanmasın
@@ -770,7 +770,9 @@ if (run("guc")) {
     const P2 = await import("./scripts/powers2.js");
     let calisan = 0, hasarli = 0;
     const hatali = [];
-    for (const key of P2.YENI_GUCLER) {
+    const P3 = await import("./scripts/powers3.js");
+    const HEPSI = [...P2.YENI_GUCLER, ...P3.YENI_GUCLER2];
+    for (const key of HEPSI) {
       clear(); reset();
       bot.e.teleport({ x: 40.5, y: G, z: 40.5 });
       const zs = [[46, 40], [47, 42], [44, 46], [36, 40], [40, 34], [52, 41], [48, 48]].map(([x, z]) => spawn("minecraft:zombie", x, z));
@@ -788,8 +790,34 @@ if (run("guc")) {
       if (zs.some((z) => (z._damage ?? 0) > 0)) hasarli++;
     }
     clear();
-    check(calisan === P2.YENI_GUCLER.length, `18 yeni gücün hepsi çalıştı (${calisan}${hatali.length ? ", çalışmayan: " + hatali.join(", ") : ""})`);
-    check(hasarli >= 12, `yeni güçlerin çoğu düşmanlara hasar verdi (${hasarli})`);
+    check(calisan === HEPSI.length, `${HEPSI.length} yeni gücün hepsi çalıştı (${calisan}${hatali.length ? ", çalışmayan: " + hatali.join(", ") : ""})`);
+    check(hasarli >= 28, `yeni güçlerin çoğu düşmanlara hasar verdi (${hasarli})`);
+  }
+  // v0.4.3: kombolar ve takım
+  {
+    const P4 = await import("./scripts/powers4.js");
+    check(P.KOMBOLAR.length === 7, `7 kombo tanımlı (${P.KOMBOLAR.map((k) => k.ad).join(", ")})`);
+    give("aqualit:robot_kilicli_5");
+    useOn("aqualit:robot_kilicli_5", { x: 42, y: GROUND, z: 38 }, "Up", { comp: "aqualit:robot_item", p: { type: "kilicli", model: 5 } });
+    ticks(5);
+    const ekip = myBots().filter((b) => b.type === "kilicli" && b.model === 5).slice(-2);
+    for (const b of ekip) { b.pw.cd = {}; b.pw.cast = null; b.e.teleport({ x: 40.5 + ekip.indexOf(b), y: G, z: 40.5 }); }
+    clear();
+    [[48, 40], [49, 42], [44, 47], [52, 41]].forEach(([x, z]) => spawn("minecraft:skeleton", x, z));
+    const ad = P4.takimHamlesi(ekip);
+    check(!!ad, `iki Kılıçlı takım hamlesi yaptı (${P4.TAKIM_KOMBO[ad] ?? P4.TAKTIKLER[ad] ?? ad})`);
+    for (let t = 0; t < 400 && ekip.some((b) => b.pw.cast); t++) system.tick();
+    // kombo: kalabalıkta motor kombo seçer
+    clear();
+    const tek = ekip[0];
+    tek.pw.cd = {}; tek.pw.cast = null;
+    [[46, 40], [47, 42], [44, 46], [36, 40], [40, 34], [52, 41], [48, 48]].forEach(([x, z]) => spawn("minecraft:zombie", x, z));
+    spawn("minecraft:skeleton", 54, 40);
+    K.applyStats(tek, { ...K.getStats(tek), guc: true }, false);
+    let kombo = null;
+    for (let t = 0; t < 60 && !kombo; t++) { system.tick(); if (P.KOMBOLAR.some((k) => k.id === tek.pw.castName)) kombo = tek.pw.castName; }
+    check(!!kombo, `kalabalıkta kombo kullandı (${kombo})`);
+    clear();
   }
 }
 

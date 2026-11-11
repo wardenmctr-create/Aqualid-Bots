@@ -602,10 +602,31 @@ export function powersTick(b) {
   if (b.job) return; // bölgeye yürürken güç kullanma
   const ctx = analyze(b);
   if (!ctx) return;
+  // v0.4.3: önce uygun bir kombo var mı (bütün parçaları açık ve beklemede değil, durum uygun)
+  for (const k of KOMBOLAR) {
+    if (k.model > b.model || (pw.cd["kombo_" + k.id] ?? 0) > now) continue;
+    if (k.sira.some((p) => !POWERS[p] || POWERS[p].model > b.model || (pw.cd[p] ?? 0) > now)) continue;
+    if (!safe(() => k.kosul(b, ctx), false)) continue;
+    pw.cd["kombo_" + k.id] = now + k.bekle;
+    pw.castName = k.id;
+    pw.cast = komboIsi(b, ctx, k);
+    return;
+  }
   const key = choose(b, ctx);
   if (!key) return;
   pw.castName = key;
   pw.cast = CASTS[key](b, ctx);
+}
+
+/** v0.4.3 kombolar (powers4.js doldurur): { id, ad, model, sira: [güç anahtarları], kosul(b, ctx), bekle } */
+export const KOMBOLAR = [];
+function* komboIsi(b, ctx, k) {
+  const o = ownerOf(b);
+  safe(() => o?.onScreenDisplay.setActionBar(`§6⚡ ${b.name}: KOMBO · ${k.ad}`));
+  for (const p of k.sira) {
+    const c = analyze(b) ?? ctx;
+    yield* CASTS[p](b, c);
+  }
 }
 
 /** Dışarıdan (kumanda, test) belirli bir gücü hemen dene; başarılıysa true. */

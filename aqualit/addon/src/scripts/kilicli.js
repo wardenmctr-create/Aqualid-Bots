@@ -5,6 +5,8 @@ import { KILICLI_MODELS, DMG_TIERS } from "./constants.js";
 import { V, safe, clamp } from "./util.js";
 import { powersTick } from "./powers.js";
 import "./powers2.js";
+import "./powers3.js";
+import "./powers4.js";
 import { teamTick } from "./takim.js";
 
 const BASE_HEALTH = 20; // aqualit:kilicli bileşen grubundaki temel can
