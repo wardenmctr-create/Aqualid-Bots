@@ -7,7 +7,7 @@ import { world, system, BlockVolume, ItemStack } from "@minecraft/server";
 import { safe, V, log, wait } from "./util.js";
 import { menu, modal } from "./ui/forms.js";
 import { consumeHand } from "./place.js";
-import { unitIdAt, UnitContainer } from "./sandik.js";
+import { unitIdAt, UnitContainer, placeChestBlock } from "./sandik.js";
 import { Chests } from "./store.js";
 
 export const KABLO = "aqualit:aqualit_kablo";
@@ -15,6 +15,8 @@ export const FIRIN = "aqualit:aqualit_firin";
 export const AKTARIM = "aqualit:aqualit_aktarim";
 export const ENERJI = "aqualit:aqualit_block";
 export const PLATFORM = "aqualit:org_platform";
+export const PANEL = "aqualit:org_panel";
+const ZEMIN_KALINLIK = 0.125;       // platform modelinin zemini 2 piksel: üstü toprakla aynı hizada olsun
 const BAGLANIR = new Set([KABLO, FIRIN, AKTARIM, ENERJI]);
 const YON = { n: { x: 0, y: 0, z: -1 }, s: { x: 0, y: 0, z: 1 }, w: { x: -1, y: 0, z: 0 }, e: { x: 1, y: 0, z: 0 },
   u: { x: 0, y: 1, z: 0 }, d: { x: 0, y: -1, z: 0 } };
@@ -94,28 +96,174 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
 });
 
 // ======================================================================= platform
+/** Platformun önündeki dokunmatik panelin dokunma kutusu (görünmez varlık). */
+export function panelKoy(e) {
+  const l = e.location;
+  const p = { x: l.x, y: l.y + ZEMIN_KALINLIK, z: l.z + 2.5 };
+  const var_ = safe(() => e.dimension.getEntities({ type: PANEL, location: p, maxDistance: 1.5 }), []) ?? [];
+  if (var_.length) return var_[0];
+  const pe = safe(() => e.dimension.spawnEntity(PANEL, p));
+  safe(() => pe.setDynamicProperty("aq:owner", e.getDynamicProperty("aq:owner")));
+  return pe;
+}
+/** Panelin ya da platformun kendisi -> platform varlığı. */
+function platformOf(e) {
+  if (safe(() => e.typeId) === PLATFORM) return e;
+  const l = e.location;
+  return (safe(() => e.dimension.getEntities({ type: PLATFORM, location: { x: l.x, y: l.y, z: l.z - 2.5 }, maxDistance: 2 }), []) ?? [])[0];
+}
+export function platformYarat(dim, zemin, owner) {
+  // zemin: platformun oturacağı toprak bloğunun konumu; platform zemini bu bloğun üst yüzüyle aynı hizada
+  const p = { x: zemin.x + 0.5, y: zemin.y + 1 - ZEMIN_KALINLIK, z: zemin.z + 0.5 };
+  const e = safe(() => dim.spawnEntity(PLATFORM, p));
+  if (!e) return null;
+  safe(() => e.setDynamicProperty("aq:owner", owner));
+  panelKoy(e);
+  safe(() => dim.playSound("beacon.activate", p, { volume: 0.8, pitch: 1.2 }));
+  return e;
+}
 export function platformKur(pl, block) {
-  const p = { x: block.x + 0.5, y: block.y + 1, z: block.z + 0.5 };
-  const e = safe(() => pl.dimension.spawnEntity(PLATFORM, p));
+  const e = platformYarat(pl.dimension, { x: block.x, y: block.y, z: block.z }, pl.id);
   if (!e) return safe(() => pl.sendMessage("§cPlatform buraya kurulamadı."));
-  safe(() => e.setDynamicProperty("aq:owner", pl.id));
   consumeHand(pl);
-  safe(() => pl.dimension.playSound("beacon.activate", p, { volume: 0.8, pitch: 1.2 }));
-  safe(() => pl.sendMessage("§bOrganizatör Platformu§r kuruldu. Ortası Organizatör'ün yeri; paneline (öndeki konsol) dokun."));
+  safe(() => pl.sendMessage("§bOrganizatör Platformu§r kuruldu. Önündeki panele dokun. İstersen Organizatör üssün geri kalanını kendisi kurar."));
   orguYerlestir(pl.id, e);
+}
+/** Organizatör'ün platformdaki yeri: ortadaki dairenin üstü (zemin hizası; içine gömülmez). */
+export function platformYeri(e) {
+  return { x: Math.floor(e.location.x) + 0.5, y: Math.round((e.location.y + ZEMIN_KALINLIK) * 8) / 8, z: Math.floor(e.location.z) + 0.5 };
 }
 function orguYerlestir(owner, e) {
   import("./brain.js").then(({ bots }) => {
     const org = [...bots.values()].filter((b) => b.valid && b.owner === owner && b.type === "toplayici")
       .sort((a, b) => V.dist(a.loc, e.location) - V.dist(b.loc, e.location))[0];
     if (!org) return;
-    const yer = { x: Math.floor(e.location.x) + 0.5, y: e.location.y + 0.4, z: Math.floor(e.location.z) + 0.5 };
+    const yer = platformYeri(e);
     org.home = yer;
     safe(() => org.e.setDynamicProperty("aq:home", yer));
     safe(() => org.e.teleport(yer));
     org.say("Platformuma geçtim! Buradan bütün üssü yönetiyorum.");
   }).catch((x) => log("platform", x));
 }
+
+// ======================================================================= v0.5.0 üssü sıfırdan kurma (malzemesiz)
+const KORU = /chest|barrel|furnace|aqualit|bed|door|crafting|anvil|enchant|beacon|spawner|portal|bedrock|shulker/;
+function katiMi(t) {
+  return !!t && t !== "minecraft:air" && !/water|lava|short_grass|tall_grass|fern|flower|snow_layer|leaves|sapling|vine|bush/.test(t);
+}
+/** Kolonun zemin yüksekliği (en üstteki katı blok), y0 çevresinde. */
+function zeminY(dim, x, z, y0) {
+  for (let y = y0 + 8; y >= y0 - 8; y--) if (katiMi(tip(dim, { x, y, z }))) return y;
+  return null;
+}
+/** Organizatör'ün evinin yakınında 11x11 (platform + çevresi) en düz yeri seçer. */
+function yerSec(dim, ev, kacin) {
+  let en = null;
+  for (let r = 0; r <= 12; r += 2) {
+    for (let dx = -r; dx <= r; dx += 2) for (let dz = -r; dz <= r; dz += 2) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      const cx = Math.floor(ev.x) + dx, cz = Math.floor(ev.z) + dz;
+      if (kacin && Math.abs(kacin.x - cx) <= 6 && Math.abs(kacin.z - cz) <= 6) continue;   // sandığın üstüne kurma
+      const ys = [];
+      let korunan = false;
+      for (let x = cx - 5; x <= cx + 5; x += 2) for (let z = cz - 5; z <= cz + 5; z += 2) {
+        const y = zeminY(dim, x, z, Math.floor(ev.y) - 1);
+        if (y === null) { korunan = true; break; }
+        ys.push(y);
+        if (KORU.test(tip(dim, { x, y: y + 1, z }) ?? "") || KORU.test(tip(dim, { x, y, z }) ?? "")) korunan = true;
+      }
+      if (korunan || !ys.length) continue;
+      ys.sort((a, b) => a - b);
+      const gy = ys[Math.floor(ys.length / 2)];
+      const puan = ys.reduce((a, y) => a + Math.abs(y - gy), 0) + r * 0.5;
+      if (!en || puan < en.puan) en = { cx, cz, gy, puan };
+    }
+    if (en && en.puan < 6) break;
+  }
+  return en;
+}
+function koyBlok(dim, p, t) {
+  safe(() => dim.setBlockType(p, t));
+  safe(() => dim.spawnParticle("minecraft:basic_flame_particle", { x: p.x + 0.5, y: p.y + 0.5, z: p.z + 0.5 }));
+}
+/** Organizatör üssünü sıfırdan kurar: yeri düzler, platform + panel, enerji bloğu, 2 fırın, çalışma masası,
+ *  ağa bağlı sandık, kablolar ve evdeki sandığa aktarım bloğu. Parçalar Organizatör'ün kendi üretimi (malzeme istemez). */
+export function* usuSifirdanKur(org) {
+  const dim = org.dim;
+  const evSandik = org.homeChest?.();
+  const evPos = evSandik ? V.floor(evSandik.location) : null;
+  // zaten platformu varsa onu kullan
+  let e = (safe(() => dim.getEntities({ type: PLATFORM, location: org.loc, maxDistance: 24 }), []) ?? [])
+    .find((x) => safe(() => x.getDynamicProperty("aq:owner")) === org.owner);
+  org.setStatus("Üssünü kuruyor");
+  org.say("Üssümü kuruyorum: zemini düzlüyorum, platformu ve bütün parçaları kendim yapıyorum.", { force: true });
+  let cx, cz, gy;
+  if (e) {
+    cx = Math.floor(e.location.x); cz = Math.floor(e.location.z); gy = Math.round(e.location.y + ZEMIN_KALINLIK) - 1;
+  } else {
+    const yer = yerSec(dim, org.home ?? org.loc, evPos);
+    if (!yer) { org.say("Yakında üs kuracak uygun yer bulamadım."); return false; }
+    ({ cx, cz, gy } = yer);
+    // düzle: 11x11, zeminin üstünü 6 kat boşalt, altını doldur
+    for (let x = cx - 5; x <= cx + 5; x++) {
+      for (let z = cz - 5; z <= cz + 5; z++) {
+        for (let y = gy + 1; y <= gy + 6; y++) {
+          const t = tip(dim, { x, y, z });
+          if (t && t !== "minecraft:air" && !KORU.test(t)) safe(() => dim.setBlockType({ x, y, z }, "minecraft:air"));
+        }
+        for (let y = gy; y >= gy - 3; y--) {
+          if (katiMi(tip(dim, { x, y, z }))) break;
+          koyBlok(dim, { x, y, z }, y === gy ? "minecraft:grass_block" : "minecraft:dirt");
+        }
+      }
+      yield;
+    }
+    e = platformYarat(dim, { x: cx, y: gy, z: cz }, org.owner);
+    if (!e) { org.say("Platformu kuramadım."); return false; }
+    yield* wait(10);
+  }
+  panelKoy(e);
+  const Y = gy + 1;
+  // parçalar batı kenarında: kablo hattı x = cx-5; arkasında (x = cx-6) fırınlar, enerji, masa, sandık
+  const hat = [-2, -1, 0, 1, 2].map((dz) => ({ x: cx - 5, y: Y, z: cz + dz }));
+  for (const p of hat) {
+    const t = tip(dim, p);
+    if (t === KABLO) continue;
+    if (t && t !== "minecraft:air" && !KORU.test(t)) safe(() => dim.setBlockType(p, "minecraft:air"));
+    koyBlok(dim, p, KABLO);
+    yield* wait(3);
+  }
+  const parca = [[-2, FIRIN], [-1, FIRIN], [0, ENERJI], [1, MASA]];
+  for (const [dz, t] of parca) {
+    const p = { x: cx - 6, y: Y, z: cz + dz };
+    if (tip(dim, p) !== t) { koyBlok(dim, p, t); yield* wait(4); }
+    if (!katiMi(tip(dim, { x: p.x, y: Y - 1, z: p.z }))) koyBlok(dim, { x: p.x, y: Y - 1, z: p.z }, "minecraft:stone");
+  }
+  // ağa bağlı Aqualit sandığı
+  const sp = { x: cx - 6, y: Y, z: cz + 2 };
+  if (!SANDIK_BLOK.has(tip(dim, sp) ?? "")) {
+    safe(() => placeChestBlock(dim, sp, "toplayici", org.owner, { x: cx - 5, y: Y, z: cz + 2 }, { name: "Üs sandığı" }));
+    yield* wait(4);
+  }
+  for (const p of hat) cevreyiGuncelle(dim, p);
+  // evdeki sandığın yanına aktarım bloğu (uzaktan eşya ışınlama)
+  if (evPos && !aktarimYakin(dim, evPos)) {
+    for (const d of [{ x: 1, z: 0 }, { x: -1, z: 0 }, { x: 0, z: 1 }, { x: 0, z: -1 }, { x: 1, z: 1 }, { x: -1, z: -1 }]) {
+      const p = { x: evPos.x + d.x, y: evPos.y, z: evPos.z + d.z };
+      if (tip(dim, p) === "minecraft:air" || /grass|flower|fern/.test(tip(dim, p) ?? "")) { koyBlok(dim, p, AKTARIM); break; }
+    }
+  }
+  // Organizatör platformdaki yerine
+  const yer = platformYeri(e);
+  org.home = yer;
+  safe(() => org.e.setDynamicProperty("aq:home", yer));
+  safe(() => org.e.teleport(yer));
+  const ag = agBul(e);
+  org.say(`Üssüm hazır! Platform, ${ag.firinlar.length} güçlü fırın, çalışma masası, ${ag.sandiklar.size} ağ sandığı ve ${ag.kablolar.length} kablo kurdum${evPos ? ", evdeki sandığa aktarım bloğu koydum" : ""}.`, { force: true });
+  org.setStatus("Hazır");
+  return true;
+}
+
 function usDurumu(dim, merkez) {
   const vol = new BlockVolume({ x: merkez.x - 24, y: merkez.y - 8, z: merkez.z - 24 }, { x: merkez.x + 24, y: merkez.y + 8, z: merkez.z + 24 });
   const say = (t) => safe(() => [...(dim.getBlocks(vol, { includeTypes: [t] }, true)?.getBlockLocationIterator() ?? [])], []) ?? [];
@@ -333,10 +481,14 @@ export function* usKur(org, e) {
 }
 
 world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
-  if (safe(() => ev.target.typeId) !== PLATFORM) return;
+  const tt = safe(() => ev.target.typeId);
+  if (tt !== PLATFORM && tt !== PANEL) return;
   ev.cancel = true;
-  const pl = ev.player, e = ev.target;
+  const pl = ev.player, e0 = ev.target;
   system.run(async () => {
+    const e = platformOf(e0);
+    if (!e) return;
+    panelKoy(e);
     const ag = agBul(e);
     const govde = [`§7Kabloyla bağlı: §f${ag.sandiklar.size}§7 sandık, §f${ag.firinlar.length}§7 fırın, §f${ag.masalar.length}§7 çalışma masası, §f${ag.aktarimlar.length}§7 aktarım bloğu`,
       `§7Güç: ${ag.guc ? "§avar (Aqualit Bloğu bağlı)" : "§eyok (fırınlar yavaş)"}`, usDurumu(e.dimension, V.floor(e.location))].join("\n");
@@ -345,7 +497,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
       { text: "§lUzaktan aktarım§r\n§7Platform <-> uzak sandık", v: "aktar" },
       { text: "§lBağlı fırınlarda erit§r\n§7Ham cevher, kum, et...", v: "erit" },
       { text: "§lOrganizatör'le konuş§r\n§7Yap, getir, düzenle (çalışma masaları kullanılır)", v: "tel" },
-      { text: "§lÜssü Organizatör kursun§r\n§7Fırın, kablolar, bağlantılar", v: "kur" },
+      { text: "§lÜssü Organizatör kursun§r\n§7Fırınlar, enerji, masa, sandık, kablolar (malzemesiz)", v: "kur" },
       { text: "Organizatör'ü platforma çağır", v: "cagir" },
       { text: "§7Platformu kaldır (eşyaya dönüştür)", v: "kaldir" },
     ]);
@@ -363,10 +515,11 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
       const org = [...bots.values()].filter((b) => b.valid && b.owner === pl.id && b.type === "toplayici")
         .sort((a, b) => V.dist(a.loc, e.location) - V.dist(b.loc, e.location))[0];
       if (!org) return safe(() => pl.sendMessage("§eÜssü kuracak Organizatör yok."));
-      (org._isler ??= []).push(function* (o) { yield* usKur(o, e); });
-      return org.say("Üssümü kuruyorum: fırın, kablolar, bağlantılar.");
+      (org._isler ??= []).push(function* (o) { yield* usuSifirdanKur(o); });
+      return org.say("Üssümü kuruyorum: fırınlar, enerji, masa, sandık, kablolar.");
     }
     if (r.v === "kaldir") {
+      for (const pe of safe(() => e.dimension.getEntities({ type: PANEL, location: e.location, maxDistance: 4 }), []) ?? []) safe(() => pe.remove());
       safe(() => e.remove());
       const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
       const it = new ItemStack("aqualit:org_platform", 1);

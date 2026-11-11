@@ -65,7 +65,8 @@ def platform_bp():
         'description': {'identifier': PLATFORM, 'is_spawnable': False, 'is_summonable': True},
         'components': {
             'minecraft:type_family': {'family': ['aqualit_platform', 'inanimate']},
-            'minecraft:collision_box': {'width': 1.2, 'height': 1.3},
+            # v0.5.0: alçak kutu (Organizatör ortada durur, içine gömülmez); panele dokunma ayrı varlıkta (org_panel)
+            'minecraft:collision_box': {'width': 1.0, 'height': 0.2},
             'minecraft:health': {'value': 100, 'max': 100},
             'minecraft:damage_sensor': {'triggers': [{'cause': 'all', 'deals_damage': 'no'}]},
             'minecraft:physics': {'has_gravity': False, 'has_collision': False},
@@ -75,6 +76,35 @@ def platform_bp():
             'minecraft:persistent': {},
             'minecraft:loot': {'table': 'loot_tables/empty.json'},
         }}}
+
+
+PANEL = 'aqualit:org_panel'
+
+
+def panel_bp():
+    """Platformun önündeki konsolun dokunma kutusu (görünmez; model platformun parçası)."""
+    return {'format_version': '1.21.0', 'minecraft:entity': {
+        'description': {'identifier': PANEL, 'is_spawnable': False, 'is_summonable': True},
+        'components': {
+            'minecraft:type_family': {'family': ['aqualit_platform', 'inanimate']},
+            'minecraft:collision_box': {'width': 1.0, 'height': 2.2},
+            'minecraft:health': {'value': 100, 'max': 100},
+            'minecraft:damage_sensor': {'triggers': [{'cause': 'all', 'deals_damage': 'no'}]},
+            'minecraft:physics': {'has_gravity': False, 'has_collision': False},
+            'minecraft:pushable': {'is_pushable': False, 'is_pushable_by_piston': False},
+            'minecraft:knockback_resistance': {'value': 1.0},
+            'minecraft:fire_immune': {},
+            'minecraft:persistent': {},
+            'minecraft:loot': {'table': 'loot_tables/empty.json'},
+        }}}
+
+
+def panel_rp():
+    return {'format_version': '1.10.0', 'minecraft:client_entity': {'description': {
+        'identifier': PANEL, 'materials': {'default': 'entity_alphatest'},
+        'textures': {'default': 'textures/entity/aqualit_platform/platform'},
+        'geometry': {'default': 'geometry.aqualit.org_platform'}, 'render_controllers': [],
+    }}}
 
 
 def platform_rp():
@@ -116,7 +146,10 @@ def build(RP, BP, wj, td, sounds, GEN):
     tex.save(f'{RP}/textures/blocks/aqualit_kablo.png')
     td['aqualit_kablo'] = {'textures': 'textures/blocks/aqualit_kablo'}
     wj(f'{RP}/models/blocks/aqualit_kablo.geo.json', geo)
-    vis = {f'kol_{y}': f"q.block_state('aqualit:{y}') == 'var'" for y in YONLER}
+    # v0.5.0: model dosyasında tasarımın ön-arka ekseni dünyaya göre ters düşüyordu (kuzey kolu güneyde görünüyordu):
+    # kuzey/güney kolları karşı yönün durumuyla gösterilir. Doğu/batı dosyada zaten doğru (Bedrock X ekseni aynalı).
+    KARSI = {'n': 's', 's': 'n'}
+    vis = {f'kol_{y}': f"q.block_state('aqualit:{KARSI.get(y, y)}') == 'var'" for y in YONLER}
     _blok(wj, BP, 'aqualit_kablo', {'identifier': 'geometry.aqualit.aqualit_kablo', 'bone_visibility': vis}, 'aqualit_kablo',
           'kablo', comps_ek={'minecraft:light_emission': 4},
           states={f'aqualit:{y}': ['yok', 'var'] for y in YONLER},
@@ -146,6 +179,8 @@ def platform_build(RP, BP, wj, GEN):
     wj(f'{RP}/models/entity/aqualit_org_platform.geo.json', geo)
     wj(f'{BP}/entities/org_platform.json', platform_bp())
     wj(f'{RP}/entity/aqualit_org_platform.entity.json', platform_rp())
+    wj(f'{BP}/entities/org_panel.json', panel_bp())
+    wj(f'{RP}/entity/aqualit_org_panel.entity.json', panel_rp())
     wj(f'{RP}/render_controllers/aqualit_org_platform.render_controllers.json', {'format_version': '1.10.0', 'render_controllers': {
         'controller.render.aqualit.org_platform': {'geometry': 'Geometry.default', 'materials': [{'*': 'Material.default'}],
                                                    'textures': ['Texture.default']},

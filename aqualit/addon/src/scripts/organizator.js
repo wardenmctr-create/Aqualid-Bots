@@ -471,6 +471,19 @@ export function* organizatorIsi(org) {
       }
       continue;
     }
+    // 3b) v0.5.0: platformu yoksa üssünü bir kez kendisi kurar (malzemesiz; yer düzler, bütün parçaları yapar)
+    if (!org._usDenendi && system.currentTick > 20 * 30 && !safe(() => org.e.getDynamicProperty("aq:us_kuruldu"), false)) {
+      org._usDenendi = true;
+      const PLAT = safe(() => org.dim.getEntities({ type: "aqualit:org_platform", location: org.home ?? org.loc, maxDistance: 24 }), []) ?? [];
+      if (!PLAT.length) {
+        const US = await_us();
+        if (US) {
+          const ok = yield* US.usuSifirdanKur(org);
+          if (ok) safe(() => org.e.setDynamicProperty("aq:us_kuruldu", true));
+          continue;
+        }
+      } else safe(() => org.e.setDynamicProperty("aq:us_kuruldu", true));
+    }
     // 4) boşta: eve dön, çevrede yere düşmüş eşya varsa topla ve sandığa koy
     if (org.home && V.dist(org.loc, org.home) > 6) {
       org.setStatus("Üsse dönüyor");
@@ -898,3 +911,8 @@ export function robotIstegi(bot, anahtar, n) {
   konus(bot.owner, `${bot.name} benden ${n} ${tanim.ad} istedi; getiriyorum.`);
   return iste(bot.owner, { tanim, n, kim: bot.id });
 }
+
+// v0.5.0: üs modülü (döngüsel içe aktarma olmasın diye dinamik)
+let __us = null;
+import("./us.js").then((m) => (__us = m)).catch(() => {});
+function await_us() { return __us; }

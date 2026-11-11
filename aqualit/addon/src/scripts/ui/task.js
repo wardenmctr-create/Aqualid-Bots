@@ -60,12 +60,18 @@ export async function robotMenu(player, bot) {
   if (bot.type === "kilicli") return rodRobot(player, bot);
   if (bot.type === "toplayici") {
     const r = await orgMenu(player, bot, [
+      { text: "§lÜssünü kur§r\n§7Platform, fırınlar, enerji, masa, sandık, kablolar (malzemesiz)", icon: "textures/items/org_platform", v: "us" },
       { text: "Çantası", icon: "textures/items/aqualit_chest", v: "inv" },
       { text: "Eve dön", icon: "textures/items/compass_item", v: "back" },
       { text: "İsim ver", icon: "textures/items/name_tag", v: "name" },
       { text: "Robotu topla", icon: robotIcon(bot.type, bot.model), v: "pick" },
     ]);
     if (!r?.v) return;
+    if (r.v === "us") {
+      const US = await import("../us.js");
+      (bot._isler ??= []).push(function* (o) { yield* US.usuSifirdanKur(o); });
+      return player.sendMessage(`§s${bot.name}§r üssünü kuracak.`);
+    }
     if (r.v === "inv") return bagMenu(player, { title: `§l${bot.name} · çanta`, container: () => bot.canta(), canEdit: () => V.dist(player.location, bot.loc) <= EDIT_RANGE });
     if (r.v === "back") return commandReturn(bot, false);
     if (r.v === "name") return renameRobot(player, bot);

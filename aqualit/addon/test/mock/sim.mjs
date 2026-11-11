@@ -1803,6 +1803,31 @@ if (run("us")) {
   const n = US.aktar([cid], [ucid], "minecraft:iron_ingot");
   let uz = 0; const uk = new SK.UnitContainer(ucid); for (let L = 0; L < uk.size; L++) { const it = uk.getItem(L); if (it?.typeId === "minecraft:iron_ingot") uz += it.amount; }
   check(n === 10 && uz === 10, "uzaktan aktarımla 10 demir uzak sandığa ışınlandı");
+  // v0.5.0: platform zemini toprakla aynı hizada, önünde panel; Organizatör üssü sıfırdan kendisi kurar
+  check(Math.abs(pe.location.y - (GROUND + 1 - 0.125)) < 1e-6 && ow.getEntities({ type: US.PANEL }).length === 1, "platform zemini toprak hizasında, önünde dokunmatik panel");
+  check(Math.abs(US.platformYeri(pe).y - (GROUND + 1)) < 1e-6, "Organizatör'ün yeri platformun üstü (içine gömülmez)");
+  for (const x of ow.getEntities({ type: US.PLATFORM })) x.remove();
+  for (const x of ow.getEntities({ type: US.PANEL })) x.remove();
+  give("aqualit:robot_toplayici");
+  ticks(12);
+  useOn("aqualit:robot_toplayici", { x: 120, y: GROUND, z: 120 }, "Up", { comp: "aqualit:robot_item", p: { type: "toplayici", model: 1 } });
+  ticks(5);
+  const org = myBots().filter((b) => b.type === "toplayici").pop();
+  check(!!org, "organizatör var");
+  // engebeli zemin
+  ow.setBlockType({ x: 126, y: GROUND + 1, z: 121 }, "minecraft:dirt");
+  ow.setBlockType({ x: 127, y: GROUND + 1, z: 121 }, "minecraft:dirt");
+  const gen2 = US.usuSifirdanKur(org);
+  let r2; let ad2 = 0; while (!(r2 = gen2.next()).done && ad2++ < 5000) { if (ad2 % 3 === 0) ticks(1); }
+  const pl2 = ow.getEntities({ type: US.PLATFORM })[0];
+  check(r2.value === true && !!pl2 && ow.getEntities({ type: US.PANEL }).length === 1, "Organizatör platformu malzemesiz kendisi kurdu");
+  const ag2 = US.agBul(pl2);
+  check(ag2.firinlar.length === 2 && ag2.guc && ag2.masalar.length === 1 && ag2.sandiklar.size === 1 && ag2.kablolar.length >= 5,
+    `üs ağı tam: ${ag2.firinlar.length} fırın, güç ${ag2.guc}, ${ag2.masalar.length} masa, ${ag2.sandiklar.size} sandık, ${ag2.kablolar.length} kablo`);
+  check(ag2.firinlar.every((f) => US.gucluMu(ow, f)), "fırınlar enerji bloğuna bağlı (güçlü)");
+  check(V3dist(org.loc, US.platformYeri(pl2)) < 0.6, "Organizatör platformdaki yerinde");
+  const hc = org.homeChest?.();
+  check(!hc || !!US.aktarimYakin(ow, V3floor(hc.location)), "evdeki sandığın yanına aktarım bloğu kondu");
 }
 
 // ---------------------------------------------------------------- v0.3.8 Keşif Haritası

@@ -112,22 +112,24 @@ def platform():
     for i in range(N):                     # dış kenarda turkuaz ışık şeridi
         for j in (2, N - 3):
             zemin[j][i] = 'ö'; zemin[i][j] = 'ö'
+    # v0.5.0: ortadaki daire artık zemine boyalı (yükseltilmiş daire Organizatör'ü içine gömüyordu)
+    for r, renk in ((24, '1'), (18, '3'), (12, 'P')):
+        for zz in range(N):
+            for xx in range(N):
+                d = math.hypot(xx - h + 0.5, zz - h + 0.5)
+                if d <= r:
+                    zemin[zz][xx] = renk if d < r - 1.5 else '&'
     kutu(f, 'root', 'zemin', (-h, 0, -h), (h, 2, h), base='%', top=zemin,
          front=[['&'] * N, ['ö' if x % 8 == 0 else '&' for x in range(N)]],
          back=[['&'] * N, ['ö' if x % 8 == 0 else '&' for x in range(N)]],
          left=[['&'] * N, ['ö' if x % 8 == 0 else '&' for x in range(N)]],
-         right=[['&'] * N, ['ö' if x % 8 == 0 else '&' for x in range(N)]], glow='ö')
+         right=[['&'] * N, ['ö' if x % 8 == 0 else '&' for x in range(N)]], glow='öP')
     # kenarlarda kablo yuvaları (her kenarda 3)
     for k in (-48, 0, 48):
         for ad, a, b in ((f'y_n{k}', (k - 3, 2, -h), (k + 3, 4, -h + 3)), (f'y_s{k}', (k - 3, 2, h - 3), (k + 3, 4, h)),
                          (f'y_w{k}', (-h, 2, k - 3), (-h + 3, 4, k + 3)), (f'y_e{k}', (h - 3, 2, k - 3), (h, 4, k + 3))):
             w, hh, d = (int(b[i] - a[i]) for i in range(3))
             kutu(f, 'root', ad, a, b, base='3', top=[['ö' if (i + j) % 2 == 0 else '3' for i in range(w)] for j in range(d)], glow='ö')
-    # ortada yükseltilmiş daire (Organizatör'ün yeri): kat kat
-    for r, y0, renk in ((24, 2, '1'), (18, 4, '3'), (12, 6, 'P')):
-        kutu(f, 'root', f'daire{r}', (-r, y0, -r), (r, y0 + 2, r), base=renk,
-             top=[[(renk if math.hypot(x - r + 0.5, z - r + 0.5) < r - 1.5 else '&') if math.hypot(x - r + 0.5, z - r + 0.5) <= r else ' '
-                   for x in range(2 * r)] for z in range(2 * r)], glow='P')
     # önde panel: ayak + eğik konsol + yarı saydam ekran
     kutu(f, 'root', 'panel_ayak', (-6, 2, 36), (6, 20, 42), base='%', front=pano(12, 18, '%', '&'))
     konsol = pano(24, 10, 'k', '&')
