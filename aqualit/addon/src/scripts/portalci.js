@@ -16,6 +16,7 @@ const MODLAR = { omuz: "Omzunda süzülüyor", serbest: "Yanında uçuyor", bekl
 const pcs = new Map();             // varlık kimliği -> { e, owner, mod, cirak }
 const portallar = new Map();       // portal kimliği -> { e, hedef: {dim, loc, yaw}, bitis }
 const gecti = new Map();           // varlık kimliği -> tik (portaldan yeni geçti, geri sekmesin)
+const seferde = new Set();         // Nether seferindeki robotlar: yalnız kendi portallarından geçer
 
 export const MALZEME = {
   kuvars: { ad: "Nether kuvarsı", bloklar: ["minecraft:quartz_ore"], esya: "minecraft:quartz" },
@@ -224,6 +225,7 @@ system.runInterval(() => {
       const tip = safe(() => ent.typeId, "");
       if (tip !== "minecraft:player" && tip !== "aqualit:robot" && tip !== "aqualit:kesif") continue;
       if (t - (gecti.get(ent.id) ?? -999) < 60) continue;
+      if (seferde.has(ent.id) && p.sahip !== ent.id) continue;
       const l = ent.location;
       const dx = l.x - p.loc.x, dz = l.z - p.loc.z;
       const derin = Math.abs(dx * n.x + dz * n.z), yan = Math.abs(dx * n.z - dz * n.x);
@@ -233,7 +235,7 @@ system.runInterval(() => {
 }, 2);
 
 /** Oyuncunun (ya da robotun) önüne iki yönlü portal açar: Üst Dünya <-> Nether (End'den Üst Dünya'ya). */
-export function* portalSeferi(kaynak, dimHedefId, sure = 20 * 60, hedefLoc = null) {
+export function* portalSeferi(kaynak, dimHedefId, sure = 20 * 60, hedefLoc = null, sahip = null) {
   const dim = kaynak.dimension;
   const l = kaynak.location;
   const yaw = safe(() => kaynak.getRotation().y, 0);
@@ -253,6 +255,7 @@ export function* portalSeferi(kaynak, dimHedefId, sure = 20 * 60, hedefLoc = nul
   if (!p1 || !p2) return null;
   portallar.get(p1.id).hedef = { dim: hedefDim.id, loc: varis, yaw };
   portallar.get(p2.id).hedef = { dim: dim.id, loc: on, yaw: (yaw + 180) % 360 };
+  if (sahip) { portallar.get(p1.id).sahip = sahip; portallar.get(p2.id).sahip = sahip; }
   return { p1, p2, on, varis };
 }
 
@@ -261,6 +264,7 @@ function* tasiyarak(b, p, hedef) {
   // Portalcı robotu omuzlarından tutup uçurur
   const dim = b.dim;
   for (let i = 0; i < 400; i++) {
+    if (safe(() => b.dim.id) !== dim.id) break;        // portaldan geçti: başka boyuta taşıma
     const l = b.loc;
     const d = V.dist(l, hedef);
     if (d < 0.6) break;
@@ -279,8 +283,9 @@ export function* netherIsi(b, p, tur, adet) {
   safe(() => p.e.setProperty("aqualit:kucuk", false));
   b.setStatus(`Portalcıyla Nether'e gidiyor (${m.ad})`);
   b.say(`Portalcım ile Nether'e geçiyorum: ${adet} ${m.ad} getireceğim.`);
-  const s = yield* portalSeferi(b.e, b.dim.id === "minecraft:nether" ? "minecraft:overworld" : "minecraft:nether", 20 * 60 * 6);
-  if (!s) { b.say("Portal açılamadı."); modAyarla(p, "cirak"); return; }
+  seferde.add(b.e.id);
+  const s = yield* portalSeferi(b.e, b.dim.id === "minecraft:nether" ? "minecraft:overworld" : "minecraft:nether", 20 * 60 * 6, null, b.e.id);
+  if (!s) { seferde.delete(b.e.id); b.say("Portal açılamadı."); modAyarla(p, "cirak"); return; }
   yield* tasiyarak(b, p, s.on);
   for (let i = 0; i < 40 && b.dim.id === geri.dim; i++) yield;
   if (b.dim.id === geri.dim) {           // geçemediyse doğrudan ışınla
@@ -308,11 +313,12 @@ export function* netherIsi(b, p, tur, adet) {
   const toplanan = sayi() - once;
   // dön
   b.setStatus("Portalla dönüyor");
-  const s2 = yield* portalSeferi(b.e, geri.dim, 20 * 30, geri.loc);
+  const s2 = yield* portalSeferi(b.e, geri.dim, 20 * 30, geri.loc, b.e.id);
   if (s2) yield* tasiyarak(b, p, s2.on);
   for (let i = 0; i < 40 && b.dim.id !== geri.dim; i++) yield;
   if (b.dim.id !== geri.dim) safe(() => b.e.teleport(geri.loc, { dimension: world.getDimension(geri.dim) }));
   yield;
+  seferde.delete(b.e.id);
   modAyarla(p, "cirak");
   b.say(`Döndüm! ${toplanan} ${m.ad} getirdim, sandığıma koyuyorum.`);
   yield* b.deposit();

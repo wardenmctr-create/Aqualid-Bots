@@ -1303,6 +1303,84 @@ if (run("tema")) {
   for (const e of [kn, ke, ko]) e.remove();
 }
 
+// ---------------------------------------------------------------- v0.4.1 hız çubuğu, biçime göre eşyalar
+if (run("hiz")) {
+  console.log("== Hız çubuğu 0-500 (canlı kare), tırmanma yalnız arazide, X-ray yalnız matkapta");
+  const KR = await import("./scripts/kesif_radar.js");
+  const KS = await import("./scripts/kesif.js");
+  check(KR.hizKaresi(500).includes("§4") && KR.hizKaresi(500).includes("§e!!"), "500'de kırmızı kare, içinde sarı ünlem");
+  check(KR.hizKaresi(100).includes("§a") && KR.hizKaresi(0).includes("§8"), "hıza göre kare rengi değişiyor");
+  check(KR.hizSeviyesi(5).etki === "speed" && KR.hizSeviyesi(0).etki === "slowness" && KR.hizSeviyesi(1) === null, "hız/yavaşlık seviyesi");
+  give("aqualit:robot_kesif");
+  useOn("aqualit:robot_kesif", { x: 20, y: GROUND, z: -30 }, "Up", { comp: "aqualit:robot_item", p: { type: "kesif" } });
+  ticks(5);
+  const ke = ow.getEntities({ type: "aqualit:kesif" }).filter((e) => e.getDynamicProperty("aq:sahip") === player.id).pop();
+  KS.transform(ke, "arazi", player);
+  ticks(40);
+  ke.getComponent("minecraft:rideable").addRider(player);
+  ticks(12);
+  const var_ = (id) => { for (let i = 0; i < 36; i++) if (player._inv.getItem(i)?.typeId === id) return true; return false; };
+  check(KS.formOf(ke) === "arazi" && (var_("aqualit:kesif_tirman_kapali") || var_("aqualit:kesif_tirman_acik")) && !var_("aqualit:kesif_xray"), "arazi aracında tırmanma eşyası var, X-ray yok");
+  KR.tirmanMenu(player);
+  ticks(2);
+  check(var_("aqualit:kesif_tirman_acik") && !player.messages.at(-1)?.includes("yalnız arazi"), "arazi aracında Tırmanma Modu açıldı");
+  KR.tirmanMenu(player);
+  // canlı hız formu
+  UI.answers.push(async (f) => {
+    const sl = f.items.find((i) => i.t === "slider");
+    const lb = f.items.filter((i) => i.t === "label").pop();
+    sl.v?.setData?.(500);
+    check(String(lb.v.getData()).includes("§e!!"), "çubuğu 500'e çekince kare canlı kırmızı + ünlem oldu");
+    f.items.find((i) => i.t === "button" && String(i.v).includes("Ayarla")).cb();
+  });
+  await KR.hizMenu(player);
+  check(Math.abs(ke.getDynamicProperty("aq:hiz") - 5) < 1e-9, "hız %500 kaydedildi");
+  // sürüş: hızlı dönüş = drift, ani yavaşlama = fren
+  const SU = await import("./scripts/surus.js");
+  ke.getVelocity = () => ({ x: 0, y: 0, z: 0.5 });
+  const a = SU.surusDurumu(ke, null);
+  ke._rot = { x: 0, y: (ke._rot?.y ?? 0) + 25 };
+  const b = SU.surusDurumu(ke, { yaw: a.yaw, hiz: 0.9 });
+  check(Math.abs(b.dn) > 20 && b.drift > 5 && b.fren > 0.3, "sürüş motoru drifti ve sert freni tanıyor");
+  const t0 = player.particles?.length ?? 0;
+  delete ke.getVelocity;
+  // matkap: X-ray eşyası gelir, tırmanma gider
+  const XR = await import("./scripts/xray.js");
+  XR.XR_AYAR.R = 1;
+  ke.getComponent("minecraft:rideable").ejectRider(player);
+  KS.transform(ke, "matkap", player);
+  ticks(40);
+  ke.getComponent("minecraft:rideable").addRider(player);
+  ticks(12);
+  check(var_("aqualit:kesif_xray") && !var_("aqualit:kesif_tirman_kapali") && !var_("aqualit:kesif_tirman_acik"), "matkapta X-ray eşyası var, tırmanma eşyası yok");
+  const p0 = { x: Math.floor(ke.location.x), y: GROUND - 3, z: Math.floor(ke.location.z) };
+  const tasTipi = ow.getBlock(p0).typeId;
+  ow.setBlockType({ x: p0.x + 1, y: p0.y, z: p0.z }, "minecraft:diamond_ore");
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes("Yarı saydam")) }));
+  comps.item["aqualit:device"].onUse({ source: player, itemStack: new ItemStack("aqualit:kesif_xray") }, { params: { kind: "xray" } });
+  for (let i = 0; i < 4; i++) { ticks(1); await new Promise((r) => setTimeout(r, 0)); }
+  ticks(400);
+  check(XR.xrayKipi(player) === "y" && ow.getBlock(p0).typeId === "aqualit:xr_" + tasTipi.split(":")[1] + "_y", `yarı saydam: ${tasTipi} hayalet taşa döndü`);
+  check(ow.getBlock({ x: p0.x + 1, y: p0.y, z: p0.z }).typeId === "minecraft:diamond_ore", "cevher olduğu gibi kaldı");
+  const B = await import("./scripts/blocks.js");
+  check(B.dropsFor(ow.getBlock(p0).typeId)[0]?.[0] === B.dropsFor(tasTipi)[0]?.[0] && B.isNatural(ow.getBlock(p0).typeId), "hayalet taş robotlar için asıl taş (aynı eşyayı düşürür)");
+  // ayarlar: taş dahil değil -> taş normal kalır
+  const k0 = tasTipi.split(":")[1];
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes("Ayarlar")) }));
+  UI.answers.push((f) => ({ canceled: false, formValues: f.fields.map((x) => !String(x.label).startsWith(XR.ADLAR[k0])) }));
+  await XR.xrayMenu(player, ke);
+  ticks(400);
+  check(ow.getBlock(p0).typeId === tasTipi, `ayarlardan ${XR.ADLAR[k0]} çıkarılınca normal göründü`);
+  player.setDynamicProperty("aq:xray_ayar", undefined);
+  XR.xrayAyarla(player, ke, "t");
+  ticks(400);
+  check(ow.getBlock(p0).typeId === "aqualit:xr_" + k0 + "_t", "tam saydam kipine geçti");
+  // matkaptan inince kapanır, taşlar geri döner
+  ke.getComponent("minecraft:rideable").ejectRider(player);
+  ticks(400);
+  check(!XR.xrayKipi(player) && ow.getBlock(p0).typeId === tasTipi && !var_("aqualit:kesif_xray"), "matkaptan inince X-ray kapandı, taşlar geri döndü");
+}
+
 // ---------------------------------------------------------------- v0.4.0 evcil dronlar
 if (run("evcil")) {
   console.log("== Evcil dronlar: basılı tut → omuzda; dokun → eşya; ölünce envantere; tarif robotu geri verir");

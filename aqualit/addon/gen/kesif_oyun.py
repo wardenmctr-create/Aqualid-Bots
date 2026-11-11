@@ -105,9 +105,10 @@ def kesif_bp():
             g['minecraft:movement'] = {'value': HIZ[f]}
             g['minecraft:movement.basic'] = {}
             g['minecraft:jump.static'] = {}
-            # v0.3.6: bir blok yükseğe kendiliğinden çıkar
-            g['minecraft:variable_max_auto_step'] = {'base_value': 1.0625, 'controlled_value': 1.0625,
-                                                     'jump_prevented_value': 1.0625}
+            # v0.3.6: bir blok yükseğe kendiliğinden çıkar; v0.4.1: arazi aracı (yapışkansız) 4 bloğa kadar
+            adim = 4.0625 if f == 'arazi' else 1.0625
+            g['minecraft:variable_max_auto_step'] = {'base_value': adim, 'controlled_value': adim,
+                                                     'jump_prevented_value': adim}
         else:
             # v0.3.6: robot hali öteki Aqualit robotları gibi etrafına ve oyuncuya bakar (yürümez; betik taşır)
             g['minecraft:movement'] = {'value': 0.25}
@@ -230,9 +231,22 @@ def kesif_rp():
                      'end': 'textures/entity/aqualit_kesif/kesif_end', 'end_glow': 'textures/entity/aqualit_kesif/kesif_end_glow'},
         'geometry': {'default': 'geometry.aqualit.kesif'},
         'animations': anims,
-        # v0.3.8: v.egim: inip çıkarken yumuşatılmış burun açısı (dikey hızdan; betikteki egim yalnız tırmanma ve uçuş)
+        # v0.4.1: 4 bloklu basamaklarda burun 45°'ye kadar kalkar. v0.3.8: v.egim: inip çıkarken yumuşatılmış burun açısı (dikey hızdan; betikteki egim yalnız tırmanma ve uçuş)
         'scripts': {'scale': f"q.variant == 0 ? 0.8 : {VS}",
-                    'pre_animation': ['v.egim = math.lerp(v.egim ?? 0, math.clamp(-q.vertical_speed * 6, -30, 30), 0.12);'],
+                    'pre_animation': [
+                        'v.egim = math.lerp(v.egim ?? 0, math.clamp(-q.vertical_speed * 7, -45, 45), 0.12);',
+                        # v0.4.1 sürüş motoru (arazi): hız, ivme, dönüş hızından drift açısı, virajda yatma,
+                        # ani frende öne dalıp yaylanma (yay-sönüm), gaz verince burun hafif kalkar
+                        'v.dt = math.clamp(q.delta_time, 0.001, 0.1);',
+                        'v.hiz = q.ground_speed;',
+                        'v.ivme = math.lerp(v.ivme ?? 0, (v.hiz - (v.onceki ?? v.hiz)) / v.dt, 0.25); v.onceki = v.hiz;',
+                        'v.dn = math.clamp(q.yaw_speed, -400, 400);',
+                        'v.kayma = math.lerp(v.kayma ?? 0, math.clamp(v.dn * 0.09 * math.min(v.hiz / 7, 1.4), -32, 32), 0.08);',
+                        'v.yatma = math.lerp(v.yatma ?? 0, math.clamp(-v.dn * 0.03 * math.min(v.hiz / 6, 1.2), -9, 9), 0.12);',
+                        'v.sh = v.sh ?? 0; v.sv = v.sv ?? 0;',
+                        'v.sv = v.sv + (-v.sh * 60 - v.sv * 7 + math.clamp(-v.ivme, -40, 40) * 2.2) * v.dt;',
+                        'v.sh = math.clamp(v.sh + v.sv * v.dt, -14, 14);',
+                    ],
                     'animate': ['gizle', 'tutucu', 'tema', 'ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
     }}}
@@ -386,7 +400,7 @@ def kesif_anims():
         'd_root': {'rotation': [P('egim'), 0, 0]}, 'd_prop': {'rotation': spin(900)}, 'd_radar': {'rotation': radar},
         'd_flag': {'rotation': wave}}}
     A['run_arazi'] = {'loop': True, 'bones': {
-        'a_root': {'rotation': [f"{P('egim')} + (v.egim ?? 0)", 0, 0]},
+        'a_root': {'rotation': [f"{P('egim')} + (v.egim ?? 0) + (v.sh ?? 0)", "v.kayma ?? 0", "v.yatma ?? 0"]},
         **{f'a_wheel_{w}': {'rotation': wheel} for w in ('fl', 'fr', 'bl', 'br')},
         'a_radar': {'rotation': radar}, 'a_flag': {'rotation': wave}}}
     A['run_matkap'] = {'loop': True, 'bones': {

@@ -34,7 +34,13 @@ const busy = new Set();      // dönüşmekte olan Keşifler
 const last = new Map();      // oyuncu -> { form, tick } (indiğinde yavaş düşüş için)
 const snd = (dim, id, p, o) => safe(() => dim.playSound(id, p, o));
 
-export const formOf = (e) => safe(() => e.getProperty("aqualit:form"), "robot");
+// v0.4.1: biçim iki yerde tutulur (varlık özelliği + dinamik özellik); oyunda özellik bazen eski değeri verdi
+// ("arazi aracındayken Tırmanma Modu 'yalnız arazi aracında' diyordu"). Dinamik özellik dönüşümde hemen yazılır.
+export const formOf = (e) => {
+  const d = safe(() => e.getDynamicProperty("aq:form"));
+  if (typeof d === "string" && d) return d;
+  return safe(() => e.getProperty("aqualit:form"), "robot") ?? "robot";
+};
 const ownerOf = (e) => safe(() => e.getDynamicProperty("aq:sahip"));
 export const ridersOf = (e) => safe(() => e.getComponent("minecraft:rideable")?.getRiders() ?? [], []);
 
@@ -220,6 +226,7 @@ export function transform(e, to, pl) {
     if (!safe(() => e.isValid, false)) return busy.delete(e.id);
     safe(() => e.triggerEvent(`aqualit:form_${to}`));
     safe(() => e.setProperty("aqualit:form", to));
+    safe(() => e.setDynamicProperty("aq:form", to));
     safe(() => e.setProperty("aqualit:gecis", false));
     safe(() => e.triggerEvent("aqualit:gecis_off"));
     safe(() => e.setProperty("aqualit:egim", 0));
@@ -304,7 +311,7 @@ function dig(v, fwd, mode, bakis) {
     const b = safe(() => dim.getBlock({ x, y, z }));
     if (!b) continue;
     const id = safe(() => b.typeId, "minecraft:air");
-    if (id === "minecraft:air" || /water|lava/.test(id) || UNBREAK.has(id) || KEEP.test(id)) continue;
+    if (id === "minecraft:air" || /water|lava/.test(id) || UNBREAK.has(id) || (KEEP.test(id) && !id.startsWith("aqualit:xr_"))) continue;
     safe(() => dim.runCommand(`setblock ${x} ${y} ${z} air destroy`));
     n++;
   }
@@ -334,7 +341,7 @@ function kazBakis(v, b) {
     const bl = safe(() => dim.getBlock({ x, y, z }));
     if (!bl) continue;
     const id = safe(() => bl.typeId, "minecraft:air");
-    if (id === "minecraft:air" || /water|lava/.test(id) || UNBREAK.has(id) || KEEP.test(id)) continue;
+    if (id === "minecraft:air" || /water|lava/.test(id) || UNBREAK.has(id) || (KEEP.test(id) && !id.startsWith("aqualit:xr_"))) continue;
     safe(() => dim.runCommand(`setblock ${x} ${y} ${z} air destroy`));
     n++;
   }

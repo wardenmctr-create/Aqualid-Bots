@@ -2,6 +2,15 @@
 import { safe, rand } from "./util.js";
 
 const M = (s) => "minecraft:" + s;
+// v0.4.1: X-ray hayalet blokları (aqualit:xr_<tür>_y|t) robotlar için asıl blok sayılır
+const XR_ASIL = { stone: "stone", deepslate: "deepslate", granite: "granite", diorite: "diorite", andesite: "andesite",
+  tuff: "tuff", calcite: "calcite", dirt: "dirt", netherrack: "netherrack", blackstone: "blackstone", basalt: "basalt",
+  end_stone: "end_stone" };
+export function asil(t) {
+  if (typeof t !== "string" || !t.startsWith("aqualit:xr_")) return t;
+  const k = t.slice(11, -2);
+  return XR_ASIL[k] ? M(XR_ASIL[k]) : t;
+}
 const set = (arr) => new Set(arr.map((s) => (s.includes(":") ? s : M(s))));
 
 export const AIR = set(["air", "void_air", "structure_void"]);
@@ -93,6 +102,7 @@ const NATURAL = set([
   "warped_nylium", "glowstone", "packed_ice", "ice", "sculk", "cinnabar", "sulfur",
 ]);
 export function isNatural(t) {
+  t = asil(t);
   if (NATURAL.has(t)) return true;
   if (t.endsWith("_terracotta") && !t.includes("glazed")) return true;
   if (t.endsWith("_ore") || t === M("ancient_debris") || t.startsWith("aqualit:") && t.endsWith("_ore")) return true;
@@ -101,6 +111,7 @@ export function isNatural(t) {
 
 /** Kazma süresi (tik). */
 export function mineTicks(t) {
+  t = asil(t);
   if (t === M("obsidian") || t === M("crying_obsidian")) return 60;
   if (t === M("ancient_debris")) return 40;
   if (t.endsWith("_ore") || t.startsWith("aqualit:")) return 14;
@@ -114,6 +125,7 @@ export function mineTicks(t) {
 }
 
 export function digSound(t) {
+  t = asil(t);
   if (t.endsWith("_log") || t.endsWith("_stem") || t.includes("planks") || t.includes("wood")) return "dig.wood";
   if (t.includes("gravel")) return "dig.gravel";
   if (t.includes("sand") && !t.includes("sandstone")) return "dig.sand";
@@ -164,6 +176,7 @@ export const VALUABLE = new Set(["elmas", "zumrut", "altin", "aqualit", "antik",
 
 /** Herhangi bir bloğun robotça kazıldığında bıraktığı eşyalar: [[id, adet], ...] */
 export function dropsFor(t, perm) {
+  t = asil(t);
   const ore = ORE_OF_BLOCK.get(t);
   if (ore) return [[ore.drop[0], rand(ore.drop[1], ore.drop[2])]];
   switch (t) {
@@ -322,6 +335,7 @@ const PROTECTED_SUFFIX = ["chest", "furnace", "_bed", "_door", "shulker_box", "b
   "enchanting_table", "hopper", "dispenser", "dropper", "lectern", "bookshelf", "_concrete", "wool", "lantern",
   "spawner", "bedrock", "end_portal", "portal", "command_block", "structure_block", "barrier", "jigsaw", "light_block"];
 export function isProtected(t) {
+  t = asil(t);
   if (t.startsWith("aqualit:") && !t.endsWith("_ore")) return true;
   if (t === M("bedrock") || t === M("barrier") || t === M("end_portal_frame") || t === M("reinforced_deepslate")) return true;
   for (const s of PROTECTED_SUFFIX) if (t.endsWith(s)) return true;

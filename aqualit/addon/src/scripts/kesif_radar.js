@@ -5,9 +5,11 @@
 // İkisi de yalnız binerken envanterdedir; inince geri alınır.
 import { world, system, ItemStack, LocationWaypoint } from "@minecraft/server";
 import { V, safe, clamp } from "./util.js";
-import { menu } from "./ui/forms.js";
+import { menu, modal } from "./ui/forms.js";
+import { CustomForm, ObservableNumber, ObservableString } from "@minecraft/server-ui";
 import { Yerler, Harita } from "./harita.js";
 import { KESIF_ID, formOf } from "./kesif.js";
+import { XRAY_ID, xrayKapat, xrayKipi } from "./xray.js";
 import { YAPI } from "./yapi_bilgi.js";
 import { ikon, yiginTara, kesifOf, hedefSec, otopilotBaslat, otopilotDur } from "./kesif_ai.js";
 import { selector } from "./konum.js";
@@ -22,19 +24,13 @@ const PIN = "textures/ui/aqualit_bas/pin_kesif";
 const TARAMA = 8;                 // oyuncunun çevresinde taranan yığın yarıçapı (yüklü olanlar)
 
 // ======================================================================= hız
-export const HIZLAR = [
-  { k: 0.5, ad: "Yavaş", not: "Dar yerler, mağaralar" },
-  { k: 1, ad: "Normal", not: "" },
-  { k: 1.5, ad: "Hızlı", not: "" },
-  { k: 2.5, ad: "Ekstra hızlı", not: "§eYalnız uçakta tavsiye edilir", yaratici: true },
-  { k: 4, ad: "Max hız", not: "§cYalnız uçakta tavsiye edilir", yaratici: true },
-];
-const yaratici = (pl) => safe(() => pl.getGameMode(), "Survival") === "Creative";
+// v0.4.1: beş seçenek yerine 0% ile 500% arası çubuk (10'ar 10'ar); altında hıza göre renk değiştiren kare
+export const HIZ_MIN = 0, HIZ_MAX = 500, HIZ_ADIM = 10;
 
-/** Keşif'in seçili hız çarpanı. Yaratıcı olmayan sürücüde en çok "Hızlı". */
+/** Keşif'in seçili hız çarpanı (0 – 5). */
 export function hizCarpani(v, pl) {
-  const k = safe(() => v.getDynamicProperty("aq:hiz"), 1) ?? 1;
-  return pl && !yaratici(pl) ? Math.min(k, 1.5) : k;
+  const k = Number(safe(() => v.getDynamicProperty("aq:hiz"), 1) ?? 1);
+  return Number.isFinite(k) ? Math.max(0, Math.min(5, k)) : 1;
 }
 
 function bindigi(pl) {
@@ -42,30 +38,62 @@ function bindigi(pl) {
   return v && safe(() => v.typeId, "") === KESIF_ID ? v : null;
 }
 
-/** Oyunun sürüş sistemi hız etkisine uyar: Hızlı = hız III, Ekstra = VIII, Max = XV, Yavaş = yavaşlık III. */
+/** Oyunun sürüş sistemi hız etkisine uyar: her hız seviyesi +%20, her yavaşlık seviyesi −%15. */
+export function hizSeviyesi(k) {
+  if (k > 1) return { etki: "speed", amp: Math.max(0, Math.round((k - 1) / 0.2) - 1) };
+  if (k < 1) return { etki: "slowness", amp: Math.max(0, Math.round((1 - k) / 0.15) - 1) };
+  return null;
+}
 export function hizUygula(v, k) {
   safe(() => v.removeEffect("speed"));
   safe(() => v.removeEffect("slowness"));
-  const sv = { 1.5: 2, 2.5: 7, 4: 14 }[k];
-  if (sv !== undefined) safe(() => v.addEffect("speed", 20 * 60 * 60 * 24, { amplifier: sv, showParticles: false }));
-  if (k === 0.5) safe(() => v.addEffect("slowness", 20 * 60 * 60 * 24, { amplifier: 2, showParticles: false }));
+  const s = hizSeviyesi(k);
+  if (s) safe(() => v.addEffect(s.etki, 20 * 60 * 60 * 24, { amplifier: s.amp, showParticles: false }));
+}
+
+/** Hız karesi: hıza göre renk; 500'de kırmızı, ortasında sarı ünlem. */
+export function hizKaresi(yuzde) {
+  const renk = yuzde <= 0 ? "§8" : yuzde < 100 ? "§b" : yuzde === 100 ? "§a" : yuzde <= 200 ? "§e" : yuzde <= 300 ? "§6"
+    : yuzde < 500 ? "§c" : "§4";
+  const K = "██████";
+  const orta = yuzde >= 500 ? `${renk}██§l§e!!§r${renk}██` : renk + K;
+  return [`${renk}${K}`, orta, `${renk}${K}`, `§f§l%${yuzde}`].join("\n");
+}
+
+function hizKaydet(pl, v, yuzde) {
+  const k = yuzde / 100;
+  safe(() => v.setDynamicProperty("aq:hiz", k));
+  hizUygula(v, k);
+  const uyari = k > 1.5 && formOf(v) !== "ucak" ? " §e(Bu hız uçakta tavsiye edilir.)" : yuzde === 0 ? " §e(araç durur)" : "";
+  safe(() => pl.onScreenDisplay.setActionBar(`§bHız: §f%${yuzde}${uyari}`));
+  safe(() => v.dimension.playSound("random.click", v.location, { pitch: 0.6 + k * 0.12 }));
 }
 
 export async function hizMenu(pl) {
   const v = bindigi(pl);
   if (!v) return safe(() => pl.sendMessage("§eHız sayacı yalnız Keşif'e binince çalışır."));
-  const cur = hizCarpani(v, pl);
-  const list = HIZLAR.filter((h) => !h.yaratici || yaratici(pl));
-  const r = await menu(pl, "§lHız Sayacı", `§7Şu an: §f${list.find((h) => h.k === cur)?.ad ?? "Normal"}`,
-    list.map((h) => ({ text: `${h.k === cur ? "§l§b» " : ""}${h.ad} §7(×${h.k})${h.not ? `\n${h.not}` : ""}`, v: h.k,
-      icon: `textures/items/kesif_hiz` })));
-  if (!r || !safe(() => v.isValid, false)) return;
-  safe(() => v.setDynamicProperty("aq:hiz", r.v));
-  hizUygula(v, r.v);
-  const h = HIZLAR.find((x) => x.k === r.v);
-  const uyari = r.v > 1.5 && formOf(v) !== "ucak" ? " §e(Yalnız uçakta tavsiye edilir.)" : "";
-  safe(() => pl.onScreenDisplay.setActionBar(`§bHız: §f${h.ad} §7(×${h.k})${uyari}`));
-  safe(() => v.dimension.playSound("random.click", v.location, { pitch: 0.8 + r.v * 0.15 }));
+  const cur = Math.round(hizCarpani(v, pl) * 100 / HIZ_ADIM) * HIZ_ADIM;
+  // canlı form: çubuğu kaydırdıkça alttaki kare renk değiştirir
+  try {
+    const deger = new ObservableNumber(cur, { clientWritable: true });
+    const kare = new ObservableString(hizKaresi(cur));
+    const f = new CustomForm(pl, "§lHız Sayacı");
+    f.slider("Hız (%)", deger, HIZ_MIN, HIZ_MAX, { step: HIZ_ADIM });
+    f.label(kare);
+    deger.subscribe((n) => kare.setData(hizKaresi(Math.round(Number(n) / HIZ_ADIM) * HIZ_ADIM)));
+    let tamam = false;
+    f.button("§lAyarla", () => { tamam = true; safe(() => f.close()); });
+    f.closeButton();
+    await f.show();
+    if (!tamam || !safe(() => v.isValid, false)) return;
+    const yuzde = Math.max(HIZ_MIN, Math.min(HIZ_MAX, Math.round(Number(deger.getData()) / HIZ_ADIM) * HIZ_ADIM));
+    return hizKaydet(pl, v, yuzde);
+  } catch (e) {
+    // yedek: canlı form açılamazsa düz çubuk (kare açılıştaki hızı gösterir)
+    const r = await modal(pl, "§lHız Sayacı", [{ type: "slider", label: `Hız (%)\n${hizKaresi(cur)}`, min: HIZ_MIN, max: HIZ_MAX, step: HIZ_ADIM, value: cur }], "Ayarla");
+    if (!r || !safe(() => v.isValid, false)) return;
+    return hizKaydet(pl, v, Math.max(HIZ_MIN, Math.min(HIZ_MAX, Number(r[0]) || 0)));
+  }
 }
 
 // ======================================================================= radar
@@ -310,7 +338,10 @@ const uyarildi = new Set();
 export function tirmanMenu(pl, arac) {
   const v = bindigi(pl) ?? arac;
   if (!v) return safe(() => pl.sendMessage("§eTırmanma Modu yalnız Keşif'in arazi aracına binince çalışır."));
-  if (formOf(v) !== "arazi") return safe(() => pl.onScreenDisplay.setActionBar("§eTırmanma Modu yalnız arazi aracında çalışır"));
+  if (formOf(v) !== "arazi") {
+    const ozellik = safe(() => v.getProperty("aqualit:form"), "?");
+    return safe(() => pl.sendMessage(`§eTırmanma Modu yalnız arazi aracında çalışır. §8(teşhis: araç biçimi ${formOf(v)} / ${ozellik})`));
+  }
   const acik = !tutucuAcik(v);
   tutucuAyarla(v, acik);
   tirmanEsyasi(pl, v);
@@ -325,7 +356,25 @@ function esyalariVer(pl, v) {
   const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
   if (!inv) return;
   otopilotEsyasi(pl, v);
-  tirmanEsyasi(pl, v);
+  // v0.4.1: her biçimin kendi eşyası: Tırmanma yalnız arazi aracında, X-ray yalnız matkapta
+  const f = formOf(v);
+  if (f === "arazi") tirmanEsyasi(pl, v);
+  else for (let i = 0; i < inv.size; i++) {
+    const t = safe(() => inv.getItem(i)?.typeId);
+    if (t === TIR_ACIK || t === TIR_KAPALI) safe(() => inv.setItem(i));
+  }
+  if (f === "matkap") {
+    if (envanterde(inv, XRAY_ID) < 0) {
+      const st = new ItemStack(XRAY_ID, 1);
+      safe(() => (st.keepOnDeath = false));
+      safe(() => (st.lockMode = "inventory"));
+      safe(() => inv.addItem(st));
+    }
+  } else {
+    const i = envanterde(inv, XRAY_ID);
+    if (i >= 0) safe(() => inv.setItem(i));
+    if (xrayKipi(pl)) xrayKapat(pl);
+  }
   for (const id of [RADAR, HIZ]) {
     if (envanterde(inv, id) >= 0) continue;
     const st = new ItemStack(id, 1);
@@ -339,8 +388,9 @@ function esyalariAl(pl) {
   if (!inv) return;
   for (let i = 0; i < inv.size; i++) {
     const t = safe(() => inv.getItem(i)?.typeId);
-    if (t === RADAR || t === HIZ || t === OTO_ACIK || t === OTO_KAPALI || t === TIR_ACIK || t === TIR_KAPALI) safe(() => inv.setItem(i));
+    if (t === RADAR || t === HIZ || t === OTO_ACIK || t === OTO_KAPALI || t === TIR_ACIK || t === TIR_KAPALI || t === XRAY_ID) safe(() => inv.setItem(i));
   }
+  if (xrayKipi(pl)) xrayKapat(pl);
 }
 
 system.runInterval(() => {

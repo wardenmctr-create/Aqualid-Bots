@@ -1,7 +1,7 @@
 # Aqualit Robotları — Claude Code çalışma rehberi
 
-Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.4.0**
-(Portalcı, evcil dronlar, Organizatör Yardımcısı ve üssü, yeni vizör, tepeden kamera haritası, uzaktan izleme; 0.3.9: matkap ve cevher dürbünü; Keşif düzeltmeleri, uçan binek sistemi, arazi Tırmanma Modu; 0.3.5: mini tarama dronları; 0.3.2: takip, otopilot, 3B eşyalar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
+Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.4.1**
+(matkap X-ray, hız çubuğu 0-500, arazi sürüş motoru ve 4 blok basamak; 0.4.0: Portalcı, evcil dronlar, Organizatör Yardımcısı ve üssü, yeni vizör, tepeden kamera haritası, uzaktan izleme; 0.3.9: matkap ve cevher dürbünü; Keşif düzeltmeleri, uçan binek sistemi, arazi Tırmanma Modu; 0.3.5: mini tarama dronları; 0.3.2: takip, otopilot, 3B eşyalar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
 Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 
 ## Kullanıcı (kalıcı istekler — her oturumda uy)
@@ -110,6 +110,13 @@ ortam değişkeniyle başka yer gösterilebilir.
   `aqualit:n/s/w/e/u/d` yok/var, kemik görünürlüğü), `aqualit_aktarim`, platform varlığı `aqualit:org_platform`.
   Blok durumlarında bool/int şemadan geçmiyor: metin değer kullan.
 - Organizatör vizörü: `robot.py` `vz_*` parçaları; cam `visor_cam` kemiğinde, ayrı render controller (alphablend).
+
+### v0.4.1 modülleri
+- `xray.js` + `gen/xray.py`: hayalet taşlar `aqualit:xr_<tür>_y|t` (`fillBlocks` + `includeTypes`, yığın dilimi 16x16x128,
+  tik başına 6 çağrı), ayar `aq:xray_ayar`, geri çevrilecekler `aq:xray_kalan`. `blocks.js asil()` hayaleti asıl sayar.
+  Matkap `KEEP` hayaletleri kazar. Eşya yalnız matkapta (`kesif_radar.js esyalariVer`).
+- `kesif.js formOf`: biçim `aq:form` dinamik özelliği + varlık özelliği. Hız: `aq:hiz` 0-5, `hizMenu` canlı CustomForm.
+- `surus.js` toz/ses; gövde hareketi `gen/kesif_oyun.py` pre_animation (`v.kayma`, `v.yatma`, `v.sh`).
 
 ## Kodlama kuralları
 

@@ -5,6 +5,7 @@
 import { world, system, BlockVolume } from "@minecraft/server";
 import { safe } from "./util.js";
 import { CEVHER } from "./harita_glif.js";
+import { formOf } from "./kesif.js";
 
 const KESIF_ID = "aqualit:kesif";
 const GEN = 5;          // sağa-sola 5 sütun (11 genişlik)
@@ -62,7 +63,7 @@ export function durbun(v) {
 system.runInterval(() => {
   for (const pl of world.getAllPlayers()) {
     const v = ridingKesif(pl);
-    if (!v || safe(() => v.getProperty("aqualit:form")) !== "matkap") continue;
+    if (!v || formOf(v) !== "matkap") continue;
     const { satirlar, en } = durbun(v);
     const not = en ? `§e${CEVHER[en.c[0]]} §l${en.c[2]}§r§e ${en.uz} blok ${en.dy > 0 ? `(${en.dy} yukarıda)` : en.dy < 0 ? `(${-en.dy} aşağıda)` : "(aynı hizada)"}`
       : "§7Yakında cevher yok";

@@ -249,6 +249,19 @@ def particles():
                 'uv': {**tex, 'uv': [48, 0], 'uv_size': [16, 16]}},
             'minecraft:particle_appearance_tinting': {'color': renk + ['math.min(1, (1 - variable.particle_age / variable.particle_lifetime) * 4)']},
         }
+    # v0.4.1: arazi aracı tekerlek tozu (renk zemine göre: variable.r/g/b; miktar: variable.n)
+    P['toz'] = {**once,
+        'minecraft:emitter_rate_instant': {'num_particles': 'variable.n'},
+        'minecraft:emitter_shape_sphere': {'radius': 0.35, 'surface_only': False, 'direction': 'outwards'},
+        'minecraft:particle_initial_speed': 'math.random(0.6, 1.6)',
+        'minecraft:particle_motion_dynamic': {'linear_acceleration': [0, 0.9, 0], 'linear_drag_coefficient': 2.2},
+        'minecraft:particle_lifetime_expression': {'max_lifetime': 'math.random(0.6, 1.2)'},
+        'minecraft:particle_appearance_billboard': {
+            'size': ['0.25 + variable.particle_age * 0.9'] * 2,
+            'facing_camera_mode': 'rotate_xyz', 'uv': {**tex, 'uv': [32, 16], 'uv_size': [16, 16]}},
+        'minecraft:particle_appearance_tinting': {'color': ['variable.r', 'variable.g', 'variable.b',
+                                                            '0.75 * (1 - variable.particle_age / variable.particle_lifetime)']},
+    }
     out = {}
     for k, comps in P.items():
         out[k] = {'format_version': '1.10.0', 'particle_effect': {
@@ -265,4 +278,5 @@ PARTICLE_VARS = {
     'parlama': ['boy'],
     'kivilcim': [], 'kubbe_parilti': [], 'golge_duman': [],
     'cerceve': ['yon', 'uzun'], 'cerceve_on': ['yon', 'uzun'],
+    'toz': ['n', 'r', 'g', 'b'],
 }
