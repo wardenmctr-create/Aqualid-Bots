@@ -92,8 +92,8 @@ def portal_bp():
 def portalci_rp():
     return {'format_version': '1.10.0', 'minecraft:client_entity': {'description': {
         'identifier': PID,
-        # v0.4.6: tüm gövde alphablend'de oyunda bozuk çiziliyordu (yüzler sırasız): düz malzeme, cam opak
-        'materials': {'default': 'entity_alphatest', 'glow': 'copper_golem_eyes'},
+        # cam yarı saydam (evcil çırak dronla aynı malzeme)
+        'materials': {'default': 'entity_alphablend', 'glow': 'copper_golem_eyes'},
         'textures': {'default': 'textures/entity/aqualit_portalci/portalci',
                      'glow': 'textures/entity/aqualit_portalci/portalci_glow'},
         'geometry': {'default': 'geometry.aqualit.portalci'},
@@ -119,7 +119,7 @@ def portal_rp():
 def render_ctrl():
     P = "q.property('aqualit:buyuk')"
     return {'format_version': '1.10.0', 'render_controllers': {
-        # v0.4.6: tek kare doku (uv_anim'li 8 karelik şerit oyunda bozuk görünüyordu)
+        # v0.4.6: tek kare doku (uv_anim'li 8 karelik şerit oyunda bozuk görünüyordu); girdaplar kemikle döner
         'controller.render.aqualit.portalci': {'geometry': 'Geometry.default', 'materials': [{'*': 'Material.default'}],
                                                'textures': ['Texture.default']},
         'controller.render.aqualit.portalci_glow': {'geometry': 'Geometry.default', 'materials': [{'*': 'Material.glow'}],
@@ -138,6 +138,8 @@ def render_ctrl():
 
 def animations():
     per = {f'per_{a}': {'rotation': [0, f"{'' if a in ('fl', 'br') else '-'}q.life_time * 900", 0]} for a in ('fl', 'fr', 'bl', 'br')}
+    per['girdap'] = {'rotation': [0, 0, 'q.life_time * -200']}       # v0.4.8: girdap diski döner (renkler sabit)
+    per['kure_b'] = {'rotation': [0, 'q.life_time * 140', 0]}
     per['govde'] = {'position': [0, 'math.sin(q.life_time * 120) * 0.8', 0],
                     'rotation': ['math.sin(q.life_time * 120) * 3 + (q.has_rider ? 8 : 0)', 0, 0]}
     return {'format_version': '1.8.0', 'animations': {
@@ -154,7 +156,8 @@ def build(RP, BP, wj, GEN):
     os.makedirs(f'{RP}/textures/entity/aqualit_portalci', exist_ok=True)
     os.makedirs(f'{RP}/textures/entity/aqualit_portal', exist_ok=True)
     os.makedirs(f'{RP}/models/entity', exist_ok=True)
-    g, t, gl = K.build(forms=[PC.model_portalci(True, 0.0)], W=256, ident='geometry.aqualit.portalci')
+    g, t, gl = K.build(forms=[PC.model_portalci(True, 0.0, donen=True)], W=256, ident='geometry.aqualit.portalci')
+    _cam_saydam(t)
     geo, texs, glows = g, [t], [gl]
     t.save(f'{RP}/textures/entity/aqualit_portalci/portalci.png')
     gl.save(f'{RP}/textures/entity/aqualit_portalci/portalci_glow.png')

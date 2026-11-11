@@ -25,7 +25,8 @@ def girdap(n, t=0.0):
     return g
 
 
-def model_portalci(cam=True, t=0.0):
+def model_portalci(cam=True, t=0.0, donen=False):
+    """donen: girdaplar ayrı kemikte (v0.4.8): renkleri sabit pikseller, parça olarak döner (animasyonla)."""
     f = Form('portalci', 'Portalcı')
     f.bone('root', None, (0, 0, 0))
     f.bone('govde', 'root', (0, 10, 0))
@@ -45,11 +46,23 @@ def model_portalci(cam=True, t=0.0):
     kutu(f, 'govde', 'serit', (-6.5, 6, -5.5), (6.5, 7, 5.5), base='ğ', glow='ğ', top=fill(13, 11, 'ş'))
     kutu(f, 'govde', 'alin', (-1, 13, 5), (1, 15, 6), base='ğ', glow='ğü', front=rows('üğ', 'ğş'))
     # arkada 1 piksel kalınlığında dönen portal merceği (gövdenin arka yüzüne yapışık disk)
-    kutu(f, 'govde', 'mercek', (-3.5, 7, -6), (3.5, 14, -5), base='3', glow='ğüÇöşç', back=girdap(7, t),
-         front=fill(7, 7, '3'))
+    if donen:
+        # girdap diski kendi kemiğinde döner (köşeler ve kenarlar saydam: yuvarlak disk; renkler sabit)
+        f.bone('girdap', 'govde', (0, 10.5, -6))
+        g = [[(' ' if c == 'ç' else c) for c in r] for r in girdap(7, 0.0)]
+        bos7 = fill(7, 1, ' ')
+        kutu(f, 'girdap', 'girdap_disk', (-3.5, 7, -6), (3.5, 14, -5), base='ğ', glow='ğüÇöş', back=g,
+             front=[r[:] for r in g], left=fill(1, 7, ' '), right=fill(1, 7, ' '), top=bos7, bottom=[r[:] for r in bos7])
+    else:
+        kutu(f, 'govde', 'mercek', (-3.5, 7, -6), (3.5, 14, -5), base='3', glow='ğüÇöşç', back=girdap(7, t),
+             front=fill(7, 7, '3'))
     # tepede küçük girdap küresi
     kutu(f, 'govde', 'anten', (-0.5, 15, -0.5), (0.5, 17, 0.5), base='%')
-    kutu(f, 'govde', 'kure', (-1.5, 17, -1.5), (1.5, 20, 1.5), base='ğ', glow='ğüÇöşç', front=girdap(3, t),
+    kb = 'govde'
+    if donen:
+        f.bone('kure_b', 'govde', (0, 18.5, 0))
+        kb = 'kure_b'
+    kutu(f, kb, 'kure', (-1.5, 17, -1.5), (1.5, 20, 1.5), base='ğ', glow='ğüÇöşç', front=girdap(3, t),
          back=girdap(3, t + .3), left=girdap(3, t + .5), right=girdap(3, t + .7), top=girdap(3, t))
     # köşe kolları + halkalı yatay pervaneler (yarıçap 5)
     for ad, sx, sz in (('fl', 1, 1), ('fr', -1, 1), ('bl', 1, -1), ('br', -1, -1)):
