@@ -200,10 +200,14 @@ ekle("savas_analizi", 38, "Savaş analizi", 5, 30, 30, (b, ctx) => (ctx.sev >= 4
 });
 ekle("taktik_gorus", 39, "Taktik görüş", 5, 25, 20, (b, ctx) => (ctx.count >= 3 ? 42 : 0), function* (b) {
   pay(b, "taktik_gorus");
-  for (const e of enemiesAround(b, b.loc, 24)) safe(() => e.addEffect("glowing", 15 * T, { showParticles: false }));
+  // Bedrock'ta "parlama" etkisi yok: düşmanların tepesinde 15 sn ışık işareti (duvar arkasından da görünür parçacık)
   const o = ownerOf(b);
   safe(() => o?.onScreenDisplay.setActionBar(`§s${b.name}§r: ${enemiesAround(b, b.loc, 24).length} düşman işaretlendi`));
-  yield* wait(4); endCast(b);
+  endCast(b);
+  for (let t = 0; t < 15 * T; t += 10) {
+    for (const e of enemiesAround(b, b.loc, 24)) FX.parlama(b.dim, up(e.location, 2.4), 0.45);
+    yield* wait(10);
+  }
 });
 // ---- Nanobotlar (41–45)
 ekle("nanobot_surusu", 41, "Nanobot sürüsü", 5, 30, 50, (b, ctx) => (ctx.count >= 5 ? 50 + ctx.count * 3 : 0), function* (b) {
