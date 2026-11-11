@@ -215,7 +215,7 @@ export async function gearForm(player, b, group) {
     { type: "slider", label: "Hız", min: 1, max: 10, step: 1, value: clamp(s.hiz, 1, 10) },
     { type: "slider", label: "Enerji (güçler için)", min: 10, max: 1000, step: 10, value: clamp(s.enerji, 10, 1000) },
     { type: "slider", label: "Durum ciddiyeti (hangi güçleri kullanabilir)", min: 1, max: 100, step: 1, value: clamp(s.ciddiyet ?? 100, 1, 100) },
-    { type: "toggle", label: "§cDurum ciddiyeti %101§r (güç güncellemesiyle çalışır)", value: !!s.mod101 },
+    { type: "toggle", label: "§cDurum ciddiyeti %101§r (10 sn zaman durur, düşmanları temizler)", value: !!s.mod101 },
   ], "Kaydet");
   if (!v) return;
   const [lvlIdx, resetToLevel, can, dmgI, hiz, enerji, ciddiyet, mod101] = v;

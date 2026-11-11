@@ -672,7 +672,7 @@ if (run("guc")) {
   check(bot && bot.model === 5, "seviye 5 kılıçlı doğdu");
   await import("./scripts/powers2.js"); await import("./scripts/powers3.js");
   check(P.unlocked(1).length === 0 && P.unlocked(2).length === 2 && P.unlocked(3).length === 4
-    && P.unlocked(4).length === 13 && P.unlocked(5).length === 50, `güçler seviyelere göre açılıyor (${[1, 2, 3, 4, 5].map((m) => P.unlocked(m).length).join("/")})`);
+    && P.unlocked(4).length === 13 && P.unlocked(5).length === 51, `güçler seviyelere göre açılıyor (${[1, 2, 3, 4, 5].map((m) => P.unlocked(m).length).join("/")})`);
   player.teleport({ x: 41.5, y: G, z: 41.5 });
   const st0 = K.getStats(bot);
   K.applyStats(bot, { ...st0, guc: false }, false); // elle denemeler: kendi başına güç kullanmasın
@@ -817,6 +817,14 @@ if (run("guc")) {
     let kombo = null;
     for (let t = 0; t < 60 && !kombo; t++) { system.tick(); if (P.KOMBOLAR.some((k) => k.id === tek.pw.castName)) kombo = tek.pw.castName; }
     check(!!kombo, `kalabalıkta kombo kullandı (${kombo})`);
+    clear();
+    // %101 modu
+    for (let t = 0; t < 600 && tek.pw.cast; t++) system.tick();
+    tek.pw.cd = {}; tek.pw.cast = null;
+    const zs = [[46, 40], [47, 42], [44, 46]].map(([x, z]) => spawn("minecraft:zombie", x, z));
+    check(P.usePower(tek, "mod101"), "%101 modu başladı");
+    for (let t = 0; t < 260 && tek.pw.cast; t++) system.tick();
+    check(zs.every((z) => (z._damage ?? 0) >= 9999 || !z.isValid) && !player._cam.set, `%101: düşmanlar yok edildi, kamera geri geldi (${zs.map((z) => z._damage ?? 0).join("/")})`);
     clear();
   }
 }
