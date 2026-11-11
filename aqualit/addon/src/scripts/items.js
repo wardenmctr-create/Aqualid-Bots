@@ -263,6 +263,26 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
     "aqualit:command_rod": "rod", "aqualit:tuning_gear": "gear", [KIT_ID]: "kit",
   };
   const kind = devices[itemId];
+  // v0.4.2: eğilip elindeki eşyayla robota dokun: eşyanın hepsini robota verir (çantasına)
+  if (!kind && itemId && player.isSneaking && !itemId.startsWith("aqualit:robot_")) {
+    ev.cancel = true;
+    if (!debounce(player, 10)) return;
+    const slot = player.selectedSlotIndex;
+    system.run(() => {
+      const bot = getBot(target);
+      if (!bot) return;
+      if (bot.owner && bot.owner !== player.id) return player.sendMessage("§cBu robot senin değil.");
+      const inv = safe(() => player.getComponent("minecraft:inventory")?.container);
+      const it = safe(() => inv.getItem(slot));
+      if (!it) return;
+      const rest = bot.addStack(it);
+      const verilen = it.amount - (rest?.amount ?? 0);
+      safe(() => inv.setItem(slot, rest ?? undefined));
+      safe(() => player.playSound("random.pop", { pitch: 1.4 }));
+      bot.say(verilen ? `${verilen} eşyayı aldım, çantama koydum.` : "Çantam dolu.");
+    });
+    return;
+  }
   if (!kind) return;
   ev.cancel = true;
   if (!debounce(player)) return;

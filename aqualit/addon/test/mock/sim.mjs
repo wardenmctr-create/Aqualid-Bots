@@ -1423,6 +1423,41 @@ if (run("hiz")) {
   check(!XR.xrayKipi(player) && ow.getBlock(p0).typeId === tasTipi && !var_("aqualit:kesif_xray"), "matkaptan inince X-ray kapandı, taşlar geri döndü");
 }
 
+// ---------------------------------------------------------------- v0.4.2 küçük istekler
+if (run("kucuk")) {
+  console.log("== Küçük istekler: eğilip robota eşya ver, geçerken sandığa bırak, bana getir");
+  give("aqualit:robot_madenci");
+  useOn("aqualit:robot_madenci", { x: -30, y: GROUND, z: 30 }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
+  ticks(5);
+  const b = myBots().filter((x) => x.type === "madenci").pop();
+  // eğilip elindeki eşyayla dokun
+  give("minecraft:bread", 5, 2);
+  ticks(12);                                   // eşya kullanımı arası bekleme (debounce)
+  player.isSneaking = true;
+  world.beforeEvents.playerInteractWithEntity.fire({ player, target: b.e, itemStack: player._inv.getItem(2), cancel: false });
+  ticks(3);
+  player.isSneaking = false;
+  check(b.count("minecraft:bread") === 5 && !player._inv.getItem(2), "eğilip ekmekle dokununca robota 5 ekmek verildi");
+  // geçerken bırak: çanta yarıdan dolu, sandığın yanında
+  const GB = await import("./scripts/gecerken.js");
+  for (let i = 0; i < 20; i++) b.addItem("minecraft:dirt", 64);
+  b.jobName = "gorev";
+  const ch = b.homeChest();
+  b.e.teleport({ x: ch.location.x + 1.5, y: ch.location.y, z: ch.location.z + 0.5 });
+  const n = GB.gecerkenBirak(b);
+  b.jobName = "bekleme";
+  check(n > 0 && b.count("minecraft:dirt") < 20 * 64, `geçerken sandığa ${n} eşya bıraktı`);
+  // bana getir
+  const J = await import("./scripts/jobs.js");
+  b.task = { type: "madenci", items: [], finish: "bana" };
+  b.addItem("minecraft:coal", 7);
+  player.teleport({ x: b.loc.x + 3, y: b.loc.y, z: b.loc.z });
+  const gen = J.finishJob(b, {});
+  let r, adim = 0; while (!(r = gen.next()).done && adim++ < 4000) {}
+  let komur = 0; for (let i = 0; i < 36; i++) { const it = player._inv.getItem(i); if (it?.typeId === "minecraft:coal") komur += it.amount; }
+  check(komur === 7, "iş bitince 'bana getir': 7 kömür oyuncuya geldi");
+}
+
 // ---------------------------------------------------------------- v0.4.0 evcil dronlar
 if (run("evcil")) {
   console.log("== Evcil dronlar: basılı tut → omuzda; dokun → eşya; ölünce envantere; tarif robotu geri verir");

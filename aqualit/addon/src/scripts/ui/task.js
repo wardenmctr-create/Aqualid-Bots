@@ -232,7 +232,7 @@ async function minerTask(player, bot) {
   if (!items) return null;
   const o = await modal(player, "Madenci · seçenekler", [
     { type: "dropdown", label: "Ararken güzel bir şey bulursa (elmas, altın...)", items: ["Al", "Alma", "Bana sor"], value: 0 },
-    { type: "dropdown", label: "İş bitince", items: ["Hemen sandığa getir", "Fırında eritip sandığa koy"], value: 0 },
+    { type: "dropdown", label: "İş bitince", items: ["Hemen sandığa getir", "Fırında eritip sandığa koy", "Bana getir"], value: 0 },
     { type: "toggle", label: "Kazdığı taşları da topla", value: false },
     { type: "dropdown", label: "Sandıktan en fazla uzaklık", items: DIST_LABELS, value: distIndex(bot.maxDist ?? 256) },
   ], "Başla");
@@ -240,7 +240,7 @@ async function minerTask(player, bot) {
   return {
     type: "madenci", mode: "normal", items,
     bonus: ["al", "alma", "sor"][o[0]] ?? "al",
-    finish: o[1] === 1 ? "smelt" : "chest",
+    finish: o[1] === 1 ? "smelt" : o[1] === 2 ? "bana" : "chest",
     stone: !!o[2],
     maxDist: DIST_OPTS[o[3]] ?? 256,
   };

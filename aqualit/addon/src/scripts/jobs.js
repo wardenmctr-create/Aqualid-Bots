@@ -32,7 +32,34 @@ function summary(task, got, names) {
 }
 
 /** Görev bitince: eve dön, gerekirse erit, sandığa koy, haber ver. */
+/** v0.4.2 "İş bitince: bana getir": sahibini bulur, topladıklarını envanterine verir, sonra eve döner. */
+function* banaGetir(bot, keep) {
+  const pl = world.getAllPlayers().find((p) => p.id === bot.owner);
+  if (!pl || safe(() => pl.dimension.id) !== bot.dim.id) return false;
+  bot.setStatus("Sana getiriyor");
+  yield* bot.travelTo(V.floor(pl.location), { near: 2 });
+  if (V.dist(bot.loc, pl.location) > 5) return false;
+  const inv = safe(() => pl.getComponent("minecraft:inventory")?.container);
+  const ci = bot.inv;
+  if (!inv || !ci) return false;
+  let n = 0;
+  for (let i = 0; i < ci.size; i++) {
+    const it = ci.getItem(i);
+    if (!it || keep(it.typeId) > 0) continue;
+    const rest = safe(() => inv.addItem(it), it);
+    const verilen = it.amount - (rest?.amount ?? 0);
+    n += verilen;
+    ci.setItem(i, rest ?? undefined);
+  }
+  safe(() => pl.playSound("random.pop", { pitch: 1.2 }));
+  bot.say(n ? `${n} eşyayı sana getirdim.` : "Getirecek bir şey kalmadı.");
+  return true;
+}
+
 export function* finishJob(bot, opts = {}) {
+  if (bot.task?.finish === "bana") {
+    yield* banaGetir(bot, opts.keep ?? (() => 0));
+  }
   bot.setStatus("Eve dönüyor");
   bot.setAct("none");
   const home = yield* bot.goHome({ run: opts.run });
@@ -1248,9 +1275,23 @@ function findFlatSpot(bot, home) {
   return bestN >= 12 ? best : null;
 }
 
+const KEMIK = "minecraft:bone_meal";
+/** v0.4.2: çiftçi kemik tozu kullanır: yeni ektiği ekine serper (büyüme 2-5 kademe atlar). */
+function kemikTozu(bot, p, crop) {
+  if (bot.count(KEMIK) < 1 || !crop.state) return false;
+  const b = safe(() => bot.dim.getBlock(p));
+  const g = safe(() => b.permutation.getState(crop.state), undefined);
+  if (typeof g !== "number" || g >= 7) return false;
+  bot.take(KEMIK, 1);
+  safe(() => b.setPermutation(b.permutation.withState(crop.state, Math.min(7, g + rand(2, 5)))));
+  safe(() => bot.dim.spawnParticle("minecraft:crop_growth_emitter", { x: p.x + 0.5, y: p.y + 0.5, z: p.z + 0.5 }));
+  return true;
+}
+
 function* plantEmpty(bot, crops) {
   const plantable = crops.filter((c) => c.plant);
   if (!plantable.length) return false;
+  if (bot.count(KEMIK) < 1) yield* bot.fetchFromChests((id) => id === KEMIK, 16);
   const home = bot.home ?? bot.loc;
   const fields = bot.scan([M("farmland")], home, 16, 4, 16, 40);
   let n = 0;
@@ -1266,6 +1307,7 @@ function* plantEmpty(bot, crops) {
     yield* wait(5);
     if (bot.take(crop.seed, 1) > 0) {
       safe(() => bot.dim.setBlockPermutation(up, BlockPermutation.resolve(crop.block, { [crop.state]: 0 })));
+      kemikTozu(bot, up, crop);
       n++;
     }
     bot.setAct("none");

@@ -10,6 +10,7 @@ import "./sandik.js";
 import "./konum.js";
 import "./cevher_durbunu.js";
 import "./surus.js";
+import "./gecerken.js";
 import { safe } from "./util.js";
 import { fxCleanup } from "./fx.js";
 

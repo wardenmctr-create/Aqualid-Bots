@@ -76,7 +76,7 @@ def robot_bp():
             'minecraft:behavior.hurt_by_target': {'priority': 2,
                                                   'entity_types': {'filters': {'none_of': DOST}}},
             'minecraft:behavior.nearest_attackable_target': {
-                'priority': 3, 'must_see': False, 'reselect_targets': True, 'within_radius': 16,
+                'priority': 3, 'must_see': True, 'must_see_forget_duration': 4.0, 'reselect_targets': True, 'within_radius': 16,
                 'entity_types': [{'filters': {'all_of': [
                     {'test': 'is_family', 'subject': 'other', 'value': 'monster'},
                     {'test': 'is_family', 'subject': 'other', 'operator': '!=', 'value': 'creeper'},
