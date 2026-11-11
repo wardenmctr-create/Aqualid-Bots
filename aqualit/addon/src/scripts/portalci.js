@@ -418,6 +418,21 @@ for (const [k, m] of Object.entries(MALZEME)) {
 }
 MALZEME_OF.set("minecraft:glowstone", "isiltas");
 MALZEME_OF.set("minecraft:gold_ingot", "altin");
+/** v0.4.6: robotun Portalcı çırağı (yoksa undefined). Çırağı olan Madenci'ye Nether madenleri de açılır. */
+export function cirakPortalcisi(b) {
+  return [...pcs.values()].find((x) => x.mod === "cirak" && x.cirak === b.rid && safe(() => x.e.isValid, false));
+}
+/** Madenci maden anahtarı -> Nether malzeme anahtarı */
+export const MADEN_MALZEME = { kuvars: "kuvars", nether_altin: "altin", antik: "enkaz" };
+/** Seçilen Nether madenlerini sırayla Portalcıyla toplar; bitince (varsa) dünyadaki görevi başlatır. */
+export function* netherMadenleri(b, p, liste, sonra) {
+  for (const n of liste) {
+    const k = MADEN_MALZEME[n.key];
+    if (k) yield* netherIsi(b, p, k, n.amount);
+  }
+  if (sonra) system.run(sonra);
+}
+
 /** Bir robotun (ya da sahibin) eksiği Nether malzemesiyse, çırağı olan boştaki robot Portalcısıyla sefere çıkar.
  *  need: { eşyaKimliği: adet }. Üstlenilen eşya kimlikleri döner. */
 export function netherIhtiyaci(owner, need) {

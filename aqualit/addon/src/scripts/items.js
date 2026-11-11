@@ -5,7 +5,7 @@ import { haritaAc, orduMenu } from "./kesif_harita.js";
 import { evcilKullan } from "./evcil.js";
 import { spawnPortalci } from "./portalci.js";
 import { platformKur } from "./us.js";
-import { xrayMenu } from "./xray.js";
+import { xrayKullan } from "./xray.js";
 import { rodMenu } from "./insa.js";
 import { applyStats, defaultStats, getStats } from "./kilicli.js";
 import { consumeHand } from "./place.js";
@@ -73,7 +73,7 @@ export function useDevice(player, kind, opts = {}) {
           const v = safe(() => player.getComponent("minecraft:riding")?.entityRidingOn);
           const matkap = v && safe(() => v.typeId) === "aqualit:kesif" && (safe(() => v.getDynamicProperty("aq:form")) ?? safe(() => v.getProperty("aqualit:form"))) === "matkap";
           if (!matkap) return player.sendMessage("§eX-ray yalnız matkaptayken çalışır.");
-          return fire(() => xrayMenu(player, v));
+          return xrayKullan(player);
         }
         case "telefon": return fire(() => telefonAc(player));
         case "harita": return fire(() => haritaAc(player));

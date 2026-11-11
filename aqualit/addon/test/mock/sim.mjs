@@ -1310,8 +1310,11 @@ if (run("kesif")) {
     check(el && ileri(el) < ray.get(`${bx},${by + 1},${bz + 9}`), "işaret duvarın önünde (taşın içinde kalmıyor)");
     player.location = eskiYer;
     player.particles = [];
+    const XRk = await import("./scripts/xray.js");
+    XRk.xrayKullan(player);                    // v0.4.6: X-ray eşyasıyla açılır
     ticks(4);
     check((player.particles ?? []).some((q) => q.id === "aqualit:cevher" || q[0] === "aqualit:cevher" || JSON.stringify(q).includes("aqualit:cevher")), "matkapta cevherler ekrana çiziliyor (panel yok)");
+    XRk.xrayKullan(player);
     set({ x: bx, y: by + 1, z: bz + 9 }, "minecraft:stone");
     set({ x: bx + 2, y: by - 2, z: bz + 5 }, "minecraft:stone");
     set({ x: bx - 1, y: by + 1, z: bz + 3 }, "minecraft:stone");
@@ -1493,39 +1496,42 @@ if (run("hiz")) {
   ke.isOnGround = true;
   // matkap: X-ray eşyası gelir, tırmanma gider
   const XR = await import("./scripts/xray.js");
-  XR.XR_AYAR.R = 1;
   ke.getComponent("minecraft:rideable").ejectRider(player);
   KS.transform(ke, "matkap", player);
   ticks(40);
   ke.getComponent("minecraft:rideable").addRider(player);
   ticks(12);
   check(var_("aqualit:kesif_xray") && !var_("aqualit:kesif_tirman_kapali") && !var_("aqualit:kesif_tirman_acik"), "matkapta X-ray eşyası var, tırmanma eşyası yok");
+  // v0.4.6: X-ray = cevher görüşü (kişisel); saydam taş yok
   const p0 = { x: Math.floor(ke.location.x), y: GROUND - 3, z: Math.floor(ke.location.z) };
   const tasTipi = ow.getBlock(p0).typeId;
   ow.setBlockType({ x: p0.x + 1, y: p0.y, z: p0.z }, "minecraft:diamond_ore");
-  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes("Yarı saydam")) }));
+  player.particles = [];
+  ticks(6);
+  check(!player.particles.some((q) => q.id === "aqualit:cevher"), "X-ray kapalıyken cevher işareti yok");
   comps.item["aqualit:device"].onUse({ source: player, itemStack: new ItemStack("aqualit:kesif_xray") }, { params: { kind: "xray" } });
   for (let i = 0; i < 4; i++) { ticks(1); await new Promise((r) => setTimeout(r, 0)); }
-  ticks(400);
-  check(XR.xrayKipi(player) === "y" && ow.getBlock(p0).typeId === "aqualit:xr_" + tasTipi.split(":")[1] + "_y", `yarı saydam: ${tasTipi} hayalet taşa döndü`);
-  check(ow.getBlock({ x: p0.x + 1, y: p0.y, z: p0.z }).typeId === "minecraft:diamond_ore", "cevher olduğu gibi kaldı");
-  const B = await import("./scripts/blocks.js");
-  check(B.dropsFor(ow.getBlock(p0).typeId)[0]?.[0] === B.dropsFor(tasTipi)[0]?.[0] && B.isNatural(ow.getBlock(p0).typeId), "hayalet taş robotlar için asıl taş (aynı eşyayı düşürür)");
-  // ayarlar: taş dahil değil -> taş normal kalır
-  const k0 = tasTipi.split(":")[1];
-  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes("Ayarlar")) }));
-  UI.answers.push((f) => ({ canceled: false, formValues: f.fields.map((x) => !String(x.label).startsWith(XR.ADLAR[k0])) }));
-  await XR.xrayMenu(player, ke);
-  ticks(400);
-  check(ow.getBlock(p0).typeId === tasTipi, `ayarlardan ${XR.ADLAR[k0]} çıkarılınca normal göründü`);
-  player.setDynamicProperty("aq:xray_ayar", undefined);
-  XR.xrayAyarla(player, ke, "t");
-  ticks(400);
-  check(ow.getBlock(p0).typeId === "aqualit:xr_" + k0 + "_t", "tam saydam kipine geçti");
-  // matkaptan inince kapanır, taşlar geri döner
+  player._rot = { x: 60, y: 0 };
+  ticks(12);
+  check(XR.xrayKipi(player) && player.particles.some((q) => q.id === "aqualit:cevher") && ow.getBlock(p0).typeId === tasTipi,
+    "X-ray eşyasına basınca cevherler ekranda, taşlar değişmedi (saydam taş yok)");
+  const baska = world.getAllPlayers().find((x) => x.id !== player.id);
+  check(!baska || !(baska.particles ?? []).some((q) => q.id === "aqualit:cevher"), "X-ray kişisel: başka oyuncu görmüyor");
+  ticks(12);
+  comps.item["aqualit:device"].onUse({ source: player, itemStack: new ItemStack("aqualit:kesif_xray") }, { params: { kind: "xray" } });
+  for (let i = 0; i < 4; i++) { ticks(1); await new Promise((r) => setTimeout(r, 0)); }
+  player.particles = [];
+  ticks(6);
+  check(!XR.xrayKipi(player) && !player.particles.some((q) => q.id === "aqualit:cevher"), "tekrar basınca X-ray kapandı");
+  player._rot = { x: 0, y: 0 };
+  // eski sürümden kalan hayalet taş açılışta geri döner
+  ow.setBlockType(p0, "aqualit:xr_" + tasTipi.split(":")[1] + "_y");
+  XR._test.dilimIsle(ow, Math.floor(p0.x / 16), Math.floor(p0.z / 16), -64, 63, null);
+  check(ow.getBlock(p0).typeId === tasTipi, "eski saydam taşlar asıllarına döndürülüyor");
+  XR.xrayKullan(player);
   ke.getComponent("minecraft:rideable").ejectRider(player);
-  ticks(400);
-  check(!XR.xrayKipi(player) && ow.getBlock(p0).typeId === tasTipi && !var_("aqualit:kesif_xray"), "matkaptan inince X-ray kapandı, taşlar geri döndü");
+  ticks(20);
+  check(!XR.xrayKipi(player) && !var_("aqualit:kesif_xray"), "matkaptan inince X-ray kapandı, eşya gitti");
 }
 
 // ---------------------------------------------------------------- v0.4.2 küçük istekler
@@ -1676,6 +1682,30 @@ if (run("portalci")) {
   }
   check(mb.dim.id === "minecraft:overworld", `robot Nether'den döndü (${Math.round(t / 20)} sn)`);
   check((tot["minecraft:quartz"] ?? 0) >= 8, `kuvars sandığa kondu (${tot["minecraft:quartz"] ?? 0})`);
+  // v0.4.6: çırağı olan madenciye görev listesinde Nether madenleri açılır; seçince Portalcıyla gider
+  {
+    const TK = await import("./scripts/ui/task.js");
+    let gordu = false;
+    UI.answers.push((f) => ({ canceled: false, selection: 0 }));                       // Maden topla
+    UI.answers.push((f) => { gordu = f.buttons.some((b) => /Nether Kuvarsı/.test(b.text) && /Portalcı/.test(b.text));
+      return { canceled: false, selection: f.buttons.findIndex((b) => /Nether Kuvarsı/.test(b.text)) }; });
+    UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => /Kömür/.test(b.text)) }));
+    UI.answers.push((f) => ({ canceled: false, selection: 0 }));                       // Devam
+    UI.answers.push(() => ({ canceled: false, formValues: [0, 0] }));                  // miktarlar
+    UI.answers.push(() => ({ canceled: false, formValues: [0, 0, false, 0] }));        // seçenekler
+    await TK.giveTask(player, mb);
+    check(gordu, "çırağı olan madencinin listesinde Nether Kuvarsı var (Portalcıyla)");
+    check(mb.jobName === "gorev" && /Nether/.test(player.messages.at(-1) ?? "") && /dönünce/.test(player.messages.at(-1) ?? ""),
+      "Nether madeni seçince Portalcıyla Nether'e gidiyor, dönünce dünyadaki madenlere bakacak");
+    brain.startJob(mb, (function* () {})(), "bekleme"); ticks(2);
+    PC.portalciOf(pcE).mod = "serbest";
+    let gizli = true;
+    UI.answers.push(() => ({ canceled: false, selection: 0 }));
+    UI.answers.push((f) => { gizli = !f.buttons.some((b) => /Nether Kuvarsı/.test(b.text)); return { canceled: true }; });
+    await TK.giveTask(player, mb);
+    check(gizli, "çırak yokken Nether madenleri kilitli");
+    PC.portalciOf(pcE).mod = "cirak";
+  }
 }
 
 // ---------------------------------------------------------------- v0.4.0 Organizatör üssü

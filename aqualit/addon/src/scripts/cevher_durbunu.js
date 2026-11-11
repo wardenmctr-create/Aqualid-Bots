@@ -5,6 +5,7 @@
 // saydam yapmak) oyunda mümkün değil; dürbün duvarın ardındaki cevherin yerini gösterir.
 import { world, system, BlockVolume, MolangVariableMap } from "@minecraft/server";
 import { CEVHER_U } from "./cevher_atlas.js";
+import { gorusAcik } from "./xray.js";
 import { safe } from "./util.js";
 import { CEVHER } from "./harita_glif.js";
 import { formOf } from "./kesif.js";
@@ -63,7 +64,7 @@ export function durbun(v) {
 }
 
 // ======================================================================= v0.4.5 cevher görüşü (panelsiz)
-// Matkaptayken cevherler ekranın kendisinde, gerçek yerlerinde görünür: her cevherin resmi gözden cevhere giden
+// Matkaptayken X-ray açıksa (X-ray eşyasına basılı tut) cevherler ekranın kendisinde, gerçek yerlerinde görünür: her cevherin resmi gözden cevhere giden
 // çizginin üstüne, önündeki ilk duvarın hemen önüne konur ve uzaklıkla orantılı küçültülür (gerçek blok ne kadar
 // görünecekse o kadar). Böylece duvarın ardındaki elmas, duvarda tam kazman gereken yerde ve uzaklığına uygun boyda
 // görünür. Gözden çizgi dönmeye bağlı değil: kafanı çevirince işaretler kaymaz. Oyunda denenmedi.
@@ -126,7 +127,8 @@ system.runInterval(() => {
   const t = system.currentTick;
   for (const pl of world.getAllPlayers()) {
     const v = ridingKesif(pl);
-    if (!v || formOf(v) !== "matkap") { gorus.delete(pl.id); continue; }
+    // v0.4.6: yalnız X-ray eşyasıyla açılınca (kişisel)
+    if (!v || formOf(v) !== "matkap" || !gorusAcik.has(pl.id)) { gorus.delete(pl.id); continue; }
     let g = gorus.get(pl.id);
     if (!g) gorus.set(pl.id, (g = { liste: [], ray: new Map(), sira: 0, son: -99 }));
     if (t - g.son >= 10) { g.liste = tara(pl); g.son = t; }

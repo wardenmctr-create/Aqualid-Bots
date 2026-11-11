@@ -112,6 +112,8 @@ ortam değişkeniyle başka yer gösterilebilir.
 - Organizatör vizörü: `robot.py` `vz_*` parçaları; cam `visor_cam` kemiğinde, ayrı render controller (alphablend).
 
 ### v0.4.1 modülleri
+- **v0.4.7: eski saydam taş X-ray kaldırıldı**; `xray.js` artık cevher görüşünü aç/kapat (`gorusAcik`, kişisel) ve
+  eski kayıtlı hayalet taşları geri çevirir. Aşağıdaki satır eski sistem:
 - `xray.js` + `gen/xray.py`: hayalet taşlar `aqualit:xr_<tür>_y|t` (`fillBlocks` + `includeTypes`, yığın dilimi 16x16x128,
   tik başına 6 çağrı), ayar `aq:xray_ayar`, geri çevrilecekler `aq:xray_kalan`. `blocks.js asil()` hayaleti asıl sayar.
   Matkap `KEEP` hayaletleri kazar. Eşya yalnız matkapta (`kesif_radar.js esyalariVer`).

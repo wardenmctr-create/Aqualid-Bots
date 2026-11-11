@@ -3,7 +3,7 @@ import { system } from "@minecraft/server";
 import { menu, modal, pickMany, confirm, AMOUNTS, amountIndex } from "./forms.js";
 import { TYPE_NAME, TYPE_TOOL, robotIcon, DIST_OPTS, DIST_LABELS, distIndex, distText } from "../constants.js";
 import * as B from "../blocks.js";
-import { startTask, commandStop, commandResume, commandReturn, bots } from "../brain.js";
+import { startTask, startJob, commandStop, commandResume, commandReturn, bots } from "../brain.js";
 import { pickupRobot } from "../place.js";
 import { fmtPos, safe, V } from "../util.js";
 import { setProp, getProp } from "../store.js";
@@ -168,6 +168,18 @@ export async function giveTask(player, bot) {
   else if (bot.type === "ciftci") task = await farmerTask(player, bot);
   else if (bot.type === "oduncu") task = await lumberTask(player, bot);
   if (!task) return;
+  if (task.nether?.length) {
+    const PC = await import("../portalci.js");
+    const p = PC.cirakPortalcisi(bot);
+    const nether = task.nether;
+    delete task.nether;
+    if (p) {
+      const sonra = task.items?.length ? () => beginTask(player, bot, task) : null;
+      startJob(bot, PC.netherMadenleri(bot, p, nether, sonra), "gorev");
+      return player.sendMessage(`§s${bot.name}§r: Portalcımla Nether'e gidiyorum (${nether.map((n) => `${n.amount} ${B.ORE_BY_KEY[n.key]?.name}`).join(", ")})${sonra ? ", dönünce diğer madenlere bakarım" : ""}.`);
+    }
+    if (!task.items?.length) return player.sendMessage("§cPortalcı çırağı bulunamadı.");
+  }
   beginTask(player, bot, task);
 }
 
@@ -222,13 +234,18 @@ async function minerTask(player, bot) {
     return { type: "madenci", mode: "skyblock", items: [{ key: "tas", amount: AMOUNTS[v[0]] }], finish: "chest" };
   }
   const inNether = bot.dim.id.includes("nether");
-  const opts = B.ORES.filter((o) => !!o.nether === inNether || o.key === "aqualit" && !inNether).map((o) => ({
-    key: o.key, name: o.name, icon: o.icon, note: o.nether ? "Nether" : `en iyi derinlik y=${o.y}`,
+  // v0.4.6: Portalcı çırağı varsa Nether madenleri de açılır (Portalcıyla Nether'e gidip toplar)
+  const PC = await import("../portalci.js");
+  const cirak = !inNether && PC.cirakPortalcisi(bot);
+  const opts = B.ORES.filter((o) => !!o.nether === inNether || o.key === "aqualit" && !inNether || (cirak && o.nether && PC.MADEN_MALZEME[o.key])).map((o) => ({
+    key: o.key, name: o.name, icon: o.icon,
+    note: o.nether ? (inNether ? "Nether" : "§dNether · Portalcı çırağıyla gider") : `en iyi derinlik y=${o.y}`,
   }));
-  const keys = await pickMany(player, "Madenci · hangi madenler?", "Toplanacak madenlere dokun, sonra Devam'a bas.", opts,
+  const kilitli = !inNether && !cirak ? "\n§8Nether madenleri için bu robota bir Portalcı çırağı ver." : "";
+  const keys = await pickMany(player, "Madenci · hangi madenler?", "Toplanacak madenlere dokun, sonra Devam'a bas." + kilitli, opts,
     (bot.task?.items ?? []).map((i) => i.key).filter((k) => B.ORE_BY_KEY[k]));
   if (!keys) return null;
-  const items = await amounts(player, "Madenci · miktarlar", keys, B.ORE_BY_KEY, 16);
+  let items = await amounts(player, "Madenci · miktarlar", keys, B.ORE_BY_KEY, 16);
   if (!items) return null;
   const o = await modal(player, "Madenci · seçenekler", [
     { type: "dropdown", label: "Ararken güzel bir şey bulursa (elmas, altın...)", items: ["Al", "Alma", "Bana sor"], value: 0 },
@@ -237,8 +254,11 @@ async function minerTask(player, bot) {
     { type: "dropdown", label: "Sandıktan en fazla uzaklık", items: DIST_LABELS, value: distIndex(bot.maxDist ?? 256) },
   ], "Başla");
   if (!o) return null;
+  // Nether madenleri ayrı: Portalcıyla sefer (dünyadaki madenler ondan sonra)
+  const nether = !inNether ? items.filter((i) => B.ORE_BY_KEY[i.key]?.nether) : [];
+  if (nether.length) items = items.filter((i) => !B.ORE_BY_KEY[i.key]?.nether);
   return {
-    type: "madenci", mode: "normal", items,
+    type: "madenci", mode: "normal", items, nether,
     bonus: ["al", "alma", "sor"][o[0]] ?? "al",
     finish: o[1] === 1 ? "smelt" : o[1] === 2 ? "bana" : "chest",
     stone: !!o[2],
