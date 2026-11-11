@@ -65,7 +65,7 @@ export async function robotMenu(player, bot) {
       { text: "Robotu topla", icon: robotIcon(bot.type, bot.model), v: "pick" },
     ]);
     if (!r?.v) return;
-    if (r.v === "inv") return bagMenu(player, { title: `§l${bot.name} · çanta`, container: () => bot.inv, canEdit: () => V.dist(player.location, bot.loc) <= EDIT_RANGE });
+    if (r.v === "inv") return bagMenu(player, { title: `§l${bot.name} · çanta`, container: () => bot.canta(), canEdit: () => V.dist(player.location, bot.loc) <= EDIT_RANGE });
     if (r.v === "back") return commandReturn(bot, false);
     if (r.v === "name") return renameRobot(player, bot);
     if (r.v === "pick") {
@@ -126,7 +126,7 @@ export async function robotMenu(player, bot) {
     case "stop": commandStop(bot); return player.sendMessage(`§s${bot.name}§r görevi durdurdu.`);
     case "resume": commandResume(bot); return player.sendMessage(`§s${bot.name}§r göreve devam ediyor.`);
     case "inv": {
-      await bagMenu(player, { title: `§l${bot.name} · çanta`, container: () => bot.inv,
+      await bagMenu(player, { title: `§l${bot.name} · çanta`, container: () => bot.canta(),
         canEdit: () => V.dist(player.location, bot.loc) <= EDIT_RANGE });
       return robotMenu(player, bot);
     }

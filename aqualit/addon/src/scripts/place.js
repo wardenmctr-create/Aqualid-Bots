@@ -111,7 +111,7 @@ export function readItemData(itemStack) {
   const g = (k) => safe(() => itemStack?.getDynamicProperty(k));
   return { rid: g("aq:rid"), name: g("aq:name"), chest: g("aq:chest"), stats: g("aq:stats"), task: g("aq:task"),
     home: g("aq:home"), homeDim: g("aq:homeDim"), maxd: g("aq:maxd"), owner: g("aq:owner"), ownerName: g("aq:ownerName"),
-    type: g("aq:type"), model: g("aq:model"), pose: g("aq:pose") };
+    type: g("aq:type"), model: g("aq:model"), pose: g("aq:pose"), tasma: g("aq:tasma") };
 }
 
 /** Robot varlığını oluşturur ve kurar. data: {type, model, rid?, name?, chest?, stats?, task?, home?, homeDim?, maxd?} */
@@ -140,6 +140,7 @@ export function createRobot(player, dim, pos, data, opts = {}) {
     setJSON(e, "aq:stats", st && st.model === model ? st : defaultStats(model));
   }
   if (data.task) setProp(e, "aq:task", data.task);
+  if (data.tasma) setProp(e, "aq:tasma", data.tasma);      // v0.5.0 taşma deposu
   e.nameTag = name;
   safe(() => e.getComponent("minecraft:tameable")?.tame(player));
   safe(() => e.triggerEvent(type === "kilicli" ? "aqualit:as_kilicli" : "aqualit:as_worker"));
@@ -229,6 +230,8 @@ export function pickupRobot(player, b) {
   if (b.chestId) safe(() => item.setDynamicProperty("aq:chest", b.chestId));
   const st = getProp(e, "aq:stats", undefined);
   if (st) safe(() => item.setDynamicProperty("aq:stats", st));
+  const ts = getProp(e, "aq:tasma", undefined);
+  if (ts) safe(() => item.setDynamicProperty("aq:tasma", ts));
   item.nameTag = `§s${b.name}`;
   safe(() => item.setLore([`§7${TYPE_NAME[b.type]} robot`, "§7Yere koyunca uyanır"]));
   giveItem(player, item);

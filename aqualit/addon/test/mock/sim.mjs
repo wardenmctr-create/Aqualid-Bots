@@ -3134,5 +3134,29 @@ if (run("kilicli2")) {
   player.teleport({ x: 0.5, y: G, z: -3.5 });
 }
 
+// ---------------------------------------------------------------- v0.5.0 sınırsız çanta
+if (run("tasma")) {
+  console.log("== Sınırsız çanta: 27 yuva dolunca taşma deposu, sayma, alma, çanta ekranı, sandığa boşaltma");
+  give("aqualit:robot_madenci");
+  ticks(12);
+  useOn("aqualit:robot_madenci", { x: -70, y: GROUND, z: -70 }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
+  ticks(5);
+  const b = myBots().filter((x) => x.type === "madenci").pop();
+  for (let i = 0; i < 27; i++) b.inv.setItem(i, new ItemStack(i % 2 ? "minecraft:cobblestone" : "minecraft:andesite", 1));
+  check(b.addItem("minecraft:dirt", 500) === 0 && b.count("minecraft:dirt") === 500, "27 yuva doluyken 500 toprak taşma deposuna girdi");
+  check(!b.isFull(), "taşma deposu varken robot dolu sayılmıyor");
+  check(b.take("minecraft:dirt", 120) === 120 && b.count("minecraft:dirt") === 380, "taşmadan eşya alınabiliyor");
+  const c = b.canta();
+  check(c.size === 27 + Math.ceil(380 / 64), `çanta ekranı taşmayı da gösteriyor (${c.size} yuva)`);
+  c.setItem(27, undefined);
+  check(b.count("minecraft:dirt") === 380 - 64, "çanta ekranından alınan taşmadan düştü");
+  const ch = b.homeChest();
+  ticks(2);
+  b.job = b.deposit(); b.jobName = "gorev";
+  ticks(20 * 30, () => !b.job);
+  const tot = chestTotals(ch);
+  check((tot["minecraft:dirt"] ?? 0) === 316 && b.count("minecraft:dirt") === 0, `sandığa boşaltınca taşma da gitti (${tot["minecraft:dirt"] ?? 0})`);
+}
+
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");
 process.exit(fails ? 1 : 0);

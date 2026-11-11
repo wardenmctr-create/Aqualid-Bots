@@ -23,6 +23,50 @@ function decodeTrail(s) {
   return s.split(";").map((k) => V.parse(k)).filter((p) => Number.isFinite(p.x));
 }
 
+const TASMA_EN_COK = 1024 * 64;
+/** Taşma deposuna konabilir mi: yığılabilir, adsız, açıklamasız, büyüsüz. */
+function sadeMi(it) {
+  if (!it || (safe(() => it.maxAmount, 1) ?? 1) <= 1) return false;
+  if (safe(() => it.nameTag)) return false;
+  if ((safe(() => it.getLore(), []) ?? []).length) return false;
+  const ench = safe(() => it.getComponent("minecraft:enchantable")?.getEnchantments(), []) ?? [];
+  return !ench.length;
+}
+/** Gerçek envanter + taşma deposu tek kap gibi (çanta ekranı). Taşmadaki her eşya en çok yığın boyunda sanal yuvalar. */
+class Canta {
+  constructor(b) { this.b = b; }
+  _sanal() {
+    const l = [];
+    for (const [id, n0] of Object.entries(this.b.tasma)) {
+      let n = n0;
+      const max = safe(() => new ItemStack(id, 1).maxAmount, 64) ?? 64;
+      while (n > 0) { const k = Math.min(n, max); l.push({ id, amount: k }); n -= k; }
+    }
+    return l;
+  }
+  get _gercek() { return this.b.inv; }
+  get size() { return (this._gercek?.size ?? 0) + this._sanal().length; }
+  get emptySlotsCount() { return this._gercek?.emptySlotsCount ?? 0; }
+  getItem(i) {
+    const g = this._gercek, gs = g?.size ?? 0;
+    if (i < gs) return g.getItem(i);
+    const v = this._sanal()[i - gs];
+    return v ? new ItemStack(v.id, v.amount) : undefined;
+  }
+  setItem(i, it) {
+    const g = this._gercek, gs = g?.size ?? 0;
+    if (i < gs) return g.setItem(i, it);
+    const v = this._sanal()[i - gs];
+    if (!v) { if (it) this.b.addStack(it); return; }
+    const t = this.b.tasma;
+    if (!it) t[v.id] = (t[v.id] ?? 0) - v.amount;
+    else if (it.typeId === v.id) t[v.id] = (t[v.id] ?? 0) + it.amount - v.amount;
+    else { t[v.id] = (t[v.id] ?? 0) - v.amount; this.b.addStack(it); }
+    this.b.tasmaYaz();
+  }
+  addItem(it) { return this.b.addStack(it); }
+}
+
 export class Bot {
   constructor(e) {
     this.e = e;
@@ -455,6 +499,29 @@ export class Bot {
   get inv() {
     return safe(() => this.e.getComponent("minecraft:inventory")?.container);
   }
+  // ---- v0.5.0 sınırsız çanta: 27 yuva dolunca sade (adsız, büyüsüz, yığılabilir) eşyalar robotun kayıtlı taşma
+  // deposuna gider (aq:tasma, eşya -> adet; en çok ~1024 yuva = 65536 eşya). count/take/contents/deposit bunu da sayar.
+  get tasma() {
+    if (!this._tasma) this._tasma = getJSON(this.e, "aq:tasma", {}) ?? {};
+    return this._tasma;
+  }
+  tasmaYaz() {
+    for (const k of Object.keys(this.tasma)) if (!(this.tasma[k] > 0)) delete this.tasma[k];
+    setJSON(this.e, "aq:tasma", this.tasma);
+  }
+  tasmaToplam() {
+    let n = 0;
+    for (const v of Object.values(this.tasma)) n += v;
+    return n;
+  }
+  tasmayaKoy(id, n) {
+    const yer = TASMA_EN_COK - this.tasmaToplam();
+    const k = Math.max(0, Math.min(n, yer));
+    if (k > 0) { this.tasma[id] = (this.tasma[id] ?? 0) + k; this.tasmaYaz(); }
+    return n - k;
+  }
+  /** Çanta ekranları için: gerçek envanter + taşma deposu tek kap gibi. */
+  canta() { return new Canta(this); }
   addItem(id, n) {
     const c = this.inv;
     if (!c) return n;
@@ -465,7 +532,7 @@ export class Bot {
       const rest = safe(() => c.addItem(new ItemStack(id, amt)));
       if (rest) {
         left -= amt - rest.amount;
-        return left;
+        return max > 1 ? this.tasmayaKoy(id, left) : left;
       }
       left -= amt;
     }
@@ -474,12 +541,18 @@ export class Bot {
   addStack(stack) {
     const c = this.inv;
     if (!c) return stack;
-    return safe(() => c.addItem(stack), stack);
+    const rest = safe(() => c.addItem(stack), stack);
+    if (rest && sadeMi(rest)) {
+      const kalan = this.tasmayaKoy(rest.typeId, rest.amount);
+      if (!kalan) return undefined;
+      rest.amount = kalan;
+    }
+    return rest;
   }
   count(id) {
     const c = this.inv;
-    if (!c) return 0;
-    let n = 0;
+    let n = this.tasma[id] ?? 0;
+    if (!c) return n;
     for (let i = 0; i < c.size; i++) {
       const it = c.getItem(i);
       if (it && it.typeId === id) n += it.amount;
@@ -488,9 +561,8 @@ export class Bot {
   }
   take(id, n) {
     const c = this.inv;
-    if (!c) return 0;
     let got = 0;
-    for (let i = 0; i < c.size && got < n; i++) {
+    for (let i = 0; c && i < c.size && got < n; i++) {
       const it = c.getItem(i);
       if (!it || it.typeId !== id) continue;
       const use = Math.min(it.amount, n - got);
@@ -501,17 +573,26 @@ export class Bot {
         c.setItem(i, it);
       }
     }
+    const t = this.tasma[id] ?? 0;
+    if (got < n && t > 0) {
+      const use = Math.min(t, n - got);
+      got += use;
+      this.tasma[id] = t - use;
+      this.tasmaYaz();
+    }
     return got;
   }
   freeSlots() {
     return safe(() => this.inv.emptySlotsCount, 0);
   }
   isFull() {
-    return this.full || this.freeSlots() <= 1;
+    // v0.5.0: 27 yuva dolsa da taşma deposu dolana dek çalışmaya devam eder
+    return this.full || (this.freeSlots() <= 1 && this.tasmaToplam() >= TASMA_EN_COK - 256);
   }
   contents() {
     const c = this.inv;
     const m = new Map();
+    for (const [id, n] of Object.entries(this.tasma)) if (n > 0) m.set(id, n);
     if (!c) return m;
     for (let i = 0; i < c.size; i++) {
       const it = c.getItem(i);
@@ -692,6 +773,22 @@ export class Bot {
           const rest = safe(() => cc.addItem(it), it);
           inv.setItem(i, rest ?? undefined);
         }
+      }
+      // taşma deposu da sandığa
+      if (cc && this.tasmaToplam()) {
+        for (const [id, n0] of Object.entries(this.tasma)) {
+          let n = n0 - Math.max(0, (reserved.get(id) ?? 0));
+          const max = safe(() => new ItemStack(id, 1).maxAmount, 64) ?? 64;
+          while (n > 0) {
+            const k = Math.min(n, max);
+            const rest = safe(() => cc.addItem(new ItemStack(id, k)), { amount: k });
+            const kondu = k - (rest ? rest.amount : 0);
+            this.tasma[id] -= kondu;
+            n -= kondu;
+            if (rest) break;
+          }
+        }
+        this.tasmaYaz();
       }
       yield* wait(8);
       safe(() => ch.setProperty("aqualit:open", false));

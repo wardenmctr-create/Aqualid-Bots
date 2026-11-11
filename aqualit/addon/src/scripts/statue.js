@@ -14,7 +14,7 @@ export const POSES = ["ayakta", "oturuyor", "el_salliyor", "kosuyor", "zafer", "
 const POSE_NAMES = { ayakta: "Ayakta", oturuyor: "Oturuyor", el_salliyor: "El sallıyor", kosuyor: "Koşuyor",
   zafer: "Zafer", dusunuyor: "Düşünüyor" };
 const KEYS = ["aq:rid", "aq:name", "aq:owner", "aq:ownerName", "aq:type", "aq:model", "aq:chest", "aq:home",
-  "aq:homeDim", "aq:stats", "aq:task", "aq:maxd"];
+  "aq:homeDim", "aq:stats", "aq:task", "aq:maxd", "aq:tasma"];
 const REPAIR_TICKS = 30;
 
 export function variantOf(type, model) {
@@ -80,7 +80,7 @@ export function robotToStatue(bot) {
     "aq:rid": bot.rid, "aq:name": bot.name, "aq:owner": bot.owner, "aq:ownerName": bot.ownerName,
     "aq:type": bot.type, "aq:model": bot.model, "aq:chest": bot.chestId || undefined, "aq:home": bot.home,
     "aq:homeDim": bot.homeDim, "aq:stats": getProp(e, "aq:stats", undefined), "aq:task": getProp(e, "aq:task", undefined),
-    "aq:maxd": bot.maxDist, variant,
+    "aq:maxd": bot.maxDist, variant, "aq:tasma": getProp(e, "aq:tasma", undefined),
   };
   // çantasındakiler yere dökülür
   const inv = bot.inv;
@@ -326,7 +326,7 @@ function revive(player, block, opts = {}) {
   const rdata = {
     type: data["aq:type"] ?? type, model: data["aq:model"] ?? model, rid: data["aq:rid"], name: data["aq:name"],
     chest: data["aq:chest"], stats: data["aq:stats"], task: data["aq:task"], home: data["aq:home"],
-    homeDim: data["aq:homeDim"], maxd: data["aq:maxd"],
+    homeDim: data["aq:homeDim"], maxd: data["aq:maxd"], tasma: data["aq:tasma"],
   };
   const { name } = createRobot(player, dim, pos, rdata, { makeChest: false });
   if (opts.kit !== false) useKitCharge(player);

@@ -127,7 +127,7 @@ async function radioEntry(player, r) {
     case "resume": commandResume(b); return player.sendMessage(`§s${b.name}§r devam ediyor.`);
     case "watch": return startWatch(player, b);
     case "inv":
-      await bagMenu(player, { title: `§l${b.name} · çanta`, container: () => b.inv,
+      await bagMenu(player, { title: `§l${b.name} · çanta`, container: () => b.canta(),
         canEdit: () => V.dist(player.location, b.loc) <= EDIT_RANGE && player.dimension === b.dim });
       return radioEntry(player, r);
     case "loc": return sendLocation(b, "Buradayım!");

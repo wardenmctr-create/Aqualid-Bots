@@ -74,7 +74,7 @@ export async function rodRobot(player, b) {
   if (c.act === "style") return styleForm(player, [b]);
   if (c.act === "powers") return powersMenu(player, b);
   if (c.act === "kits") return kitMenu(player, b);
-  if (c.act === "bag") return bagMenu(player, { title: `§l${b.name} · çanta`, container: () => b.inv,
+  if (c.act === "bag") return bagMenu(player, { title: `§l${b.name} · çanta`, container: () => b.canta(),
     canEdit: () => V.dist(player.location, b.loc) <= EDIT_RANGE });
   if (c.act === "name") return renameRobot(player, b);
   if (c.act === "koruma") return (await import("../koruma.js")).korumaAyarMenu(player, [b]);
