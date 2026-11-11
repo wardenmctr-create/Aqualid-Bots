@@ -416,7 +416,7 @@ export function* uretIsi(org, hedefId, n, kim) {
 }
 
 /** Aqualit Fırın: üssünde yoksa çantadan/sandıktan alıp koyar, o da yoksa yapar. */
-function* firinHazirla(org) {
+export function* firinHazirla(org) {
   let f = yakinBlok(org, FIRIN);
   if (f) return f;
   if (org.count(FIRIN) < 1) {
@@ -499,3 +499,6 @@ export function* bosZamanUret(org) {
   return false;
 }
 ORG.BOS_IS.push(bosZamanUret);
+
+// us.js döngüsel içe aktarmasın diye (us.js -> org_uretim -> organizator -> yardimci -> us.js)
+globalThis.__aqOrgUretim = { firinHazirla, uretIsi };

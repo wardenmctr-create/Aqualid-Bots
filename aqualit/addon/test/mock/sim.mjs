@@ -1545,6 +1545,35 @@ if (run("us")) {
   US.platformKur(player, ow.getBlock({ x: 80, y: GROUND, z: 80 }));
   ticks(2);
   check(ow.getEntities({ type: US.PLATFORM }).length === 1 && !player._inv.getItem(0), "Organizatör Platformu kuruldu");
+  // ağ: platform kenarından sandığa ve fırına kablo
+  const pe = ow.getEntities({ type: US.PLATFORM })[0];
+  const pc = { x: Math.floor(pe.location.x), y: Math.floor(pe.location.y), z: Math.floor(pe.location.z) };
+  const SK = await import("./scripts/sandik.js");
+  for (let x = pc.x + 5; x <= pc.x + 8; x++) ow.setBlockType({ x, y: pc.y, z: pc.z }, "aqualit:aqualit_kablo");
+  const sp = { x: pc.x + 9, y: pc.y, z: pc.z };
+  SK.placeChestBlock(ow, sp, "genel", player.id, { x: pc.x, y: pc.y, z: pc.z });
+  ow.setBlockType({ x: pc.x + 6, y: pc.y, z: pc.z + 1 }, "aqualit:aqualit_firin");
+  ow.setBlockType({ x: pc.x + 7, y: pc.y, z: pc.z - 1 }, "aqualit:aqualit_block");
+  ow.setBlockType({ x: pc.x + 8, y: pc.y, z: pc.z + 1 }, "aqualit:aqualit_aktarim");
+  ticks(3);
+  const ag = US.agBul(pe);
+  check(ag.sandiklar.size === 1 && ag.firinlar.length === 1 && ag.aktarimlar.length === 1 && ag.guc, `platform ağı: ${ag.sandiklar.size} sandık, ${ag.firinlar.length} fırın, ${ag.aktarimlar.length} aktarım, güç ${ag.guc}`);
+  // aktarım: ağdaki sandıktan uzak sandığa
+  const [cid] = [...ag.sandiklar.keys()];
+  const kk = new SK.UnitContainer(cid);
+  kk.addItem(new ItemStack("minecraft:raw_iron", 10));
+  const uzak = { x: pc.x - 20, y: pc.y, z: pc.z - 20 };
+  SK.placeChestBlock(ow, uzak, "genel", player.id, { x: pc.x, y: pc.y, z: pc.z });
+  ticks(2);
+  const ucid = SK.unitIdAt(ow.id, uzak);
+  // fırında eritme (güçlü: hızlı)
+  const gen = US.agdaErit(pe, ag, player);
+  let r; let adim = 0; while (!(r = gen.next()).done && adim++ < 200) {}
+  let demir = 0; for (let L = 0; L < kk.size; L++) { const it = kk.getItem(L); if (it?.typeId === "minecraft:iron_ingot") demir += it.amount; }
+  check(r.value === 10 && demir === 10, `bağlı fırında 10 ham demir eridi (${adim} adım)`);
+  const n = US.aktar([cid], [ucid], "minecraft:iron_ingot");
+  let uz = 0; const uk = new SK.UnitContainer(ucid); for (let L = 0; L < uk.size; L++) { const it = uk.getItem(L); if (it?.typeId === "minecraft:iron_ingot") uz += it.amount; }
+  check(n === 10 && uz === 10, "uzaktan aktarımla 10 demir uzak sandığa ışınlandı");
 }
 
 // ---------------------------------------------------------------- v0.3.8 Keşif Haritası

@@ -431,8 +431,19 @@ export function* organizatorIsi(org) {
   org.say("Organizatör hazır! Telefondan ya da bana dokunup yazıyla görev verebilirsin.", { force: false });
   let sonDuzen = system.currentTick;
   for (;;) {
-    // 1) istekler
+    // 1) istekler (v0.4.2: işi çoksa boştaki öteki Organizatör'e devreder ve bunu söyler)
     const q = O.istekler.get(org.id);
+    if (q?.length > 1) {
+      const bos = orgListesi(org.owner).find((o) => o !== org && !(O.istekler.get(o.id)?.length) && /Hazır/.test(o.status ?? ""));
+      if (bos) {
+        const devir = q.pop();
+        let q2 = O.istekler.get(bos.id);
+        if (!q2) O.istekler.set(bos.id, (q2 = []));
+        q2.push(devir);
+        konus(org.owner, `${bos.name}, elimde iş çok: ${devir.n} ${devir.tanim?.ad ?? "eşya"} işini sen alır mısın?`, org);
+        konus(org.owner, `Tamam ${org.name}, ben hallediyorum.`, bos);
+      }
+    }
     if (q?.length) {
       const ist = q.shift();
       try {
