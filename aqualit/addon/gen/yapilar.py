@@ -765,6 +765,9 @@ ALL = [minik_kulube, kamp_alani, koy_kuyusu, lamba_diregi, cicek_bahcesi, cesme,
        demirci, kutuphane, ambar, yel_degirmeni,
        gozetleme_kulesi, deniz_feneri, yagmaci_kulesi, kucuk_kale, end_kulesi,
        bugday_tarlasi, hayvan_agili, seker_kamisi, isigin_sonu]
+# v0.4.2: Bedrock farmları (gen/farmlar.py)
+import farmlar as _FA  # noqa: E402
+ALL += _FA.FARMLAR
 KATEGORI = {'kucuk': 'Küçük yapılar', 'ev': 'Evler', 'koy': 'Köy yapıları', 'kule': 'Kuleler ve kaleler',
             'ciftlik': 'Çiftlikler', 'dev': 'Dev yapılar'}
 
