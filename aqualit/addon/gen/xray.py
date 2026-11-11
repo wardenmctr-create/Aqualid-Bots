@@ -98,3 +98,20 @@ def simge(GEN):
     d.line((9, 10, 13, 8), fill=(220, 245, 255, 255), width=2)
     d.polygon([(22, 24), (29, 31), (31, 29), (24, 22)], fill=(64, 200, 190, 255), outline=(10, 14, 20, 255))
     im.save(os.path.join(GEN, 'kesif_xray.png'))
+
+
+def modul_simgeleri(GEN):
+    """Kılıçlı yükseltme modülü simgeleri: devre kartı, ortada seviye renginde çip."""
+    from PIL import ImageDraw
+    renk = {2: (60, 220, 90), 3: (170, 80, 255), 4: (255, 210, 50), 5: (60, 150, 255)}
+    for n, c in renk.items():
+        im = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        d.rounded_rectangle((3, 6, 28, 26), radius=3, fill=(30, 60, 55, 255), outline=(10, 14, 20, 255), width=2)
+        for x in (7, 12, 17, 22):
+            d.line((x, 4, x, 7), fill=(200, 200, 200, 255), width=1); d.line((x, 25, x, 28), fill=(200, 200, 200, 255), width=1)
+        d.rectangle((10, 11, 21, 21), fill=c + (255,), outline=(255, 255, 255, 255))
+        for i in range(n - 1):
+            d.rectangle((12 + i * 3, 14, 13 + i * 3, 18), fill=(255, 255, 255, 255))
+        d.line((5, 9, 10, 9), fill=(80, 230, 210, 255)); d.line((21, 23, 26, 23), fill=(80, 230, 210, 255))
+        im.save(os.path.join(GEN, f'kilicli_modul_{n}.png'))

@@ -7,6 +7,23 @@ import { spawnPortalci } from "./portalci.js";
 import { platformKur } from "./us.js";
 import { xrayMenu } from "./xray.js";
 import { rodMenu } from "./insa.js";
+import { applyStats, defaultStats, getStats } from "./kilicli.js";
+import { consumeHand } from "./place.js";
+import * as FX2 from "./fx.js";
+
+/** v0.4.4: Kılıçlı yükseltme modülü: bir alt seviyedeki Kılıçlı'yı o seviyeye çıkarır (ayarları korunur). */
+export function modulTak(player, bot, seviye) {
+  if (bot.type !== "kilicli") return player.sendMessage("§cYükseltme modülü yalnız Kılıçlı robotlarda çalışır.");
+  if (bot.model >= seviye) return player.sendMessage(`§e${bot.name} zaten Seviye ${bot.model}.`);
+  if (bot.model !== seviye - 1) return player.sendMessage(`§eBu modül Seviye ${seviye - 1} Kılıçlı içindir (${bot.name} Seviye ${bot.model}).`);
+  const eski = getStats(bot), yeni = defaultStats(seviye);
+  applyStats(bot, { ...yeni, tarz: eski.tarz, ciddiyet: eski.ciddiyet, guc: eski.guc, mod101: eski.mod101 }, true);
+  consumeHand(player);
+  safe(() => FX2.flashAndShake(bot.dim, bot.loc, 12, 0.15));
+  safe(() => FX2.enerjiHalka(bot.dim, bot.loc, 1.5));
+  safe(() => bot.dim.playSound("random.levelup", bot.loc, { pitch: 1.2 }));
+  bot.say(`Yükseldim: Seviye ${seviye}! Yeni güçlerim açıldı.`);
+}
 import { telefonAc } from "./org_ui.js";
 import { H } from "./kayit.js";
 import { spawnKesif } from "./kesif.js";
@@ -51,6 +68,7 @@ export function useDevice(player, kind, opts = {}) {
         case "otopilot": return fire(() => otopilotMenu(player));
         case "tirman": return fire(() => tirmanMenu(player));
         case "insa": return fire(() => rodMenu(player));
+        case "modul": return player.sendMessage("§7Yükseltme modülünü Kılıçlı robotuna dokunarak tak (bir alt seviyedeki Kılıçlı'ya).");
         case "xray": {
           const v = safe(() => player.getComponent("minecraft:riding")?.entityRidingOn);
           const matkap = v && safe(() => v.typeId) === "aqualit:kesif" && (safe(() => v.getDynamicProperty("aq:form")) ?? safe(() => v.getProperty("aqualit:form"))) === "matkap";
@@ -264,6 +282,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
   const devices = {
     "aqualit:task_remote": "remote", "aqualit:robot_radio": "radio", "aqualit:robot_tracker": "tracker",
     "aqualit:command_rod": "rod", "aqualit:tuning_gear": "gear", [KIT_ID]: "kit",
+    "aqualit:kilicli_modul_2": "modul", "aqualit:kilicli_modul_3": "modul", "aqualit:kilicli_modul_4": "modul", "aqualit:kilicli_modul_5": "modul",
   };
   const kind = devices[itemId];
   // v0.4.2: eğilip elindeki eşyayla robota dokun: eşyanın hepsini robota verir (çantasına)
@@ -304,6 +323,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
       case "rod": return fire(() => UI.rodRobot(player, bot));
       case "gear": return bot.type === "kilicli" ? fire(() => UI.gearForm(player, bot)) : player.sendMessage("§cAyar dişlisi yalnızca kılıçlı robotlarda çalışır.");
       case "kit": return healRobot(player, bot);
+      case "modul": return modulTak(player, bot, Number(itemId.slice(-1)));
     }
   });
 });

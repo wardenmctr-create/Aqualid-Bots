@@ -75,6 +75,8 @@ DEVICES = [
     # v0.3.8: devasa Keşif Haritası (oyuncu da kullanır) ve yalnız yaratıcıdan alınan dron ordusu
     ('kesif_haritasi', 'Keşif Haritası (basılı tut)', 'kesif_haritasi', 'harita', 'Haritayı aç'),
     ('dron_ordusu', 'Keşif Dron Ordusu Çağırma (basılı tut: 25 dron)', 'dron_ordusu', 'ordu', 'Ordu gönder'),
+    # v0.4.4: Kılıçlı yükseltme modülleri (hayatta kalmada seviye 2–5): Kılıçlı'ya dokun
+    *[(f'kilicli_modul_{n}', f'Kılıçlı Yükseltme Modülü · Seviye {n} (Kılıçlı\'ya dokun)', f'kilicli_modul_{n}', 'modul', 'Yükselt') for n in range(2, 6)],
     # v0.4.2: İnşa Çubuğu (dokun: değer, eğilip dokun: özellik, havaya dokun: menü)
     ('insa_cubugu', 'Aqualit İnşa Çubuğu (blok durumlarını ayarlar)', 'insa_cubugu', 'insa', 'Ayarla'),
     # v0.4.0: Organizatör Platformu (9x9 tek parça; yere bas: kurulur, panele dokun: üs menüsü)
@@ -265,3 +267,10 @@ shaped('org_platform', ['XXX', 'XPX', 'XXX'], {'X': I('aqualit:aqualit_block'), 
        'aqualit:org_platform')
 
 shaped('insa_cubugu', [' RX', ' SX', 'S  '], {'R': I('minecraft:redstone'), 'X': I(K), 'S': I('minecraft:stick')}, 'aqualit:insa_cubugu')
+
+# v0.4.4: Kılıçlı yükseltme modülleri (PLAN.md önerisi)
+_B = I('aqualit:aqualit_block')
+shaped('kilicli_modul_2', ['BDB'], {'B': _B, 'D': I('minecraft:diamond')}, 'aqualit:kilicli_modul_2')
+shaped('kilicli_modul_3', ['BDB', 'DRB'], {'B': _B, 'D': I('minecraft:diamond'), 'R': I('minecraft:redstone_block')}, 'aqualit:kilicli_modul_3')
+shaped('kilicli_modul_4', ['BKB', 'KEK', 'BKB'], {'B': _B, 'K': I('minecraft:blaze_rod'), 'E': I('minecraft:ender_pearl')}, 'aqualit:kilicli_modul_4')
+shaped('kilicli_modul_5', ['BBB', 'BSB', 'BNB'], {'B': _B, 'S': I('minecraft:nether_star'), 'N': I('minecraft:netherite_ingot')}, 'aqualit:kilicli_modul_5')

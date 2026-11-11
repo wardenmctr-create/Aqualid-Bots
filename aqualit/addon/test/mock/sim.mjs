@@ -1519,6 +1519,22 @@ if (run("kucuk")) {
   let r, adim = 0; while (!(r = gen.next()).done && adim++ < 4000) {}
   let komur = 0; for (let i = 0; i < 36; i++) { const it = player._inv.getItem(i); if (it?.typeId === "minecraft:coal") komur += it.amount; }
   check(komur === 7, "iş bitince 'bana getir': 7 kömür oyuncuya geldi");
+  // v0.4.4: Kılıçlı yükseltme modülü
+  {
+    give("aqualit:robot_kilicli_1");
+    ticks(12);
+    useOn("aqualit:robot_kilicli_1", { x: -34, y: GROUND, z: 30 }, "Up", { comp: "aqualit:robot_item", p: { type: "kilicli", model: 1 } });
+    ticks(5);
+    const kb = myBots().filter((x) => x.type === "kilicli").pop();
+    give("aqualit:kilicli_modul_3", 1, 1); ticks(12);
+    world.beforeEvents.playerInteractWithEntity.fire({ player, target: kb.e, itemStack: player._inv.getItem(1), cancel: false });
+    ticks(2);
+    check(kb.model === 1 && player._inv.getItem(1), "yanlış seviye modülü takılmadı (Seviye 1'e 3. seviye modülü)");
+    give("aqualit:kilicli_modul_2", 1, 1); ticks(12);
+    world.beforeEvents.playerInteractWithEntity.fire({ player, target: kb.e, itemStack: player._inv.getItem(1), cancel: false });
+    ticks(2);
+    check(kb.model === 2 && !player._inv.getItem(1), "modülle Kılıçlı Seviye 2'ye yükseldi");
+  }
 }
 
 // ---------------------------------------------------------------- v0.4.0 evcil dronlar

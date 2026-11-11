@@ -552,7 +552,7 @@ def main():
         if os.path.exists(d):
             shutil.rmtree(d)
     os.makedirs(BP); os.makedirs(RP); os.makedirs(GEN)
-    manifests(); EO.build(RP, BP, wj, GEN); PO.build(RP, BP, wj, GEN); YO.build(RP, BP, wj); OUO.platform_build(RP, BP, wj, GEN); XR.simge(GEN); INSA.rod_icon().save(os.path.join(GEN, 'insa_cubugu.png')); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); HI.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
+    manifests(); EO.build(RP, BP, wj, GEN); PO.build(RP, BP, wj, GEN); YO.build(RP, BP, wj); OUO.platform_build(RP, BP, wj, GEN); XR.simge(GEN); XR.modul_simgeleri(GEN); INSA.rod_icon().save(os.path.join(GEN, 'insa_cubugu.png')); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); HI.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
     addon = package()
     print('paket:', addon)
 
