@@ -244,7 +244,9 @@ def kesif_rp():
                         'v.kayma = math.lerp(v.kayma ?? 0, math.clamp(v.dn * 0.09 * math.min(v.hiz / 7, 1.4), -32, 32), 0.08);',
                         'v.yatma = math.lerp(v.yatma ?? 0, math.clamp(-v.dn * 0.03 * math.min(v.hiz / 6, 1.2), -9, 9), 0.12);',
                         'v.sh = v.sh ?? 0; v.sv = v.sv ?? 0;',
-                        'v.sv = v.sv + (-v.sh * 60 - v.sv * 7 + math.clamp(-v.ivme, -40, 40) * 2.2) * v.dt;',
+                        # iniş: yüksekten düşüp yere değince burun yaylanır (rampa uçuşu)
+                        'v.vy = q.vertical_speed; v.inis = ((v.vyo ?? 0) < -6 && v.vy > -1.5) ? math.min(-(v.vyo ?? 0) * 9, 220) : 0; v.vyo = v.vy;',
+                        'v.sv = v.sv + (-v.sh * 60 - v.sv * 7 + math.clamp(-v.ivme, -40, 40) * 2.2) * v.dt + v.inis * 0.06;',
                         'v.sh = math.clamp(v.sh + v.sv * v.dt, -14, 14);',
                     ],
                     'animate': ['gizle', 'tutucu', 'tema', 'ctrl', 'kapi_ctrl']},

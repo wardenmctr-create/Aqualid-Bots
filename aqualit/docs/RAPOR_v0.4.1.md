@@ -24,8 +24,13 @@
   zemin renginde toz (kumda sarı, karda beyaz, toprakta kahve); drift ve sert frende toz bulutu ve lastik sesi.
   Not: oyun binilen araca betikle itki uygulatmıyor; kayma gövde açısıyla görünüyor, aracın yolu oyunun sürüşüyle.
 
+- **Rampa uçuşu:** hızla (yaklaşık 6 blok/sn üstü) bir rampadan çıkınca araç havalanıyor ve havada süzülüyor
+  (en çok 6 sn). İnince burun yaylanıyor, dört tekerlekten toz kalkıyor. Ekranda uçuş süresi ve mesafe; rekor kırınca
+  "YENİ REKOR!". Hız çubuğunu yükseltince daha uzağa uçar. Yapışkan modda kapalı (yüzeye tutunur).
+
 ## Oyunda denenecekler
 1. Matkapta X-ray: üç kip, ayarlar, inince eski hâline dönüş. Telefon yavaşlıyor mu?
 2. Hız çubuğu ve kare: kaydırırken renk değişiyor mu?
 3. Arazi: Tırmanma Modu açılıyor mu (açılmazsa sohbetteki teşhis yazısını gönder), 4 blok çıkıyor mu, burun kalkıyor mu?
 4. Drift, fren sallanması ve toz hoşuna gitti mi? Fazla/az ise ayarlarım.
+5. Rampa uçuşu: rampadan hızla çık. Havada kalma süresi az/çok mu? Merdiven çıkarken yanlışlıkla havalanıyor mu?

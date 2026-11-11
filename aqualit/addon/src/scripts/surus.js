@@ -7,6 +7,10 @@ import { safe } from "./util.js";
 import { KESIF_ID, formOf, ridersOf } from "./kesif.js";
 
 const once = new Map();      // araç kimliği -> { yaw, hiz }
+// v0.4.1 rampa uçuşu: hızla rampadan çıkınca araç havalanır, süzülür; inince yaylanır, toz kalkar; süre ve rekor
+const ucus = new Map();      // araç kimliği -> { havada, bas, x, z, yer: kaç örnek yerdeydi }
+export const UCUS = { HIZ: 0.32, MIN_SURE: 8 };
+const KALKIS_TIK = 6;
 const RENK = [
   [/sand|sandstone/, [0.86, 0.79, 0.55]],
   [/snow|ice/, [0.95, 0.97, 1]],
@@ -51,6 +55,7 @@ system.runInterval(() => {
     if (ridersOf(v)[0] !== pl) continue;                       // yalnız sürücü için bir kez
     const d = surusDurumu(v, once.get(v.id));
     once.set(v.id, { yaw: d.yaw, hiz: d.hiz });
+    rampa(pl, v, d);
     if (d.hiz < 0.08) continue;
     const dim = v.dimension, l = v.location;
     const r = (d.yaw * Math.PI) / 180;
@@ -71,3 +76,57 @@ system.runInterval(() => {
       safe(() => dim.playSound("step.gravel", l, { volume: 0.8, pitch: 0.6 + Math.random() * 0.3 }));
   }
 }, 2);
+
+/** Rampa uçuşu: kalkış (yerden hızla, yukarı doğru ayrılınca kısa kaldırma), süzülme, iniş. */
+export function rampa(pl, v, d) {
+  if (safe(() => v.getProperty("aqualit:tutucu"), false)) return;     // yapışkan modda yüzeye tutunur
+  const yerde = safe(() => v.isOnGround, true);
+  const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 }) ?? { x: 0, y: 0, z: 0 };
+  let u = ucus.get(v.id);
+  if (!u) ucus.set(v.id, (u = { havada: false, bas: 0, yer: 0, x: 0, z: 0 }));
+  const t = system.currentTick;
+  if (yerde) {
+    if (u.havada) {                                        // iniş
+      u.havada = false;
+      safe(() => v.removeEffect("slow_falling"));
+      safe(() => v.removeEffect("levitation"));
+      const sure = t - u.bas;
+      if (sure >= UCUS.MIN_SURE) {
+        const l = v.location;
+        const mesafe = Math.round(Math.hypot(l.x - u.x, l.z - u.z));
+        const c = zeminRengi(v.dimension, l) ?? [0.55, 0.5, 0.42];
+        const r = (d.yaw * Math.PI) / 180;
+        for (const [fx, sx] of [[1.4, 1], [1.4, -1], [-1.5, 1], [-1.5, -1]]) {
+          toz(v.dimension, { x: l.x - Math.sin(r) * fx - Math.cos(r) * sx, y: l.y + 0.15, z: l.z + Math.cos(r) * fx - Math.sin(r) * sx }, 5, c);
+        }
+        safe(() => v.dimension.playSound("mob.irongolem.walk", l, { volume: 1, pitch: 0.6 }));
+        safe(() => v.dimension.playSound("step.gravel", l, { volume: 1, pitch: 0.5 }));
+        const sn = (sure / 20).toFixed(1);
+        const rekor = Number(safe(() => pl.getDynamicProperty("aq:ucus_rekor"), 0) ?? 0);
+        const yeni = sure > rekor;
+        if (yeni) safe(() => pl.setDynamicProperty("aq:ucus_rekor", sure));
+        safe(() => pl.onScreenDisplay.setActionBar(`§b✈ Uçuş: §f${sn} sn · ${mesafe} blok${yeni ? " §6§l YENİ REKOR!" : ` §7(rekor ${(rekor / 20).toFixed(1)} sn)`}`));
+        if (yeni && sure > 20) safe(() => pl.playSound("random.levelup", { pitch: 1.4 }));
+      }
+    }
+    u.yer = Math.min(u.yer + 1, 10);
+    return;
+  }
+  if (!u.havada) {
+    // kalkış: bir süredir yerdeydi, hızlı gidiyor ve yukarı doğru ayrıldı (rampa) ya da hızla kenardan uçtu
+    u.havada = true;
+    u.bas = t;
+    u.x = v.location.x;
+    u.z = v.location.z;
+    if (u.yer >= 2 && d.hiz >= UCUS.HIZ) {
+      const guc = Math.min(4, Math.max(0, Math.round((d.hiz - UCUS.HIZ) * 8)));
+      if (vel.y > 0.02) safe(() => v.addEffect("levitation", KALKIS_TIK + guc * 2, { amplifier: 2 + guc, showParticles: false }));
+      safe(() => v.addEffect("slow_falling", 20 * 6, { amplifier: 0, showParticles: false }));
+      safe(() => v.dimension.playSound("mob.horse.jump", v.location, { volume: 0.8, pitch: 0.8 }));
+    }
+    u.yer = 0;
+    return;
+  }
+  // havada: 6 saniyeden uzun kalırsa süzülme biter (sonsuz uçmasın)
+  if (t - u.bas > 20 * 6) safe(() => v.removeEffect("slow_falling"));
+}

@@ -1342,8 +1342,22 @@ if (run("hiz")) {
   ke._rot = { x: 0, y: (ke._rot?.y ?? 0) + 25 };
   const b = SU.surusDurumu(ke, { yaw: a.yaw, hiz: 0.9 });
   check(Math.abs(b.dn) > 20 && b.drift > 5 && b.fren > 0.3, "sürüş motoru drifti ve sert freni tanıyor");
+  // rampa uçuşu: hızla yukarı doğru yerden ayrılınca kalkar, süzülür, inince süre yazar
+  ke.isOnGround = true;
+  ke.getVelocity = () => ({ x: 0, y: 0, z: 0.6 });
+  SU.rampa(player, ke, { hiz: 0.6, yaw: 0 }); SU.rampa(player, ke, { hiz: 0.6, yaw: 0 }); SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  ke.isOnGround = false;
+  ke.getVelocity = () => ({ x: 0, y: 0.4, z: 0.6 });
+  SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  check(ke.getEffect("levitation") && ke.getEffect("slow_falling"), "rampadan hızla çıkınca araç havalandı, süzülüyor");
+  ticks(36);
+  ke.isOnGround = true;
+  SU.rampa(player, ke, { hiz: 0.5, yaw: 0 });
+  check(!ke.getEffect("slow_falling") && /Uçuş: .*sn/.test(player.actionbar.at(-1) ?? "") && player.getDynamicProperty("aq:ucus_rekor") > 0,
+    "inince süzülme bitti, uçuş süresi ve rekor yazdı");
   const t0 = player.particles?.length ?? 0;
   delete ke.getVelocity;
+  ke.isOnGround = true;
   // matkap: X-ray eşyası gelir, tırmanma gider
   const XR = await import("./scripts/xray.js");
   XR.XR_AYAR.R = 1;
