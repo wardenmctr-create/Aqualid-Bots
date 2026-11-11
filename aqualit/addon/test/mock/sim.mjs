@@ -299,6 +299,7 @@ if (run("ui")) {
   const task = await import("./scripts/ui/task.js");
   // robot menüsü -> görev ver -> kum seç -> devam -> miktar -> seçenekler
   UI.answers.push((f) => ({ canceled: false, selection: 0 }));            // Görev ver
+  UI.answers.push((f) => ({ canceled: false, selection: 0 }));            // Malzeme topla (v0.5.0)
   UI.answers.push((f) => ({ canceled: false, selection: 1 }));            // Kum
   UI.answers.push((f) => ({ canceled: false, selection: 0 }));            // Devam
   UI.answers.push((f) => ({ canceled: false, formValues: [4] }));         // 16
