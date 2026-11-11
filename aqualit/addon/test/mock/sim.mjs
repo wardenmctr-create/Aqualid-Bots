@@ -1733,6 +1733,21 @@ if (run("portalci")) {
     check(gizli, "çırak yokken Nether madenleri kilitli");
     PC.portalciOf(pcE).mod = "cirak";
   }
+  // v0.5.0: Portalcı menüsü "Robota ışınla": uzaktaki robotun yanına geçirir
+  {
+    const uzak = myBots().find((x) => x.type === "madenci");
+    uzak.e.teleport({ x: 300.5, y: GROUND + 1, z: -300.5 });
+    ticks(2);
+    UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => /Robota ışınla/.test(b.text)) }));
+    UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => b.text.includes(uzak.name)) }));
+    world.beforeEvents.playerInteractWithEntity.fire({ player, target: pcE, cancel: false });
+    for (let i = 0; i < 6; i++) { ticks(1); await new Promise((r) => setTimeout(r, 0)); }
+    ticks(20);
+    check(V3dist(player.location, uzak.loc) < 3 && player.dimension.id === uzak.dim.id, "Portalcı oyuncuyu uzaktaki robotun yanına ışınladı");
+    player.teleport({ x: 40.5, y: GROUND + 1, z: 40.5 });
+    uzak.e.teleport({ x: 44.5, y: GROUND + 1, z: 36.5 });
+    ticks(2);
+  }
 }
 
 // ---------------------------------------------------------------- v0.4.0 Organizatör üssü

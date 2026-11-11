@@ -8,6 +8,8 @@ import { safe, V, wait, log } from "./util.js";
 import { menu } from "./ui/forms.js";
 import { consumeHand } from "./place.js";
 import { bots, botByRid, startJob } from "./brain.js";
+import { Robots } from "./store.js";
+import { robotIcon } from "./constants.js";
 
 export const PORTALCI = "aqualit:portalci";
 export const PORTAL = "aqualit:portal";
@@ -329,6 +331,46 @@ export function* netherIsi(b, p, tur, adet) {
   b.setStatus("Hazır");
 }
 
+
+// v0.5.0: Portalcı oyuncuyu robotunun yanına ışınlar (uzaklık ve boyut fark etmez; yüklü değilse kayıtlı son yeri)
+const BOYUT_AD = { "minecraft:overworld": "Üst Dünya", "minecraft:nether": "Nether", "minecraft:the_end": "End" };
+export function robotYeri(pl, kayit) {
+  const canli = [...bots.values()].find((x) => x.rid === kayit.rid && x.valid);
+  if (canli) return { loc: { ...canli.loc }, dim: canli.dim.id };
+  if (!kayit.pos) return null;
+  return { loc: { x: kayit.pos.x + 0.5, y: kayit.pos.y, z: kayit.pos.z + 0.5 }, dim: kayit.dim ?? "minecraft:overworld" };
+}
+export function isinlaYap(pl, p, yer) {
+  const yaw = safe(() => pl.getRotation().y, 0) ?? 0;
+  portalAc(pl.dimension, onunde(pl.location, yaw, 1.2), (yaw + 180) % 360, null, true, 50);
+  safe(() => pl.camera.fade({ fadeTime: { fadeInTime: 0.2, holdTime: 0.3, fadeOutTime: 0.5 }, fadeColor: { red: 0.45, green: 0.15, blue: 0.75 } }));
+  system.runTimeout(() => {
+    const dim = world.getDimension(yer.dim);
+    const hedef = { x: yer.loc.x + 1.5, y: yer.loc.y, z: yer.loc.z };
+    safe(() => pl.teleport(hedef, { dimension: dim }));
+    portalAc(dim, { x: hedef.x, y: hedef.y, z: hedef.z + 1.2 }, 180, null, true, 50);
+    if (p) safe(() => p.e.teleport({ x: hedef.x, y: hedef.y + 2, z: hedef.z }, { dimension: dim }));
+    safe(() => dim.playSound("mob.endermen.portal", hedef, { volume: 0.8, pitch: 1.2 }));
+    if (yer.dim === "minecraft:nether") safe(() => pl.addEffect("fire_resistance", 200, { showParticles: false }));
+  }, 12);
+  return true;
+}
+async function robotaIsinla(pl, p) {
+  const liste = Robots.list(pl.id);
+  if (!liste.length) return pl.sendMessage("§7Robotun yok.");
+  const btns = liste.map((k) => {
+    const y = robotYeri(pl, k);
+    const uz = y && y.dim === pl.dimension.id ? `${Math.round(Math.hypot(y.loc.x - pl.location.x, y.loc.z - pl.location.z))} blok` : BOYUT_AD[y?.dim] ?? "?";
+    return { text: `§l${k.name}§r\n§7${uz}`, icon: robotIcon(k.type, k.model ?? 1), k };
+  });
+  const c = await menu(pl, "§lRobota ışınla", "§7Kimin yanına geçeyim?", btns);
+  if (!c) return;
+  const yer = robotYeri(pl, c.k);
+  if (!yer) return pl.sendMessage("§cRobotun yeri bilinmiyor.");
+  isinlaYap(pl, p, yer);
+  pl.sendMessage(`§dPortalcı seni §l${c.k.name}§r§d yanına ışınlıyor...`);
+}
+
 // ======================================================================= menü
 async function pcMenu(pl, p) {
   const nether = pl.dimension.id === "minecraft:nether";
@@ -339,11 +381,13 @@ async function pcMenu(pl, p) {
     { text: "Burada bekle", v: "bekle" },
     { text: "§lÇırağı yap§r\n§7Bir robota yardım etsin (Nether seferleri)", v: "cirak" },
   ];
+  btns.push({ text: "§lRobota ışınla§r\n§7Bir robot seç, nerede olursa olsun yanına geç", icon: "textures/items/ender_pearl", v: "isinla" });
   const b = p.mod === "cirak" ? botByRid(p.cirak) : null;
   if (b) btns.push({ text: `§l${b.name} ile Nether'den malzeme getir`, v: "malzeme" });
   btns.push({ text: "§7Eşyaya dönüştür (envantere al)", v: "al" });
   const r = await menu(pl, "§lPortalcı", `§7Şu an: §f${MODLAR[p.mod] ?? p.mod}${b ? ` §7(${b.name})` : ""}`, btns);
   if (!r) return;
+  if (r.v === "isinla") return robotaIsinla(pl, p);
   if (r.v === "portal") {
     pl.sendMessage("§dPortal açılıyor...");
     system.runJob((function* () {
