@@ -10,6 +10,7 @@ import { safe, V } from "./util.js";
 import { menu } from "./ui/forms.js";
 import { Harita, Yerler } from "./harita.js";
 import { HUCRE, AD } from "./harita_isaret.js";
+import { ISARET } from "./harita_glif.js";
 import { YAPI } from "./yapi_bilgi.js";
 import { dronTara } from "./kesif_dron.js";
 import { bots } from "./brain.js";
@@ -271,3 +272,30 @@ export async function orduMenu(pl) {
   }
   system.runJob(is());
 }
+
+// ======================================================================= sürerken mini harita (v0.4.2)
+const OKLAR = ["ok_n", "ok_ne", "ok_e", "ok_se", "ok_s", "ok_sw", "ok_w", "ok_nw"];
+/** En yakın 3 yapı: ok aracın gidişine göre (yukarı = önün), ad, uzaklık. */
+export function miniHaritaYazi(pl, v) {
+  const p = v.location, dim = v.dimension;
+  const yaw = safe(() => v.getRotation().y, 0) ?? 0;
+  const l = Yerler.list(pl.id).filter((y) => y.dim === dim.id).map((y) => ({ y, d: V.hdist(y.pos, p) }))
+    .sort((a, b) => a.d - b.d).slice(0, 3);
+  if (!l.length) return "§7Mini harita: yakında bilinen yapı yok";
+  return l.map(({ y, d }) => {
+    const mutlak = aci(y.pos.x - p.x, y.pos.z - p.z);            // kuzey 0
+    const gidis = (((yaw - 180) % 360) + 360) % 360;            // aracın baktığı yön (kuzey 0)
+    const goreli = (((mutlak - gidis) % 360) + 360) % 360;
+    return `§f${ISARET[OKLAR[yon8(goreli)]] ?? ""} §b${ad(y)} §7${Math.round(d)}m`;
+  }).join("  ");
+}
+system.runInterval(() => {
+  for (const pl of world.getAllPlayers()) {
+    if (safe(() => pl.getDynamicProperty("aq:mini_harita"), false) !== true || acik.has(pl.id)) continue;
+    const v = safe(() => pl.getComponent("minecraft:riding")?.entityRidingOn);
+    if (!v || safe(() => v.typeId) !== "aqualit:kesif") continue;
+    const f = safe(() => v.getDynamicProperty("aq:form")) ?? safe(() => v.getProperty("aqualit:form"));
+    if (f === "matkap" || f === "robot") continue;              // matkapta cevher dürbünü var
+    safe(() => pl.onScreenDisplay.setActionBar(miniHaritaYazi(pl, v)));
+  }
+}, 20);

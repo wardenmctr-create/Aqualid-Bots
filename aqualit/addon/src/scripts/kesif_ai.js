@@ -1053,6 +1053,8 @@ export async function anaMenu(pl, e) {
   btns.push({ text: "§lBiyom bul§r\n§7Çöl, kiraz bahçesi, mantar adası...", icon: ICON("compass"), v: "biyom" });
   btns.push({ text: "§lÇevreyi keşfet§r\n§7Harita çıkarır, yoldaki yapıları kaydeder", icon: ICON("filled_map"), v: "kesfet" });
   btns.push({ text: "§lHaritam§r\n§7Tepeden canlı: yapılar, robotlar, sandıklar, moblar", icon: "textures/items/kesif_haritasi", v: "harita" });
+  const mini = safe(() => pl.getDynamicProperty("aq:mini_harita"), false) === true;
+  btns.push({ text: `Sürerken mini harita: ${mini ? "§2AÇIK" : "§cKAPALI"}§r\n§7En yakın yapılar, araca göre yönleriyle`, icon: ICON("map"), v: "mini" });
   btns.push({ text: "§lDron ordusu gönder§r\n§725 dron haritanın keşfedilmemiş yerlerine", icon: "textures/items/dron_ordusu", v: "ordu" });
   const otoOrdu = safe(() => e.getDynamicProperty("aq:oto_ordu"), true) !== false;
   btns.push({ text: `Otomatik dron ordusu: ${otoOrdu ? "§2AÇIK" : "§cKAPALI"}§r\n§7Boştayken 15 dakikada bir kendisi gönderir`, icon: ICON("clock"), v: "otoordu" });
@@ -1089,6 +1091,11 @@ export async function anaMenu(pl, e) {
       const acik = safe(() => e.getDynamicProperty("aq:oto_ordu"), true) !== false;
       safe(() => e.setDynamicProperty("aq:oto_ordu", !acik));
       return k.say(acik ? "Tamam, dron ordusunu kendiliğimden göndermeyeceğim." : "Tamam, boştayken dron ordusunu kendim gönderirim.");
+    }
+    case "mini": {
+      const acik = safe(() => pl.getDynamicProperty("aq:mini_harita"), false) === true;
+      safe(() => pl.setDynamicProperty("aq:mini_harita", !acik));
+      return safe(() => pl.sendMessage(acik ? "§7Mini harita kapandı." : "§bMini harita açık: §7sürerken ekranın altında en yakın yapılar ve yönleri."));
     }
     case "ordu": return basla(k, orduIsi(k), "25 dronluk ordumu haritanın keşfedilmemiş yerlerine gönderiyorum!");
     case "gotur": return goturMenu(pl, k);

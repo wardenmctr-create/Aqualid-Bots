@@ -1561,6 +1561,12 @@ if (run("harita")) {
   const n = HR.Harita.boyut(player.id);
   check(n > 60, `oyuncu yürüyünce yüklü alan haritaya işlendi (${n} yığın, ${Date.now() - t0} ms)`);
   HR.Yerler.ekle(player.id, { tur: "koy", ad: "Köy", pos: { x: 360, y: GROUND, z: 300 }, dim: ow.id });
+  // sürerken mini harita: araca göre yön
+  {
+    const fakeV = { location: { x: 300, y: GROUND, z: 300 }, dimension: ow, getRotation: () => ({ x: 0, y: 180 }) };   // kuzeye bakıyor
+    const yazi = KH.miniHaritaYazi(player, fakeV);
+    check(yazi.includes("Köy") && /\d+m/.test(yazi), "mini harita en yakın yapıyı ve uzaklığını yazıyor");
+  }
   // tepeden canlı harita: aç → yakın/orta/uzak → kapat
   const HI = await import("./scripts/harita_isaret.js");
   player.particles = [];
