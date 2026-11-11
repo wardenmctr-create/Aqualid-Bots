@@ -670,8 +670,9 @@ if (run("guc")) {
   ticks(5);
   const bot = myBots().filter((b) => b.type === "kilicli").pop();
   check(bot && bot.model === 5, "seviye 5 kılıçlı doğdu");
-  check(P.unlocked(1).length === 0 && P.unlocked(2).length === 1 && P.unlocked(3).length === 2
-    && P.unlocked(4).length === 4 && P.unlocked(5).length === 5, "güçler seviyelere göre açılıyor (0/1/2/4/5)");
+  await import("./scripts/powers2.js");
+  check(P.unlocked(1).length === 0 && P.unlocked(2).length === 2 && P.unlocked(3).length === 4
+    && P.unlocked(4).length === 9 && P.unlocked(5).length === 23, `güçler seviyelere göre açılıyor (${[1, 2, 3, 4, 5].map((m) => P.unlocked(m).length).join("/")})`);
   player.teleport({ x: 41.5, y: G, z: 41.5 });
   const st0 = K.getStats(bot);
   K.applyStats(bot, { ...st0, guc: false }, false); // elle denemeler: kendi başına güç kullanmasın
@@ -764,6 +765,32 @@ if (run("guc")) {
   ticks(100);
   check(!bot.pw.castName && bot.pw.energy >= before, "güçler kapalıyken kendi başına kullanmıyor");
   clear();
+  // v0.4.3: 18 yeni güç: her biri kalabalık düşmana karşı hatasız çalışır, çoğu hasar verir
+  {
+    const P2 = await import("./scripts/powers2.js");
+    let calisan = 0, hasarli = 0;
+    const hatali = [];
+    for (const key of P2.YENI_GUCLER) {
+      clear(); reset();
+      bot.e.teleport({ x: 40.5, y: G, z: 40.5 });
+      const zs = [[46, 40], [47, 42], [44, 46], [36, 40], [40, 34], [52, 41], [48, 48]].map(([x, z]) => spawn("minecraft:zombie", x, z));
+      zs.push(spawn("minecraft:skeleton", 54, 40));
+      const can0 = zs.map((z) => z.getComponent("minecraft:health")?.currentValue ?? 20);
+      bot.pw.cast = null;
+      const hp = bot.e.getComponent("minecraft:health");
+      if (key === "geri_sarma") { ticks(120); hp?.setCurrentValue?.(2); }
+      const ok = P.usePower(bot, key);
+      let hata = null;
+      for (let t = 0; t < 600 && bot.pw.cast; t++) {
+        try { system.tick(); } catch (e) { hata = e; break; }
+      }
+      if (ok && !hata) calisan++; else hatali.push(key);
+      if (zs.some((z) => (z._damage ?? 0) > 0)) hasarli++;
+    }
+    clear();
+    check(calisan === P2.YENI_GUCLER.length, `18 yeni gücün hepsi çalıştı (${calisan}${hatali.length ? ", çalışmayan: " + hatali.join(", ") : ""})`);
+    check(hasarli >= 12, `yeni güçlerin çoğu düşmanlara hasar verdi (${hasarli})`);
+  }
 }
 
 // ---------------------------------------------------------------- 12) çökme: suyu olmayan yerde çiftçi + yük testi

@@ -23,6 +23,7 @@ export const POWERS = {
   gok_gurultusu: { no: 12, ad: "Gök gürültüsü", model: 5, maliyet: 60, bekle: 40 * T, ciddiyet: 70 },
 };
 export const POWER_LIST = Object.keys(POWERS);
+export { state as gucDurumu, enemiesAround, weightOf, RANGED, pay, root, endCast, faceEntity, findStand, ownerOf, snd, alive };
 
 export const TARZLAR = ["dengeli", "saldirgan", "gizli"];
 export const TARZ_AD = { dengeli: "Dengeli", saldirgan: "Saldırgan", gizli: "Gizli" };
@@ -140,8 +141,10 @@ function fit(key, b, ctx, pw) {
       return clamp(36 + close.length * 11 + (big ? 20 : 0), 0, 100);
     }
   }
-  return 0;
+  return EK_FIT[key] ? safe(() => EK_FIT[key](b, ctx, pw, near), 0) ?? 0 : 0;
 }
+/** v0.4.3: yeni güçlerin uygunluk işlevleri (powers2.js doldurur). */
+export const EK_FIT = {};
 
 const STYLE = {
   dengeli: {},
@@ -563,7 +566,7 @@ function* castGokGurultusu(b, ctx) {
   endCast(b);
 }
 
-const CASTS = {
+export const CASTS = {
   kanca: castKanca,
   yildirim_kilici: castYildirimKilici,
   golge_adim: castGolgeAdim,
