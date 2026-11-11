@@ -5,7 +5,7 @@
 ## Arazi aracı
 - **Havada yönlendirme:** rampadan fırlayınca araç baktığın yöne döner, momentum o yöne kıvrılır; ileri basınca biraz
   hızlanır, geri basınca yavaşlar. Yükselip alçalma yok (vagon gibi kendi yayını çizer).
-- Rampa: en az 1 saniye tırmanış; hız, eğim ve rampa yüksekliği uçuşu belirler.
+- Rampa: en az 0,5 saniye tırmanış; hız, eğim ve rampa yüksekliği uçuşu belirler.
 
 ## Organizatör üs ağı
 - Platforma **kabloyla bağlı** sandıklar, fırınlar, çalışma masaları ve aktarım blokları bir ağ olur (kablo platformun

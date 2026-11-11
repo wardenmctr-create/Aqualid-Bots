@@ -12,7 +12,7 @@ const ucus = new Map();      // araç kimliği -> { havada, bas, x, z, yer: kaç
 // rampa: araç en az YOKUS_MIN tik (örnekleme 2 tikte bir) yokuş çıkıp (burnu yukarıda) hızla yerden ayrılınca uçar.
 // Tek blokluk basamak sayılmaz. Minecraft vagonu gibi: hız, rampa eğimi ve rampa yüksekliği ne kadarsa o kadar
 // yükseğe ve uzağa.
-export const UCUS = { HIZ: 0.3, MIN_SURE: 8, YOKUS_MIN: 20 };   // YOKUS_MIN: en az 1 sn (20 tik) rampada
+export const UCUS = { HIZ: 0.3, MIN_SURE: 8, YOKUS_MIN: 10 };   // YOKUS_MIN: en az 0,5 sn (10 tik) rampada
 const RENK = [
   [/sand|sandstone/, [0.86, 0.79, 0.55]],
   [/snow|ice/, [0.95, 0.97, 1]],
