@@ -1,7 +1,7 @@
 """Aqualit Robotlari: esya, blok, tarif ve dil tanimlari (tek kaynak)."""
 
 NS = 'aqualit'
-VERSION = [0, 4, 1]
+VERSION = [0, 4, 2]
 
 # ---------------------------------------------------------------- esyalar
 MATERIALS = [
@@ -69,7 +69,7 @@ DEVICES = [
     ('robot_tracker', 'Takip Ekranı', 'robot_tracker', 'tracker', 'İzle'),
     ('command_rod', 'Komut Çubuğu', 'command_rod', 'rod', 'Komut ver'),
     ('zone_selector', 'Bölge Seçici', 'zone_selector', 'zone', 'Seç'),
-    ('tuning_gear', 'Kılıçlı Ayar Dişlisi', 'tuning_gear', 'gear', 'Ayarla'),
+    ('tuning_gear', 'Ayar Dişlisi', 'tuning_gear', 'gear', 'Ayarla'),
     ('kesif_kiti', 'Keşif Dönüşüm Kiti (Keşif\'e basılı tut)', 'kesif_kiti', 'donusum', 'Dönüştür'),
     ('aqualit_telefon', 'Aqualit Telefon (Organizatör ile konuş)', 'aqualit_telefon', 'telefon', 'Konuş'),
     # v0.3.8: devasa Keşif Haritası (oyuncu da kullanır) ve yalnız yaratıcıdan alınan dron ordusu

@@ -1463,6 +1463,7 @@ if (run("evcil")) {
   console.log("== Evcil dronlar: basılı tut → omuzda; dokun → eşya; ölünce envantere; tarif robotu geri verir");
   const EV = await import("./scripts/evcil.js");
   give("aqualit:evcil_kilicli", 1, 3);
+  ticks(12);                                   // eşya kullanımı arası bekleme (debounce)
   comps.item["aqualit:device"].onUse({ source: player, itemStack: player._inv.getItem(3) }, { params: { kind: "evcil", tur: "kilicli" } });
   ticks(3);
   const a = EV.evcilOf(player);
