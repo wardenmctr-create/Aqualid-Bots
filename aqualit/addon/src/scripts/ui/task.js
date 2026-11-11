@@ -183,7 +183,7 @@ export async function giveTask(player, bot) {
     if (p) {
       const sonra = task.items?.length ? () => beginTask(player, bot, task) : null;
       startJob(bot, PC.netherMadenleri(bot, p, nether, sonra), "gorev");
-      return player.sendMessage(`§s${bot.name}§r: Portalcımla Nether'e gidiyorum (${nether.map((n) => `${n.amount} ${B.ORE_BY_KEY[n.key]?.name}`).join(", ")})${sonra ? ", dönünce diğer madenlere bakarım" : ""}.`);
+      return player.sendMessage(`§s${bot.name}§r: Portalcımla Nether'e gidiyorum (${nether.map((n) => `${n.amount} ${B.ORE_BY_KEY[n.key]?.name ?? NETHER_AD[n.key] ?? n.key}`).join(", ")})${sonra ? ", dönünce diğer işlere bakarım" : ""}.`);
     }
     if (!task.items?.length) return player.sendMessage("§cPortalcı çırağı bulunamadı.");
   }
@@ -219,8 +219,19 @@ async function yagmaTask(player, bot) {
     ad: r.y?.ad ?? "senin yanın", tur: r.y?.tur, finish: "chest" });
 }
 
+const NETHER_AD = {};
+/** v0.5.0: Portalcı çırağı varsa listeye Nether seçenekleri eklenir; seçilenler task.nether'e ayrılır. */
+async function netherEk(bot, opts) {
+  const PC = await import("../portalci.js");
+  const ek = PC.netherSecenekleri(bot);
+  for (const o of ek) NETHER_AD[o.key] = o.name;
+  return [...opts, ...ek];
+}
+function netherAyir(items) {
+  return { items: items.filter((i) => !String(i.key).startsWith("nether:")), nether: items.filter((i) => String(i.key).startsWith("nether:")) };
+}
 async function amounts(player, title, keys, by, def = 16) {
-  const fields = keys.map((k) => ({ type: "dropdown", label: `§f${by[k].name}§7 — kaç tane?`, items: AMOUNTS.map(String),
+  const fields = keys.map((k) => ({ type: "dropdown", label: `§f${by[k]?.name ?? NETHER_AD[k] ?? k}§7 — kaç tane?`, items: AMOUNTS.map(String),
     value: amountIndex(def) }));
   const v = await modal(player, title, fields, "Devam");
   if (!v) return undefined;
@@ -296,47 +307,50 @@ async function diggerTask(player, bot) {
     player.sendMessage(`§7Alan: ${s.x1 - s.x0 + 1}x${s.z1 - s.z0 + 1}, y ${s.y0}..${s.y1}`);
     return { type: "kurekci", mode: "alan", is: tur.v, zone: { a: z.a, b: z.b, dim: z.dim ?? bot.dim.id }, blok, finish: "chest", maxDist: 128 };
   }
-  const opts = B.SHOVEL.map((s) => ({ key: s.key, name: s.name, icon: s.icon, note: s.smeltName ? `fırında → ${s.smeltName}` : "" }));
+  const opts = await netherEk(bot, B.SHOVEL.map((s) => ({ key: s.key, name: s.name, icon: s.icon, note: s.smeltName ? `fırında → ${s.smeltName}` : "" })));
   const keys = await pickMany(player, "Kürekçi · ne toplasın?", "Toplanacaklara dokun, sonra Devam'a bas.", opts);
   if (!keys) return null;
-  const items = await amounts(player, "Kürekçi · miktarlar", keys, B.SHOVEL_BY_KEY, 64);
-  if (!items) return null;
+  const hepsi = await amounts(player, "Kürekçi · miktarlar", keys, B.SHOVEL_BY_KEY, 64);
+  if (!hepsi) return null;
+  const { items, nether } = netherAyir(hepsi);
   const o = await modal(player, "Kürekçi · seçenekler", [
     { type: "dropdown", label: "İş bitince", items: ["Sandığa getir", "Fırında erit (kum → cam, kil → tuğla) ve sandığa koy"], value: 0 },
     { type: "dropdown", label: "Sandıktan en fazla uzaklık", items: DIST_LABELS, value: distIndex(bot.maxDist ?? 128) },
   ], "Başla");
   if (!o) return null;
-  return { type: "kurekci", items, finish: o[0] === 1 ? "smelt" : "chest", maxDist: DIST_OPTS[o[1]] ?? 128 };
+  return { type: "kurekci", items, nether, finish: o[0] === 1 ? "smelt" : "chest", maxDist: DIST_OPTS[o[1]] ?? 128 };
 }
 
 async function farmerTask(player, bot) {
-  const opts = B.CROPS.map((c) => ({ key: c.key, name: c.name, icon: c.icon, note: c.plant ? "eker ve hasat eder" : "hasat eder" }));
+  const opts = await netherEk(bot, B.CROPS.map((c) => ({ key: c.key, name: c.name, icon: c.icon, note: c.plant ? "eker ve hasat eder" : "hasat eder" })));
   const keys = await pickMany(player, "Çiftçi · ne toplasın?", "Toplanacak ürünlere dokun, sonra Devam'a bas.", opts);
   if (!keys) return null;
-  const items = await amounts(player, "Çiftçi · miktarlar", keys, B.CROP_BY_KEY, 32);
-  if (!items) return null;
+  const hepsi = await amounts(player, "Çiftçi · miktarlar", keys, B.CROP_BY_KEY, 32);
+  if (!hepsi) return null;
+  const { items, nether } = netherAyir(hepsi);
   const o = await modal(player, "Çiftçi · seçenekler", [
     { type: "toggle", label: "Yakında tarla yoksa yeni tarla aç (gerekirse su getirir)", value: true },
     { type: "dropdown", label: "Sandıktan en fazla uzaklık", items: DIST_LABELS, value: distIndex(bot.maxDist ?? 128) },
   ], "Başla");
   if (!o) return null;
-  return { type: "ciftci", items, makeFarm: !!o[0], finish: "chest", maxDist: DIST_OPTS[o[1]] ?? 128 };
+  return { type: "ciftci", items, nether, makeFarm: !!o[0], finish: "chest", maxDist: DIST_OPTS[o[1]] ?? 128 };
 }
 
 async function lumberTask(player, bot) {
   const inNether = bot.dim.id.includes("nether");
-  const opts = B.LOGS.filter((l) => !!l.nether === inNether).map((l) => ({ key: l.key, name: l.name, icon: l.icon }));
+  const opts = await netherEk(bot, B.LOGS.filter((l) => !!l.nether === inNether).map((l) => ({ key: l.key, name: l.name, icon: l.icon })));
   const keys = await pickMany(player, "Oduncu · hangi ağaçlar?", "Kesilecek ağaç türlerine dokun, sonra Devam'a bas.", opts);
   if (!keys) return null;
-  const items = await amounts(player, "Oduncu · kaç kütük?", keys, B.LOG_BY_KEY, 32);
-  if (!items) return null;
+  const hepsi = await amounts(player, "Oduncu · kaç kütük?", keys, B.LOG_BY_KEY, 32);
+  if (!hepsi) return null;
+  const { items, nether } = netherAyir(hepsi);
   const o = await modal(player, "Oduncu · seçenekler", [
     { type: "toggle", label: "Kestiği yere fidan dik", value: true },
     { type: "toggle", label: "Yaprakları da kır (fidan ve elma toplar)", value: false },
     { type: "dropdown", label: "Sandıktan en fazla uzaklık", items: DIST_LABELS, value: distIndex(bot.maxDist ?? 128) },
   ], "Başla");
   if (!o) return null;
-  return { type: "oduncu", items, replant: !!o[0], leaves: !!o[1], finish: "chest", maxDist: DIST_OPTS[o[2]] ?? 128 };
+  return { type: "oduncu", items, nether, replant: !!o[0], leaves: !!o[1], finish: "chest", maxDist: DIST_OPTS[o[2]] ?? 128 };
 }
 
 /** Kumanda havaya kullanılınca: bakılan robot ya da yakındaki robotlar listesi. */

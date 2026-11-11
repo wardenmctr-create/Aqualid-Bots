@@ -54,6 +54,11 @@ export async function rodRobot(player, b) {
   btns.push({ text: "Çantası", icon: "textures/items/aqualit_chest", act: "bag" });
   btns.push({ text: "İsim ver", icon: "textures/items/name_tag", act: "name" });
   btns.push({ text: "Koruma ayarları\n§7Bölgeye kim girerse ne yapsın, arkadaşlar", icon: "textures/items/zone_selector", act: "koruma" });
+  const PC = await import("../portalci.js");
+  const cirak = PC.cirakPortalcisi(b);
+  btns.push(cirak && !b.dim.id.includes("nether")
+    ? { text: "§dNether'e ava git§r\n§7Portalcı çırağıyla: alaz çubuğu, magma kremi...", icon: "textures/items/blaze_rod", act: "nether" }
+    : { text: "§8Nether'e ava git\n§8Bunun için Kılıçlı'ya Portalcı çırağı ver", icon: "textures/items/blaze_rod", act: "nether_kilit" });
   btns.push({ text: "Kostüm olarak giy\n§7Bu Kılıçlı sen olursun (envanter boş olmalı)", icon: "textures/items/kostum_guc", act: "kostum" });
   const c = await menu(player, `§l${b.name}`, body, btns);
   if (!c) return;
@@ -78,6 +83,12 @@ export async function rodRobot(player, b) {
     canEdit: () => V.dist(player.location, b.loc) <= EDIT_RANGE });
   if (c.act === "name") return renameRobot(player, b);
   if (c.act === "koruma") return (await import("../koruma.js")).korumaAyarMenu(player, [b]);
+  if (c.act === "nether_kilit") return player.sendMessage("§7Önce bir Portalcı'yı bu Kılıçlı'nın çırağı yap (Portalcı'ya dokun → Çırağı yap).");
+  if (c.act === "nether") {
+    const { startJob } = await import("../brain.js");
+    startJob(b, PC.netherAvi(b, cirak, 16), "gorev");
+    return player.sendMessage(`§s${b.name}§r Portalcısıyla Nether'e ava gidiyor.`);
+  }
   if (c.act === "kostum") return (await import("../kostum.js")).kostumGiy(player, b);
   return applyMode(player, [b], c.v);
 }

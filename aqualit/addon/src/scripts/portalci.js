@@ -30,6 +30,8 @@ export const MALZEME = {
   ruhkumu: { ad: "Ruh kumu", bloklar: ["minecraft:soul_sand", "minecraft:soul_soil"], esya: null },
   magma: { ad: "Magma bloğu", bloklar: ["minecraft:magma"], esya: "minecraft:magma" },
   enkaz: { ad: "Antik enkaz (çok nadir)", bloklar: ["minecraft:ancient_debris"], esya: "minecraft:ancient_debris" },
+  sigil: { ad: "Nether siğili", bloklar: ["minecraft:nether_wart"], esya: "minecraft:nether_wart" },
+  cakil: { ad: "Çakıl (Nether)", bloklar: ["minecraft:gravel"], esya: "minecraft:gravel" },
 };
 
 const kayit = (e) => {
@@ -468,11 +470,71 @@ export function cirakPortalcisi(b) {
 }
 /** Madenci maden anahtarı -> Nether malzeme anahtarı */
 export const MADEN_MALZEME = { kuvars: "kuvars", nether_altin: "altin", antik: "enkaz" };
+/** v0.5.0: Portalcı çırağı olan her robot türüne açılan Nether malzemeleri (görev listesinde "Nether · Portalcıyla"). */
+export const NETHER_TUR = {
+  madenci: ["karatas", "isiltas", "magma"],
+  kurekci: ["ruhkumu", "cakil", "netherrack"],
+  oduncu: ["kutuk"],
+  ciftci: ["sigil"],
+  kilicli: ["ganimet"],
+};
+export const NETHER_IKON = { karatas: "textures/blocks/blackstone", isiltas: "textures/items/glowstone_dust", magma: "textures/items/magma_cream",
+  ruhkumu: "textures/blocks/soul_sand", cakil: "textures/blocks/gravel", netherrack: "textures/blocks/netherrack",
+  kutuk: "textures/blocks/crimson_log_side", sigil: "textures/items/nether_wart", ganimet: "textures/items/blaze_rod" };
+/** Görev sihirbazları için: [{key:'nether:<malzeme>', name, icon, note}] (çırak yoksa boş). */
+export function netherSecenekleri(b) {
+  if (!cirakPortalcisi(b) || b.dim.id.includes("nether")) return [];
+  return (NETHER_TUR[b.type] ?? []).map((k) => ({ key: `nether:${k}`, name: k === "ganimet" ? "Nether ganimeti (alaz çubuğu, magma kremi...)" : MALZEME[k]?.ad ?? k,
+    icon: NETHER_IKON[k], note: "§dNether · Portalcı çırağıyla gider" }));
+}
+/** v0.5.0 Kılıçlı: Portalcıyla Nether'e geçer, çevredeki düşmanlarla savaşıp ganimetini toplar (en çok 2 dk), döner. */
+export function* netherAvi(b, p, adet = 16) {
+  const geri = { dim: b.dim.id, loc: { ...b.loc } };
+  modAyarla(p, "sefer");
+  seferde.add(b.e.id);
+  b.say("Portalcım ile Nether'e ava gidiyorum!");
+  const s = yield* portalSeferi(b.e, "minecraft:nether", 20 * 60 * 4, null, b.e.id);
+  if (!s) { seferde.delete(b.e.id); modAyarla(p, "cirak"); b.say("Portal açılamadı."); return; }
+  yield* tasiyarak(b, p, s.on);
+  for (let i = 0; i < 40 && b.dim.id === geri.dim; i++) yield;
+  if (b.dim.id === geri.dim) { safe(() => b.e.teleport(s.varis, { dimension: world.getDimension("minecraft:nether") })); yield; }
+  b.setStatus("Nether'de avlanıyor");
+  const bas = system.currentTick;
+  let toplanan = 0;
+  while (system.currentTick - bas < 20 * 120 && toplanan < adet) {
+    const dus = (safe(() => b.dim.getEntities({ location: b.loc, maxDistance: 24, families: ["monster"] }), []) ?? [])
+      .filter((x) => !String(safe(() => x.typeId, "")).startsWith("aqualit:"))
+      .sort((x, y) => V.dist(x.location, b.loc) - V.dist(y.location, b.loc))[0];
+    if (dus) {
+      if (V.dist(dus.location, b.loc) > 2.6) yield* b.goTo(V.floor(dus.location), { range: 2, maxNodes: 800, radius: 32 });
+      else {
+        safe(() => dus.applyDamage((b.stats?.hasar ?? 8), { cause: "entityAttack", damagingEntity: b.e }));
+        b.setAct("attack");
+        yield* wait(10);
+        b.setAct("none");
+      }
+    } else yield* wait(20);
+    toplanan += safe(() => b.pickupItems(4), 0) ?? 0;
+    yield;
+  }
+  b.setStatus("Portalla dönüyor");
+  const s2 = yield* portalSeferi(b.e, geri.dim, 20 * 30, geri.loc, b.e.id);
+  if (s2) yield* tasiyarak(b, p, s2.on);
+  for (let i = 0; i < 40 && b.dim.id !== geri.dim; i++) yield;
+  if (b.dim.id !== geri.dim) safe(() => b.e.teleport(geri.loc, { dimension: world.getDimension(geri.dim) }));
+  seferde.delete(b.e.id);
+  modAyarla(p, "cirak");
+  b.say(`Döndüm! ${toplanan} ganimet getirdim.`);
+  yield* b.deposit();
+  b.setStatus("Hazır");
+}
+
 /** Seçilen Nether madenlerini sırayla Portalcıyla toplar; bitince (varsa) dünyadaki görevi başlatır. */
 export function* netherMadenleri(b, p, liste, sonra) {
   for (const n of liste) {
-    const k = MADEN_MALZEME[n.key];
-    if (k) yield* netherIsi(b, p, k, n.amount);
+    const k = MADEN_MALZEME[n.key] ?? (String(n.key).startsWith("nether:") ? n.key.slice(7) : null);
+    if (k === "ganimet") yield* netherAvi(b, p, n.amount);
+    else if (k && MALZEME[k]) yield* netherIsi(b, p, k, n.amount);
   }
   if (sonra) system.run(sonra);
 }

@@ -1731,6 +1731,15 @@ if (run("portalci")) {
     UI.answers.push((f) => { gizli = !f.buttons.some((b) => /Nether Kuvarsı/.test(b.text)); return { canceled: true }; });
     await TK.giveTask(player, mb);
     check(gizli, "çırak yokken Nether madenleri kilitli");
+    // v0.5.0: Nether kilidi öteki robot türlerinde de (Kürekçi: ruh kumu, Oduncu: kızıl kütük ...)
+    const PCm = await import("./scripts/portalci.js");
+    const kur = { type: "kurekci", rid: "test_k", dim: ow };
+    check(PCm.netherSecenekleri(kur).length === 0, "çıraksız kürekçide Nether malzemesi yok");
+    PC.portalciOf(pcE).mod = "cirak"; PC.portalciOf(pcE).cirak = "test_k";
+    const sec = PCm.netherSecenekleri(kur).map((o) => o.key);
+    check(sec.includes("nether:ruhkumu") && PCm.NETHER_TUR.oduncu.includes("kutuk") && PCm.NETHER_TUR.kilicli.includes("ganimet"),
+      "çıraklı kürekçiye ruh kumu açıldı; oduncuya kütük, kılıçlıya Nether avı");
+    PC.portalciOf(pcE).cirak = mb.rid;
     PC.portalciOf(pcE).mod = "cirak";
   }
   // v0.5.0: Portalcı menüsü "Robota ışınla": uzaktaki robotun yanına geçirir
