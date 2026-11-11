@@ -2118,6 +2118,18 @@ if (run("mimar")) {
   const YD = await import("./scripts/yapi_data.js");
   check(YD.YAPILAR.length >= 200, `kütüphanede ${YD.YAPILAR.length} yapı (en az 200)`);
   check(YD.YAPILAR.every((y) => world.structureManager.get(`aqualit:${y.id}`)), "her yapının dosyası pakette");
+  // v0.4.2: İnşa Çubuğu: dokun = seçili özelliğin sonraki değeri
+  {
+    const IN = await import("./scripts/insa.js");
+    const sp = { x: 330, y: GROUND + 1, z: 330 };
+    ow.setBlockPermutation(sp, MC.BlockPermutation.resolve("minecraft:oak_stairs", { "weirdo_direction": 0 }));
+    const b0 = ow.getBlock(sp);
+    const once = b0.permutation.getState("weirdo_direction");
+    world.beforeEvents.playerInteractWithBlock.fire({ player, block: b0, itemStack: new ItemStack("aqualit:insa_cubugu"), isFirstEvent: true, cancel: false });
+    ticks(2);
+    const sonra = ow.getBlock(sp).permutation.getState("weirdo_direction");
+    check(IN.ROD_ID === "aqualit:insa_cubugu" && sonra !== once, `İnşa Çubuğu ile merdivenin yönü değişti (${once} → ${sonra})`);
+  }
   // v0.4.2: dönen 3B hologram önizleme
   {
     const y0 = YD.YAPILAR.find((y) => y.id) ;

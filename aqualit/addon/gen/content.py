@@ -75,6 +75,8 @@ DEVICES = [
     # v0.3.8: devasa Keşif Haritası (oyuncu da kullanır) ve yalnız yaratıcıdan alınan dron ordusu
     ('kesif_haritasi', 'Keşif Haritası (basılı tut)', 'kesif_haritasi', 'harita', 'Haritayı aç'),
     ('dron_ordusu', 'Keşif Dron Ordusu Çağırma (basılı tut: 25 dron)', 'dron_ordusu', 'ordu', 'Ordu gönder'),
+    # v0.4.2: İnşa Çubuğu (dokun: değer, eğilip dokun: özellik, havaya dokun: menü)
+    ('insa_cubugu', 'Aqualit İnşa Çubuğu (blok durumlarını ayarlar)', 'insa_cubugu', 'insa', 'Ayarla'),
     # v0.4.0: Organizatör Platformu (9x9 tek parça; yere bas: kurulur, panele dokun: üs menüsü)
     ('org_platform', 'Organizatör Platformu (9x9, dokunmatik panelli üs)', 'org_platform', 'platform', 'Kur'),
 ]
@@ -261,3 +263,5 @@ shaped('aqualit_aktarim', ['XRX', 'RER', 'XRX'], {'X': I(K), 'R': I('minecraft:r
        'aqualit:aqualit_aktarim')
 shaped('org_platform', ['XXX', 'XPX', 'XXX'], {'X': I('aqualit:aqualit_block'), 'P': I('minecraft:glass_pane')},
        'aqualit:org_platform')
+
+shaped('insa_cubugu', [' RX', ' SX', 'S  '], {'R': I('minecraft:redstone'), 'X': I(K), 'S': I('minecraft:stick')}, 'aqualit:insa_cubugu')

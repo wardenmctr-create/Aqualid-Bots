@@ -6,6 +6,7 @@ import { evcilKullan } from "./evcil.js";
 import { spawnPortalci } from "./portalci.js";
 import { platformKur } from "./us.js";
 import { xrayMenu } from "./xray.js";
+import { rodMenu } from "./insa.js";
 import { telefonAc } from "./org_ui.js";
 import { H } from "./kayit.js";
 import { spawnKesif } from "./kesif.js";
@@ -49,6 +50,7 @@ export function useDevice(player, kind, opts = {}) {
         case "hiz": return fire(() => hizMenu(player));
         case "otopilot": return fire(() => otopilotMenu(player));
         case "tirman": return fire(() => tirmanMenu(player));
+        case "insa": return fire(() => rodMenu(player));
         case "xray": {
           const v = safe(() => player.getComponent("minecraft:riding")?.entityRidingOn);
           const matkap = v && safe(() => v.typeId) === "aqualit:kesif" && (safe(() => v.getDynamicProperty("aq:form")) ?? safe(() => v.getProperty("aqualit:form"))) === "matkap";
@@ -94,6 +96,7 @@ export function useDevice(player, kind, opts = {}) {
       const kind = p.params?.kind;
       const pl = e.source;
       if (!isPlayer(pl)) return;
+      if (kind === "insa") return;            // bloğa dokunma insa.js'te (rodTap)
       if (kind === "platform") {
         if (!debounce(pl, 10)) return;
         const b = e.block;
