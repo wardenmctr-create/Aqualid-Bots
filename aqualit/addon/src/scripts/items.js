@@ -78,6 +78,8 @@ export function useDevice(player, kind, opts = {}) {
         case "telefon": return fire(() => telefonAc(player));
         case "harita": return fire(() => haritaAc(player));
         case "ordu": return fire(() => orduMenu(player));
+        case "kostum_guc": return fire(async () => (await import("./kostum.js")).kostumGucMenu(player));
+        case "kostum_cik": return fire(async () => (await import("./kostum.js")).kostumCik(player));
         case "platform": return player.sendMessage("§7Platformu kurmak için yere bas (geniş, düz bir yer seç: 9x9).");
       }
     } catch (e) {

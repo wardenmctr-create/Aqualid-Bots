@@ -51,6 +51,7 @@ export async function rodRobot(player, b) {
   btns.push({ text: "Tamir kiti ver", icon: "textures/items/tamir_kiti", act: "kits" });
   btns.push({ text: "Çantası", icon: "textures/items/aqualit_chest", act: "bag" });
   btns.push({ text: "İsim ver", icon: "textures/items/name_tag", act: "name" });
+  btns.push({ text: "Kostüm olarak giy\n§7Bu Kılıçlı sen olursun (envanter boş olmalı)", icon: "textures/items/kostum_guc", act: "kostum" });
   const c = await menu(player, `§l${b.name}`, body, btns);
   if (!c) return;
   if (c.act === "topla") {
@@ -66,6 +67,7 @@ export async function rodRobot(player, b) {
   if (c.act === "bag") return bagMenu(player, { title: `§l${b.name} · çanta`, container: () => b.inv,
     canEdit: () => V.dist(player.location, b.loc) <= EDIT_RANGE });
   if (c.act === "name") return renameRobot(player, b);
+  if (c.act === "kostum") return (await import("../kostum.js")).kostumGiy(player, b);
   return applyMode(player, [b], c.v);
 }
 
@@ -139,7 +141,7 @@ export async function kitMenu(player, b) {
   player.sendMessage(`§s${b.name}§r çantasına ${added} onarım hakkı koydu. §7Toplam: ${total}`);
 }
 
-const POWER_ICON = {
+export const POWER_ICON = {
   kanca: "textures/items/fishing_rod_uncast",
   yildirim_kilici: "textures/items/iron_sword",
   golge_adim: "textures/items/ender_pearl",

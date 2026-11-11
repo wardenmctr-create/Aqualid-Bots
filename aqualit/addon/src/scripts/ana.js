@@ -11,6 +11,7 @@ import "./konum.js";
 import "./cevher_durbunu.js";
 import "./surus.js";
 import "./gecerken.js";
+import "./kostum.js";
 import { safe } from "./util.js";
 import { fxCleanup } from "./fx.js";
 

@@ -115,3 +115,14 @@ def modul_simgeleri(GEN):
             d.rectangle((12 + i * 3, 14, 13 + i * 3, 18), fill=(255, 255, 255, 255))
         d.line((5, 9, 10, 9), fill=(80, 230, 210, 255)); d.line((21, 23, 26, 23), fill=(80, 230, 210, 255))
         im.save(os.path.join(GEN, f'kilicli_modul_{n}.png'))
+
+
+def kostum_simgeleri(GEN):
+    from PIL import ImageDraw
+    im = Image.new('RGBA', (32, 32), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    d.polygon([(16, 2), (24, 16), (18, 16), (22, 30), (8, 14), (14, 14), (10, 2)], fill=(255, 220, 60, 255), outline=(40, 30, 10, 255))
+    im.save(os.path.join(GEN, 'kostum_guc.png'))
+    im = Image.new('RGBA', (32, 32), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    d.rounded_rectangle((6, 4, 26, 28), radius=3, fill=(60, 70, 80, 255), outline=(20, 20, 20, 255), width=2)
+    d.polygon([(4, 16), (14, 9), (14, 13), (22, 13), (22, 19), (14, 19), (14, 23)], fill=(230, 60, 60, 255))
+    im.save(os.path.join(GEN, 'kostum_cik.png'))

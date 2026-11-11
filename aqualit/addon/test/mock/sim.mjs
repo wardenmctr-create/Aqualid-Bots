@@ -2917,5 +2917,48 @@ if (run("kit")) {
   check(hizli && KA.robotYolcuMu(mc.id), `madenci koşarak geldi ve bindi (${Math.round(sure / 20)} sn)`);
 }
 
+// ---------------------------------------------------------------- v0.4.4 Kılıçlı Robot Kostümü
+if (run("kostum")) {
+  console.log("== Robot Kostümü: oyuncu Kılıçlı olur, güç kullanır, çıkınca eski haline döner");
+  const KO = await import("./scripts/kostum.js");
+  const K = await import("./scripts/kilicli.js");
+  const G = GROUND + 1;
+  player.teleport({ x: -60.5, y: G, z: -60.5 });
+  give("aqualit:robot_kilicli_4");
+  ticks(12);
+  useOn("aqualit:robot_kilicli_4", { x: -62, y: GROUND, z: -60 }, "Up", { comp: "aqualit:robot_item", p: { type: "kilicli", model: 4 } });
+  ticks(5);
+  const bot = myBots().filter((b) => b.type === "kilicli" && b.model === 4).pop();
+  check(!!bot, "seviye 4 kılıçlı doğdu");
+  give("minecraft:dirt", 3, 5);
+  check(!KO.kostumGiy(player, bot) && !KO.kostumda(player), "envanter doluyken kostüm giyilmiyor");
+  for (let i = 0; i < 36; i++) player._inv.setItem(i, undefined);
+  check(KO.kostumGiy(player, bot) && KO.kostumda(player), "envanter boşken Kılıçlı kostümü giyildi");
+  ticks(3);
+  const kost = ow.getEntities({ type: "aqualit:kostum" });
+  check(kost.length === 1 && kost[0]._props["aqualit:type"] === "kilicli" && kost[0]._props["aqualit:model"] === 4, "robot görünümlü kostüm varlığı (seviye 4)");
+  check(!!player._effects.invisibility && !!player._effects.health_boost && !!player._effects.strength, "oyuncu görünmez, canı ve gücü robotunki");
+  check(!!bot.e._effects?.invisibility && bot.mode === "stay", "robot görünmez bekliyor");
+  const esya = [...Array(9).keys()].map((i) => player._inv.getItem(i)?.typeId);
+  check(esya.includes("aqualit:kostum_guc") && esya.includes("aqualit:kostum_cik") && esya.includes("aqualit:aqualit_sword"), "güç, çıkış eşyaları ve kılıç verildi");
+  player.teleport({ x: -50.5, y: G, z: -55.5 });
+  ticks(2);
+  check(V3dist(kost[0].location, player.location) < 0.5, "kostüm oyuncuyla birlikte yürüyor");
+  // güç kullan
+  const z = ow.spawnEntity("minecraft:zombie", { x: -45.5, y: G, z: -55.5 });
+  UI.answers.push((f) => ({ canceled: false, selection: f.buttons.findIndex((b) => /Yıldırım/.test(b.text)) }));
+  await KO.kostumGucMenu(player);
+  const k = KO.kostumlar.get(player.id);
+  check(!!k.kb.pw?.cast || (k.kb.pw?.cd?.yildirim_kilici ?? 0) > 0, "kostümle Kılıçlı gücü kullanıldı");
+  ticks(40);
+  z.remove();
+  // çık
+  check(KO.kostumCik(player) && !KO.kostumda(player), "kostümden çıkıldı");
+  ticks(2);
+  const sonra = [...Array(36).keys()].map((i) => player._inv.getItem(i)?.typeId).filter(Boolean);
+  check(!player._effects.invisibility && !sonra.length && !ow.getEntities({ type: "aqualit:kostum" }).length, "oyuncu eski haline döndü, eşyalar ve kostüm silindi");
+  check(!bot.e._effects?.invisibility && bot.mode === "follow" && V3dist(bot.e.location, player.location) < 2, "robot yanında belirdi, takip ediyor");
+}
+
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");
 process.exit(fails ? 1 : 0);

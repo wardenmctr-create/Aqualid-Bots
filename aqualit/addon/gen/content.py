@@ -77,6 +77,9 @@ DEVICES = [
     ('dron_ordusu', 'Keşif Dron Ordusu Çağırma (basılı tut: 25 dron)', 'dron_ordusu', 'ordu', 'Ordu gönder'),
     # v0.4.4: Kılıçlı yükseltme modülleri (hayatta kalmada seviye 2–5): Kılıçlı'ya dokun
     *[(f'kilicli_modul_{n}', f'Kılıçlı Yükseltme Modülü · Seviye {n} (Kılıçlı\'ya dokun)', f'kilicli_modul_{n}', 'modul', 'Yükselt') for n in range(2, 6)],
+    # v0.4.4: Kılıçlı Robot Kostümü (giyince eline gelen güç kumandası ve çıkış)
+    ('kostum_guc', 'Kostüm Güçleri (basılı tut: güç seç)', 'kostum_guc', 'kostum_guc', 'Güç'),
+    ('kostum_cik', 'Kostümden Çık', 'kostum_cik', 'kostum_cik', 'Çık'),
     # v0.4.2: İnşa Çubuğu (dokun: değer, eğilip dokun: özellik, havaya dokun: menü)
     ('insa_cubugu', 'Aqualit İnşa Çubuğu (blok durumlarını ayarlar)', 'insa_cubugu', 'insa', 'Ayarla'),
     # v0.4.0: Organizatör Platformu (9x9 tek parça; yere bas: kurulur, panele dokun: üs menüsü)

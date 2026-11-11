@@ -369,6 +369,25 @@ def entities():
     KI.build(None, f'{RP}/textures/ui/aqualit_bas')   # konum çubuğu: robot kafa simgeleri
     robotgeo.build_chest(f'{RP}/textures/entity/aqualit_chest', f'{RP}/models/entity/aqualit_chest.geo.json')
     wj(f'{RP}/entity/aqualit_robot.entity.json', E.robot_rp(skins))
+    # v0.4.4: Kılıçlı Robot Kostümü: robotla aynı görünüm, yapay zekâsız, oyuncunun yerinde durur (kostum.js)
+    import copy
+    krp = copy.deepcopy(E.robot_rp(skins))
+    krp['minecraft:client_entity']['description']['identifier'] = 'aqualit:kostum'
+    wj(f'{RP}/entity/aqualit_kostum.entity.json', krp)
+    rbp = E.robot_bp()['minecraft:entity']['description']['properties']
+    wj(f'{BP}/entities/kostum.json', {'format_version': '1.21.0', 'minecraft:entity': {
+        'description': {'identifier': 'aqualit:kostum', 'is_spawnable': False, 'is_summonable': True, 'properties': copy.deepcopy(rbp)},
+        'components': {
+            'minecraft:type_family': {'family': ['aqualit_kostum', 'inanimate']},
+            'minecraft:collision_box': {'width': 0.1, 'height': 0.1},
+            'minecraft:health': {'value': 10, 'max': 10},
+            'minecraft:damage_sensor': {'triggers': [{'cause': 'all', 'deals_damage': 'no'}]},
+            'minecraft:physics': {'has_gravity': False, 'has_collision': False},
+            'minecraft:pushable': {'is_pushable': False, 'is_pushable_by_piston': False},
+            'minecraft:knockback_resistance': {'value': 1.0},
+            'minecraft:fire_immune': {},
+            'minecraft:loot': {'table': 'loot_tables/empty.json'},
+        }}})
     wj(f'{RP}/render_controllers/aqualit_robot.render_controllers.json', E.robot_render(skins))
     wj(f'{RP}/animations/aqualit_robot.animation.json', E.robot_animations())
     wj(f'{RP}/animation_controllers/aqualit_robot.animation_controllers.json', E.robot_controllers())
@@ -552,7 +571,7 @@ def main():
         if os.path.exists(d):
             shutil.rmtree(d)
     os.makedirs(BP); os.makedirs(RP); os.makedirs(GEN)
-    manifests(); EO.build(RP, BP, wj, GEN); PO.build(RP, BP, wj, GEN); YO.build(RP, BP, wj); OUO.platform_build(RP, BP, wj, GEN); XR.simge(GEN); XR.modul_simgeleri(GEN); INSA.rod_icon().save(os.path.join(GEN, 'insa_cubugu.png')); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); HI.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
+    manifests(); EO.build(RP, BP, wj, GEN); PO.build(RP, BP, wj, GEN); YO.build(RP, BP, wj); OUO.platform_build(RP, BP, wj, GEN); XR.simge(GEN); XR.modul_simgeleri(GEN); XR.kostum_simgeleri(GEN); INSA.rod_icon().save(os.path.join(GEN, 'insa_cubugu.png')); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); HI.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
     addon = package()
     print('paket:', addon)
 
