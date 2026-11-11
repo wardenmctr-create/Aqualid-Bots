@@ -10,14 +10,14 @@ import * as B from "./blocks.js";
 import * as FX from "./fx.js";
 import { ICONS } from "./ikon_data.js";
 import { anaMenu, kesifKuruldu, kesifToplandi, koltuksuzIceri, aiMesgul, aiBirak } from "./kesif_ai.js";
-import { hizCarpani, tutucuAcik, tutucuAyarla } from "./kesif_radar.js";
+import { hizCarpani, hizYenile, tutucuAcik, tutucuAyarla } from "./kesif_radar.js";
 
 export const KESIF_ID = "aqualit:kesif";
 export const KFORMS = ["robot", "ucak", "gemi", "denizalti", "arazi", "matkap"];
 export const KAD = { robot: "Robot", ucak: "Uçak", gemi: "Gemi", denizalti: "Denizaltı", arazi: "Arazi aracı", matkap: "Matkap" };
 const KAZ = ["bakis", "yatay", "dikey", "capraz"];
 const KAZ_AD = { bakis: "baktığın yöne", yatay: "düz ileri", dikey: "aşağı", capraz: "çapraz aşağı" };
-const SPEED = { ucak: 1.1, gemi: 0.6, denizalti: 0.38, arazi: 0.55, matkap: 0.14 }; // blok/tik
+const SPEED = { ucak: 1.1, gemi: 0.4, denizalti: 0.24, arazi: 0.55, matkap: 0.14 }; // blok/tik (v0.5.0: gemi/denizaltı yavaşladı)
 const LOOP = { ucak: "aqualit.kesif.plane_loop", gemi: "aqualit.kesif.boat_loop", denizalti: "aqualit.kesif.sub_loop",
   arazi: "aqualit.kesif.rover_loop", matkap: "aqualit.kesif.drill_loop" };
 const START = { ucak: "aqualit.kesif.plane", gemi: "aqualit.kesif.boat", denizalti: "aqualit.kesif.sonar",
@@ -225,6 +225,7 @@ export function transform(e, to, pl) {
   system.runTimeout(() => {
     if (!safe(() => e.isValid, false)) return busy.delete(e.id);
     safe(() => e.triggerEvent(`aqualit:form_${to}`));
+    system.runTimeout(() => hizYenile(e), 2);                 // v0.5.0: seçili hız yeni biçime
     safe(() => e.setProperty("aqualit:form", to));
     safe(() => e.setDynamicProperty("aq:form", to));
     safe(() => e.setProperty("aqualit:gecis", false));
@@ -384,7 +385,7 @@ function durum(v) {
 }
 export function kesifDurumSil(v) {
   const d = DURUM.get(v.id);
-  if (d?.tir) safe(() => v.triggerEvent("aqualit:tirman_off"));
+  if (d?.tir) { safe(() => v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(v), 1); }
   DURUM.delete(v.id);
 }
 
@@ -415,7 +416,7 @@ export function tirman(v, pl, mv, t) {
   const d = durum(v), dim = v.dimension, p = v.location;
   const ileri = (mv?.y ?? 0) > 0.3, geri = (mv?.y ?? 0) < -0.3;
   if (!tutucuAcik(v)) {
-    if (d.tir) { d.tir = false; safe(() => v.triggerEvent("aqualit:tirman_off")); }
+    if (d.tir) { d.tir = false; safe(() => v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(v), 1); }
     return 0;
   }
   const yaw = safe(() => v.getRotation().y, 0);
@@ -458,7 +459,7 @@ export function tirman(v, pl, mv, t) {
   const kopuk = !cv.alt && !cv.yakin && d.sure > 10;         // hiçbir yüzeye 3 blok yakın değil: gerçekten havada
   if (ustune || indi || kopuk || d.sure > 12000) {
     d.tir = false;
-    safe(() => v.triggerEvent("aqualit:tirman_off"));
+    safe(() => v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(v), 1);
     return 0;
   }
   // burun: yukarı çıkarken dik yukarı, inerken aşağı
@@ -501,6 +502,7 @@ function dzMod(v) {
   if (d.dz !== m || system.currentTick % 40 === 0) {
     d.dz = m;
     safe(() => v.triggerEvent(su ? "aqualit:dz_su" : "aqualit:dz_kara"));
+    if (su) system.runTimeout(() => hizYenile(v), 1);
   }
   // yedek: suyun dışındaysa aşağı it (bileşen değişimi oyunda gecikirse de uçamasın)
   if (!su) {
@@ -589,7 +591,7 @@ system.runInterval(() => {
         // indi: tırmanırken bırakılan araç yerçekimine döner
         if (was.v && safe(() => was.v.isValid, false) && DURUM.get(was.v.id)?.tir) {
           DURUM.get(was.v.id).tir = false;
-          safe(() => was.v.triggerEvent("aqualit:tirman_off"));
+          safe(() => was.v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(was.v), 1);
         }
         if (was.form === "ucak" && !safe(() => pl.isOnGround, true)) safe(() => pl.addEffect("slow_falling", 200, { showParticles: false }));
       }

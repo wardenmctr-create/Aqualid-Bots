@@ -44,12 +44,25 @@ export function hizSeviyesi(k) {
   if (k < 1) return { etki: "slowness", amp: Math.max(0, Math.round((1 - k) / 0.15) - 1) };
   return null;
 }
+// v0.5.0: hız artık araç başına bileşen grubuyla (gen/kesif_oyun.py HIZ_SEVIYE): hız/yavaşlık etkisi suda ve havada
+// işlemiyordu (gemi %10'da bile araba kadar hızlıydı). Etkiler eski dünyalardan kalmışsa silinir.
+export const HIZ_SEVIYE = [0, 10, 25, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500];
+const ARAC = new Set(["ucak", "gemi", "denizalti", "arazi", "matkap"]);
+export function hizSeviyeYuzde(k) {
+  const y = Math.round(k * 100);
+  let en = HIZ_SEVIYE[0];
+  for (const s of HIZ_SEVIYE) if (Math.abs(s - y) < Math.abs(en - y)) en = s;
+  return en;
+}
 export function hizUygula(v, k) {
   safe(() => v.removeEffect("speed"));
   safe(() => v.removeEffect("slowness"));
-  const s = hizSeviyesi(k);
-  if (s) safe(() => v.addEffect(s.etki, 20 * 60 * 60 * 24, { amplifier: s.amp, showParticles: false }));
+  const form = safe(() => v.getDynamicProperty("aq:form")) ?? safe(() => v.getProperty("aqualit:form"));
+  if (!ARAC.has(form)) return;
+  safe(() => v.triggerEvent(`aqualit:hz_${form}_${hizSeviyeYuzde(k)}`));
 }
+/** Biçim ya da sürüş modu değişince seçili hızı yeniden uygula. */
+export function hizYenile(v) { hizUygula(v, hizCarpani(v)); }
 
 /** Hız karesi: hıza göre renk; 500'de kırmızı, ortasında sarı ünlem. */
 export function hizKaresi(yuzde) {

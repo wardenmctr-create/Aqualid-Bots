@@ -39,7 +39,9 @@ SEATS = {
                (3.8, 5, -3.5, 'ic'), (-8, 5, -22.5, 'platform'), (8, 5, -22.5, 'platform'), (-9, 5, -30.5, 'platform'),
                (0, 5, -30.5, 'platform'), (9, 5, -30.5, 'platform')],
 }
-HIZ = {'ucak': 0.62, 'gemi': 0.6, 'denizalti': 0.5, 'arazi': 0.36, 'matkap': 0.1}   # v0.3.8: gemi ve denizaltı hızlandı   # oyuncu sürerken temel hız
+HIZ = {'ucak': 0.62, 'gemi': 0.24, 'denizalti': 0.16, 'arazi': 0.36, 'matkap': 0.1}   # v0.5.0: gemi ve denizaltı yapılarına uygun (önce araba kadar hızlıydı)
+# v0.5.0: hız çubuğu seviyeleri (%); her araç ve seviye için bileşen grubu (etkiler suda/havada işlemiyordu)
+HIZ_SEVIYE = [0, 10, 25, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500]   # oyuncu sürerken temel hız
 UCAN = {'ucak', 'denizalti'}           # v0.3.6: uçan binek sistemiyle sürülenler
 YALNIZ_OYUNCU = {'denizalti'}
 # v0.3.8: üçüncü şahıs kamerası araca göre uzakta durur (blok)
@@ -174,6 +176,19 @@ def kesif_bp():
                                        'set_property': {'aqualit:tutucu': n % 2 == 1}} for n in range(6)},
               'aqualit:dz_su': {'remove': {'component_groups': ['k_denizalti_kara']}, 'add': {'component_groups': ['k_denizalti_su']}},
               'aqualit:dz_kara': {'remove': {'component_groups': ['k_denizalti_su']}, 'add': {'component_groups': ['k_denizalti_kara']}}}
+    for f in ('ucak', 'gemi', 'denizalti', 'arazi', 'matkap'):
+        for lv in HIZ_SEVIYE:
+            v = round(HIZ[f] * lv / 100, 4)
+            g = {'minecraft:movement': {'value': v}}
+            if f in ('ucak', 'denizalti'):
+                g['minecraft:flying_speed'] = {'value': v}
+            if f in ('gemi', 'denizalti'):
+                g['minecraft:underwater_movement'] = {'value': v}
+                g['minecraft:lava_movement'] = {'value': v}
+            groups[f'hz_{f}_{lv}'] = g
+            events[f'aqualit:hz_{f}_{lv}'] = {'sequence': [
+                {'remove': {'component_groups': [f'hz_{f}_{o}' for o in HIZ_SEVIYE if o != lv]}},
+                {'add': {'component_groups': [f'hz_{f}_{lv}']}}]}
     for f in FORMS:
         events[f'aqualit:form_{f}'] = {
             'remove': {'component_groups': [f'k_{o}' for o in FORMS if o != f] +

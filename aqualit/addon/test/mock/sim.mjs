@@ -1423,7 +1423,6 @@ if (run("hiz")) {
   const KS = await import("./scripts/kesif.js");
   check(KR.hizKaresi(500).includes("§4") && KR.hizKaresi(500).includes("§e!!"), "500'de kırmızı kare, içinde sarı ünlem");
   check(KR.hizKaresi(100).includes("§a") && KR.hizKaresi(0).includes("§8"), "hıza göre kare rengi değişiyor");
-  check(KR.hizSeviyesi(5).etki === "speed" && KR.hizSeviyesi(0).etki === "slowness" && KR.hizSeviyesi(1) === null, "hız/yavaşlık seviyesi");
   give("aqualit:robot_kesif");
   useOn("aqualit:robot_kesif", { x: 20, y: GROUND, z: -30 }, "Up", { comp: "aqualit:robot_item", p: { type: "kesif" } });
   ticks(5);
@@ -1434,6 +1433,14 @@ if (run("hiz")) {
   ticks(12);
   const var_ = (id) => { for (let i = 0; i < 36; i++) if (player._inv.getItem(i)?.typeId === id) return true; return false; };
   check(KS.formOf(ke) === "arazi" && (var_("aqualit:kesif_tirman_kapali") || var_("aqualit:kesif_tirman_acik")) && !var_("aqualit:kesif_xray"), "arazi aracında tırmanma eşyası var, X-ray yok");
+  // v0.5.0: hız araç başına bileşen grubuyla (suda/havada da işler); biçim değişince seçili hız yeni araca uygulanır
+  check(ke._events.includes("aqualit:hz_arazi_100"), "araca dönüşünce varsayılan %100 hız uygulandı");
+  ke.setDynamicProperty("aq:hiz", 0.1);
+  KR.hizUygula(ke, 0.1);
+  check(ke._events.at(-1) === "aqualit:hz_arazi_10", "%10 seçilince arazi aracının hız grubu %10");
+  check(KR.hizSeviyeYuzde(4.4) === 400 && KR.hizSeviyeYuzde(0.3) === 25, "çubuk değeri en yakın hız seviyesine oturur");
+  ke.setDynamicProperty("aq:hiz", 1);
+  KR.hizUygula(ke, 1);
   KR.tirmanMenu(player);
   ticks(2);
   check(var_("aqualit:kesif_tirman_acik") && !player.messages.at(-1)?.includes("yalnız arazi"), "arazi aracında Tırmanma Modu açıldı");
