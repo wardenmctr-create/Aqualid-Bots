@@ -24,9 +24,10 @@
   zemin renginde toz (kumda sarı, karda beyaz, toprakta kahve); drift ve sert frende toz bulutu ve lastik sesi.
   Not: oyun binilen araca betikle itki uygulatmıyor; kayma gövde açısıyla görünüyor, aracın yolu oyunun sürüşüyle.
 
-- **Rampa uçuşu:** hızla (yaklaşık 6 blok/sn üstü) bir rampadan çıkınca araç havalanıyor ve havada süzülüyor
-  (en çok 6 sn). İnince burun yaylanıyor, dört tekerlekten toz kalkıyor. Ekranda uçuş süresi ve mesafe; rekor kırınca
-  "YENİ REKOR!". Hız çubuğunu yükseltince daha uzağa uçar. Yapışkan modda kapalı (yüzeye tutunur).
+- **Rampa uçuşu (Minecraft vagonu gibi):** tek blokluk basamakta uçmaz; araç en az yarım saniye yokuş çıkıp (burnu
+  yukarıda) hızla yerden ayrılınca fırlar. Ne kadar yükseğe ve uzağa gideceği: hız, rampanın eğimi ve rampanın yüksekliği
+  (tırmanırken Y koordinatının ne kadar arttığı). Havada süzülür (hız ve rampa yüksekliğiyle uzar, en çok 6 sn). İnince
+  burun yaylanır, dört tekerlekten toz; ekranda uçuş süresi, mesafe, rekor. Yapışkan modda kapalı.
 
 ## Oyunda denenecekler
 1. Matkapta X-ray: üç kip, ayarlar, inince eski hâline dönüş. Telefon yavaşlıyor mu?

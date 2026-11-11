@@ -1345,16 +1345,35 @@ if (run("hiz")) {
   // rampa uçuşu: hızla yukarı doğru yerden ayrılınca kalkar, süzülür, inince süre yazar
   ke.isOnGround = true;
   ke.getVelocity = () => ({ x: 0, y: 0, z: 0.6 });
-  SU.rampa(player, ke, { hiz: 0.6, yaw: 0 }); SU.rampa(player, ke, { hiz: 0.6, yaw: 0 }); SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  // tek blokluk basamak: uçmaz
+  SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  ke.location = { ...ke.location, y: ke.location.y + 1 }; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  ke.isOnGround = false; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  check(!ke.getEffect("levitation"), "tek blokluk basamakta uçmuyor");
+  ke.isOnGround = true; ticks(2); SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
+  // uzun rampa: 2 saniye boyunca yokuş çıkıp hızla ayrılınca uçar
+  for (let i = 0; i < 20; i++) { ke.location = { ...ke.location, y: ke.location.y + 0.25 }; SU.rampa(player, ke, { hiz: 0.6, yaw: 0 }); }
   ke.isOnGround = false;
   ke.getVelocity = () => ({ x: 0, y: 0.4, z: 0.6 });
   SU.rampa(player, ke, { hiz: 0.6, yaw: 0 });
-  check(ke.getEffect("levitation") && ke.getEffect("slow_falling"), "rampadan hızla çıkınca araç havalandı, süzülüyor");
+  const kisa = ke.getEffect("levitation")?.duration ?? 0;
+  check(kisa > 0 && ke.getEffect("slow_falling"), "uzun rampadan hızla çıkınca araç havalandı, süzülüyor");
   ticks(36);
   ke.isOnGround = true;
   SU.rampa(player, ke, { hiz: 0.5, yaw: 0 });
   check(!ke.getEffect("slow_falling") && /Uçuş: .*sn/.test(player.actionbar.at(-1) ?? "") && player.getDynamicProperty("aq:ucus_rekor") > 0,
     "inince süzülme bitti, uçuş süresi ve rekor yazdı");
+  // daha hızlı: daha uzun kaldırma (daha yükseğe/uzağa)
+  for (let i = 0; i < 20; i++) { ke.location = { ...ke.location, y: ke.location.y + 0.25 * (1.0 / 0.6) }; SU.rampa(player, ke, { hiz: 1.0, yaw: 0 }); }
+  ke.isOnGround = false; SU.rampa(player, ke, { hiz: 1.0, yaw: 0 });
+  check((ke.getEffect("levitation")?.duration ?? 0) > kisa, "daha hızlı çıkınca daha yükseğe uçuyor");
+  const hizli = ke.getEffect("levitation")?.duration ?? 0;
+  ke.isOnGround = true; SU.rampa(player, ke, { hiz: 0.2, yaw: 0 }); SU.rampa(player, ke, { hiz: 0.2, yaw: 0 });
+  // aynı hız ve eğim, iki kat yüksek rampa: daha yükseğe
+  for (let i = 0; i < 40; i++) { ke.location = { ...ke.location, y: ke.location.y + 0.25 * (1.0 / 0.6) }; SU.rampa(player, ke, { hiz: 1.0, yaw: 0 }); }
+  ke.isOnGround = false; SU.rampa(player, ke, { hiz: 1.0, yaw: 0 });
+  check((ke.getEffect("levitation")?.duration ?? 0) > hizli && (ke.getEffect("slow_falling")?.duration ?? 0) > 0, "daha yüksek rampadan daha yükseğe ve uzağa uçuyor");
+  ke.isOnGround = true; SU.rampa(player, ke, { hiz: 0.2, yaw: 0 });
   const t0 = player.particles?.length ?? 0;
   delete ke.getVelocity;
   ke.isOnGround = true;

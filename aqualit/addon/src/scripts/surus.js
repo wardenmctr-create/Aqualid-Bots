@@ -9,8 +9,10 @@ import { KESIF_ID, formOf, ridersOf } from "./kesif.js";
 const once = new Map();      // araç kimliği -> { yaw, hiz }
 // v0.4.1 rampa uçuşu: hızla rampadan çıkınca araç havalanır, süzülür; inince yaylanır, toz kalkar; süre ve rekor
 const ucus = new Map();      // araç kimliği -> { havada, bas, x, z, yer: kaç örnek yerdeydi }
-export const UCUS = { HIZ: 0.32, MIN_SURE: 8 };
-const KALKIS_TIK = 6;
+// rampa: araç en az YOKUS_MIN tik (örnekleme 2 tikte bir) yokuş çıkıp (burnu yukarıda) hızla yerden ayrılınca uçar.
+// Tek blokluk basamak sayılmaz. Minecraft vagonu gibi: hız, rampa eğimi ve rampa yüksekliği ne kadarsa o kadar
+// yükseğe ve uzağa.
+export const UCUS = { HIZ: 0.3, MIN_SURE: 8, YOKUS_MIN: 10 };
 const RENK = [
   [/sand|sandstone/, [0.86, 0.79, 0.55]],
   [/snow|ice/, [0.95, 0.97, 1]],
@@ -83,15 +85,21 @@ export function rampa(pl, v, d) {
   const yerde = safe(() => v.isOnGround, true);
   const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 }) ?? { x: 0, y: 0, z: 0 };
   let u = ucus.get(v.id);
-  if (!u) ucus.set(v.id, (u = { havada: false, bas: 0, yer: 0, x: 0, z: 0 }));
+  if (!u) ucus.set(v.id, (u = { havada: false, bas: 0, yer: 0, x: 0, z: 0, yokus: 0, y: v.location.y }));
   const t = system.currentTick;
+  const dy = v.location.y - (u.y ?? v.location.y);
+  u.y = v.location.y;
   if (yerde) {
+    // yokuş süresi: hızla yukarı çıkarken artar, düzde yavaşça azalır (rampanın ucundaki düzlük sayacı silmez), inişte sıfır
+    if (dy > 0.04 && d.hiz > 0.12) { if (!u.yokus) u.yBas = v.location.y - dy; u.yokus += 2; u.yDy = (u.yDy ?? 0) + dy; u.yDx = (u.yDx ?? 0) + d.hiz * 2; }
+    else if (dy < -0.04) { u.yokus = 0; u.yDy = 0; u.yDx = 0; }
+    else u.yokus = Math.max(0, u.yokus - 1);
     if (u.havada) {                                        // iniş
       u.havada = false;
       safe(() => v.removeEffect("slow_falling"));
       safe(() => v.removeEffect("levitation"));
       const sure = t - u.bas;
-      if (sure >= UCUS.MIN_SURE) {
+      if (u.ucus && sure >= UCUS.MIN_SURE) {
         const l = v.location;
         const mesafe = Math.round(Math.hypot(l.x - u.x, l.z - u.z));
         const c = zeminRengi(v.dimension, l) ?? [0.55, 0.5, 0.42];
@@ -118,15 +126,29 @@ export function rampa(pl, v, d) {
     u.bas = t;
     u.x = v.location.x;
     u.z = v.location.z;
-    if (u.yer >= 2 && d.hiz >= UCUS.HIZ) {
-      const guc = Math.min(4, Math.max(0, Math.round((d.hiz - UCUS.HIZ) * 8)));
-      if (vel.y > 0.02) safe(() => v.addEffect("levitation", KALKIS_TIK + guc * 2, { amplifier: 2 + guc, showParticles: false }));
-      safe(() => v.addEffect("slow_falling", 20 * 6, { amplifier: 0, showParticles: false }));
+    if (u.yokus >= UCUS.YOKUS_MIN && d.hiz >= UCUS.HIZ) {
+      // vagon gibi: rampanın eğimi ve hızla fırlar. Kalkış dikey hızı = hız x sin(eğim); tepe yüksekliği v²/2g
+      // (oyunun yerçekimi 0.08 blok/tik²), biraz abartılı (x1.6). Kaldırma: havalanma etkisi (amp 3 ≈ 0.2 blok/tik).
+      const egim = (u.yDy ?? 0) / Math.max(0.1, u.yDx ?? 0);
+      const vy0 = d.hiz * (egim / Math.sqrt(1 + egim * egim));
+      // rampanın yüksekliği: tırmanırken Y koordinatının ne kadar arttığı (tırmanış başı -> kalkış anı).
+      // Yüksek rampa = daha yükseğe ve (uzun süzülmeyle) daha uzağa
+      const rampaY = Math.max(0, v.location.y - (u.yBas ?? v.location.y));
+      const H = Math.min(30, (vy0 * vy0) / (2 * 0.08) * 1.6 + rampaY * 0.4 + 0.8);
+      const sure = Math.max(3, Math.round(H / 0.2));
+      u.tepe = H;
+      safe(() => v.addEffect("levitation", sure, { amplifier: 3, showParticles: false }));
+      // süzülme süresi: hız ve rampa yüksekliğiyle uzar (en çok 6 sn) — uzaklığı belirler
+      const hizK = Math.min(1, Math.max(0, (d.hiz - UCUS.HIZ) / 0.7));
+      u.suzul = Math.round(20 * Math.min(6, 1.5 + hizK * 2.5 + rampaY / 6));
+      safe(() => v.addEffect("slow_falling", u.suzul, { amplifier: 0, showParticles: false }));
       safe(() => v.dimension.playSound("mob.horse.jump", v.location, { volume: 0.8, pitch: 0.8 }));
-    }
+      u.ucus = true;
+    } else u.ucus = false;
+    u.yokus = 0; u.yDy = 0; u.yDx = 0;
     u.yer = 0;
     return;
   }
   // havada: 6 saniyeden uzun kalırsa süzülme biter (sonsuz uçmasın)
-  if (t - u.bas > 20 * 6) safe(() => v.removeEffect("slow_falling"));
+  if (t - u.bas > (u.suzul ?? 120)) safe(() => v.removeEffect("slow_falling"));
 }
