@@ -1,8 +1,10 @@
 // Aqualit Robotları — Cevher dürbünü (v0.3.8)
-// Matkaba binince ekranın altında canlı mini harita: matkabın önü (yukarı) ve yanları, 4 blok altından 4 blok üstüne
+// v0.4.5: panel kaldırıldı, cevherler ekranın kendisinde görünür (aşağıda "cevher görüşü"). durbun() eski kare
+// haritayı hâlâ hesaplar (testlerde). Eski not: matkaba binince ekranın altında canlı mini harita: matkabın önü (yukarı) ve yanları, 4 blok altından 4 blok üstüne
 // kadar taranır; her sütundaki en değerli cevher kendi renkli karesiyle görünür, taş koyu kalır. Gerçek x-ray (taşı
 // saydam yapmak) oyunda mümkün değil; dürbün duvarın ardındaki cevherin yerini gösterir.
-import { world, system, BlockVolume } from "@minecraft/server";
+import { world, system, BlockVolume, MolangVariableMap } from "@minecraft/server";
+import { CEVHER_U } from "./cevher_atlas.js";
 import { safe } from "./util.js";
 import { CEVHER } from "./harita_glif.js";
 import { formOf } from "./kesif.js";
@@ -60,13 +62,90 @@ export function durbun(v) {
   return { satirlar, en };
 }
 
+// ======================================================================= v0.4.5 cevher görüşü (panelsiz)
+// Matkaptayken cevherler ekranın kendisinde, gerçek yerlerinde görünür: her cevherin resmi gözden cevhere giden
+// çizginin üstüne, önündeki ilk duvarın hemen önüne konur ve uzaklıkla orantılı küçültülür (gerçek blok ne kadar
+// görünecekse o kadar). Böylece duvarın ardındaki elmas, duvarda tam kazman gereken yerde ve uzaklığına uygun boyda
+// görünür. Gözden çizgi dönmeye bağlı değil: kafanı çevirince işaretler kaymaz. Oyunda denenmedi.
+
+export const GORUS = { R: 14, DY: 8, EN_COK: 40 };
+const gorus = new Map();
+export const _gorus = gorus;      // oyuncu kimliği -> { liste: [{x,y,z,id,deger}], ray: Map, sira }
+
+function tara(pl) {
+  const dim = pl.dimension, h = pl.getHeadLocation();
+  const R = GORUS.R;
+  const vol = new BlockVolume({ x: Math.floor(h.x) - R, y: Math.floor(h.y) - GORUS.DY, z: Math.floor(h.z) - R },
+    { x: Math.floor(h.x) + R, y: Math.floor(h.y) + GORUS.DY, z: Math.floor(h.z) + R });
+  const res = safe(() => dim.getBlocks(vol, { includeTypes: TURLER }, true));
+  const liste = [];
+  for (const q of safe(() => [...(res?.getBlockLocationIterator() ?? [])], []) ?? []) {
+    const id = safe(() => dim.getBlock(q)?.typeId, "");
+    const c = CEV[id];
+    if (!c || CEVHER_U[id] === undefined) continue;
+    const uz = Math.hypot(q.x + 0.5 - h.x, q.y + 0.5 - h.y, q.z + 0.5 - h.z);
+    if (uz > R + 0.5) continue;
+    liste.push({ x: q.x, y: q.y, z: q.z, id, deger: c[1], ad: c[2], uz });
+  }
+  // önce değerli, sonra yakın olanlar
+  liste.sort((a, b) => b.deger - a.deger || a.uz - b.uz);
+  return liste.slice(0, GORUS.EN_COK);
+}
+
+/** Gözden cevhere giden çizgide ilk katı bloğa uzaklık (yoksa cevherin kendisi). */
+function engel(pl, h, c, uz) {
+  const yon = { x: (c.x + 0.5 - h.x) / uz, y: (c.y + 0.5 - h.y) / uz, z: (c.z + 0.5 - h.z) / uz };
+  const hit = safe(() => pl.dimension.getBlockFromRay(h, yon, { maxDistance: uz, includeLiquidBlocks: false, includePassableBlocks: false }));
+  if (!hit?.block) return uz;
+  const f = hit.faceLocation ?? { x: 0.5, y: 0.5, z: 0.5 };
+  const p = { x: hit.block.x + f.x, y: hit.block.y + f.y, z: hit.block.z + f.z };
+  return Math.hypot(p.x - h.x, p.y - h.y, p.z - h.z);
+}
+
+/** Çizilecek işaretler: [{ p, boy, u, c }]. ray: önceki engel uzaklıkları (cevher anahtarı -> uzaklık). */
+export function cevherIsaretleri(pl, liste, ray = new Map()) {
+  const h = pl.getHeadLocation();
+  const bak = safe(() => pl.getViewDirection(), { x: 0, y: 0, z: 1 });
+  const out = [];
+  for (const c of liste) {
+    const cx = c.x + 0.5, cy = c.y + 0.5, cz = c.z + 0.5;
+    const uz = Math.hypot(cx - h.x, cy - h.y, cz - h.z);
+    if (uz < 0.9) continue;
+    const yon = { x: (cx - h.x) / uz, y: (cy - h.y) / uz, z: (cz - h.z) / uz };
+    if (yon.x * bak.x + yon.y * bak.y + yon.z * bak.z < 0.25) continue;      // arkada / çok yanda
+    const k = `${c.x},${c.y},${c.z}`;
+    const e = ray.get(k) ?? uz;
+    // duvarın hemen önü; çok yakın duvarda bile kameranın önünde kalsın
+    const D = Math.max(0.32, Math.min(uz - 0.55, e * 0.92 - 0.12));
+    out.push({ p: { x: h.x + yon.x * D, y: h.y + yon.y * D, z: h.z + yon.z * D }, boy: (0.5 * D) / uz, u: CEVHER_U[c.id], c });
+  }
+  return out;
+}
+
 system.runInterval(() => {
+  const t = system.currentTick;
   for (const pl of world.getAllPlayers()) {
     const v = ridingKesif(pl);
-    if (!v || formOf(v) !== "matkap") continue;
-    const { satirlar, en } = durbun(v);
-    const not = en ? `§e${CEVHER[en.c[0]]} §l${en.c[2]}§r§e ${en.uz} blok ${en.dy > 0 ? `(${en.dy} yukarıda)` : en.dy < 0 ? `(${-en.dy} aşağıda)` : "(aynı hizada)"}`
-      : "§7Yakında cevher yok";
-    safe(() => pl.onScreenDisplay.setActionBar([...satirlar, not].join("\n")));
+    if (!v || formOf(v) !== "matkap") { gorus.delete(pl.id); continue; }
+    let g = gorus.get(pl.id);
+    if (!g) gorus.set(pl.id, (g = { liste: [], ray: new Map(), sira: 0, son: -99 }));
+    if (t - g.son >= 10) { g.liste = tara(pl); g.son = t; }
+    // her seferinde birkaç cevherin engel uzaklığını yenile (telefon yorulmasın)
+    const h = pl.getHeadLocation();
+    for (let i = 0; i < 8 && g.liste.length; i++) {
+      const c = g.liste[g.sira++ % g.liste.length];
+      const uz = Math.hypot(c.x + 0.5 - h.x, c.y + 0.5 - h.y, c.z + 0.5 - h.z);
+      g.ray.set(`${c.x},${c.y},${c.z}`, engel(pl, h, c, uz));
+    }
+    for (const m of cevherIsaretleri(pl, g.liste, g.ray)) {
+      const mv = new MolangVariableMap();
+      mv.setFloat("variable.u", m.u);
+      mv.setFloat("variable.boy", m.boy);
+      safe(() => pl.spawnParticle("aqualit:cevher", m.p, mv));
+    }
+    if (t % 10 === 0) {
+      const en = g.liste[0];
+      safe(() => pl.onScreenDisplay.setActionBar(en ? `§e⛏ §l${en.ad}§r§e ${Math.round(en.uz)} blok · ekranda ${g.liste.length} cevher` : "§7Yakında cevher yok"));
+    }
   }
-}, 10);
+}, 2);

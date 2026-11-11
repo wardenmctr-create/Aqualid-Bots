@@ -1286,6 +1286,33 @@ if (run("kesif")) {
     check(dr.satirlar.length === 9 && dr.satirlar.join("").includes(HG.CEVHER.elmas) && dr.satirlar.join("").includes(HG.CEVHER.komur),
       "cevher dürbünü önde ve aşağıdaki cevherleri gösteriyor");
     check(dr.en?.c?.[2] === "elmas" && dr.en.dy === -2, `en değerli cevher elmas, ${dr.en?.uz} blok, 2 aşağıda`);
+    // v0.4.5 cevher görüşü: ekranda, cevherin gerçek yönünde, duvarın önünde, uzaklıkla küçülen işaret
+    set({ x: bx, y: by + 1, z: bz + 9 }, "minecraft:diamond_ore");
+    player._rot = { x: 0, y: 0 };
+    const eskiYer = { ...player.location };
+    player.location = { x: bx + 0.5, y: by, z: bz + 0.5 };
+    const h = player.getHeadLocation();
+    const liste = [{ x: bx, y: by + 1, z: bz + 9, id: "minecraft:diamond_ore" }, { x: bx - 1, y: by + 1, z: bz + 3, id: "minecraft:coal_ore" }];
+    const ray = new Map();
+    for (const c of liste) {
+      const uz = Math.hypot(c.x + 0.5 - h.x, c.y + 0.5 - h.y, c.z + 0.5 - h.z);
+      const hit = ow.getBlockFromRay(h, { x: (c.x + 0.5 - h.x) / uz, y: (c.y + 0.5 - h.y) / uz, z: (c.z + 0.5 - h.z) / uz }, { maxDistance: uz });
+      const f = hit.faceLocation; ray.set(`${c.x},${c.y},${c.z}`, Math.hypot(hit.block.x + f.x - h.x, hit.block.y + f.y - h.y, hit.block.z + f.z - h.z));
+    }
+    const isr = CD.cevherIsaretleri(player, liste, ray);
+    const el = isr.find((m) => m.c.id === "minecraft:diamond_ore"), ko = isr.find((m) => m.c.id === "minecraft:coal_ore");
+    const ileri = (m) => Math.hypot(m.p.x - h.x, m.p.y - h.y, m.p.z - h.z);
+    const dogru = (m) => { const c = m.c, uz = Math.hypot(c.x + 0.5 - h.x, c.y + 0.5 - h.y, c.z + 0.5 - h.z), D = ileri(m);
+      return Math.hypot(h.x + (c.x + 0.5 - h.x) * D / uz - m.p.x, h.y + (c.y + 0.5 - h.y) * D / uz - m.p.y, h.z + (c.z + 0.5 - h.z) * D / uz - m.p.z) < 1e-6; };
+    check(el && ko && dogru(el) && dogru(ko), "cevher işaretleri gözden cevhere giden çizgide (ekranda gerçek yerinde)");
+    const gorunen = (m) => m.boy / ileri(m);     // ekranda görünen boy (açı)
+    check(el && gorunen(el) < gorunen(ko) && el.u !== ko.u, `uzaktaki elmas ekranda daha küçük (${el && gorunen(el).toFixed(3)} < ${ko && gorunen(ko).toFixed(3)}), kendi resmiyle`);
+    check(el && ileri(el) < ray.get(`${bx},${by + 1},${bz + 9}`), "işaret duvarın önünde (taşın içinde kalmıyor)");
+    player.location = eskiYer;
+    player.particles = [];
+    ticks(4);
+    check((player.particles ?? []).some((q) => q.id === "aqualit:cevher" || q[0] === "aqualit:cevher" || JSON.stringify(q).includes("aqualit:cevher")), "matkapta cevherler ekrana çiziliyor (panel yok)");
+    set({ x: bx, y: by + 1, z: bz + 9 }, "minecraft:stone");
     set({ x: bx + 2, y: by - 2, z: bz + 5 }, "minecraft:stone");
     set({ x: bx - 1, y: by + 1, z: bz + 3 }, "minecraft:stone");
   }
