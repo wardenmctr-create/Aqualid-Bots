@@ -8,6 +8,7 @@ import { canReach } from "./path.js";
 import { WALK, RUN } from "./bot.js";
 import { readAnswer } from "./messages.js";
 import { mimarJob } from "./mimar.js";
+import { alanIsi } from "./alan.js";
 import { yagmaGorevi } from "./yagma.js";
 import { organizatorIsi, robotIstegi } from "./organizator.js";
 
@@ -1449,6 +1450,7 @@ export function jobFor(bot) {
   if (bot.task.mode === "yagma") return yagmaGorevi(bot);
   if (bot.task.mode === "takip") return takipIsi(bot);
   if (bot.task.mode === "git") return gitIsi(bot);
+  if (bot.task.mode === "alan") return alanIsi(bot);
   switch (bot.type) {
     case "madenci": return minerJob(bot);
     case "kurekci": return diggerJob(bot);

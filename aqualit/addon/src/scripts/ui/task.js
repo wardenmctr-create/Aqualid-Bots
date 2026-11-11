@@ -6,7 +6,7 @@ import * as B from "../blocks.js";
 import { startTask, startJob, commandStop, commandResume, commandReturn, bots } from "../brain.js";
 import { pickupRobot } from "../place.js";
 import { fmtPos, safe, V } from "../util.js";
-import { setProp, getProp } from "../store.js";
+import { setProp, getProp, Prefs } from "../store.js";
 import { rodRobot } from "./kilicli_ui.js";
 import { bagMenu, EDIT_RANGE } from "./canta.js";
 import { mimarMenu, yapi } from "../mimar.js";
@@ -34,6 +34,7 @@ export function describeTask(bot) {
   if (!T) return "Görev yok";
   if (T.mode === "skyblock") return `Taş makinesinden ${T.items?.[0]?.amount ?? 0} taş`;
   if (T.mode === "yagma") return `Yağma: ${T.ad ?? "seçilen yer"} (${T.r} blok çevre)`;
+  if (T.mode === "alan") return T.is === "duzlestir" ? "Alanı düzleştiriyor" : "Alanı dolduruyor";
   if (T.mode === "takip") return `${T.ad} takip ediliyor`;
   if (T.type === "insaatci") {
     const y = yapi(T.yapi);
@@ -267,6 +268,28 @@ async function minerTask(player, bot) {
 }
 
 async function diggerTask(player, bot) {
+  // v0.5.0: alan işleri (Bölge Seçici)
+  const tur = await menu(player, "Kürekçi · görev türü", "Ne yapsın?", [
+    { text: "§lMalzeme topla§r\n§7Kum, toprak, çakıl, kil...", icon: "textures/items/aqualit_shovel", v: "topla" },
+    { text: "§lAlanı düzleştir§r\n§7Bölge Seçici alanı: alt köşe zemin olur", icon: "textures/items/zone_selector", v: "duzlestir" },
+    { text: "§lAlanı doldur§r\n§7Bölge Seçici alanındaki boşlukları doldurur", icon: "textures/blocks/dirt", v: "doldur" },
+  ]);
+  if (!tur) return null;
+  if (tur.v !== "topla") {
+    const AL = await import("../alan.js");
+    const z = Prefs.get(player.id).zone;
+    const hata = AL.alanUygun(z) ?? (z.dim && z.dim !== bot.dim.id ? "Seçili alan başka bir boyutta." : null);
+    if (hata) { player.sendMessage(`§e${hata}`); return null; }
+    const s = AL.alanSinir(z);
+    let blok;
+    if (tur.v === "doldur") {
+      const v = await modal(player, "Alanı doldur", [{ type: "dropdown", label: "Hangi blokla?", items: AL.DOLGU.map((d) => d.ad), value: 0 }], "Başla");
+      if (!v) return null;
+      blok = AL.DOLGU[v[0]]?.id;
+    }
+    player.sendMessage(`§7Alan: ${s.x1 - s.x0 + 1}x${s.z1 - s.z0 + 1}, y ${s.y0}..${s.y1}`);
+    return { type: "kurekci", mode: "alan", is: tur.v, zone: { a: z.a, b: z.b, dim: z.dim ?? bot.dim.id }, blok, finish: "chest", maxDist: 128 };
+  }
   const opts = B.SHOVEL.map((s) => ({ key: s.key, name: s.name, icon: s.icon, note: s.smeltName ? `fırında → ${s.smeltName}` : "" }));
   const keys = await pickMany(player, "Kürekçi · ne toplasın?", "Toplanacaklara dokun, sonra Devam'a bas.", opts);
   if (!keys) return null;

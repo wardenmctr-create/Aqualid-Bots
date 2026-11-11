@@ -3158,5 +3158,43 @@ if (run("tasma")) {
   check((tot["minecraft:dirt"] ?? 0) === 316 && b.count("minecraft:dirt") === 0, `sandığa boşaltınca taşma da gitti (${tot["minecraft:dirt"] ?? 0})`);
 }
 
+// ---------------------------------------------------------------- v0.5.0 Kürekçi alan işleri
+if (run("alan")) {
+  console.log("== Kürekçi: Bölge Seçici alanını düzleştirir ve doldurur");
+  const AL = await import("./scripts/alan.js");
+  const G = GROUND + 1;
+  player.teleport({ x: -100.5, y: G, z: 100.5 });
+  give("aqualit:robot_kurekci");
+  ticks(12);
+  useOn("aqualit:robot_kurekci", { x: -102, y: GROUND, z: 100 }, "Up", { comp: "aqualit:robot_item", p: { type: "kurekci", model: 1 } });
+  ticks(5);
+  const b = myBots().filter((x) => x.type === "kurekci").pop();
+  // alan 6x6: içine tepe (2 kat toprak) ve çukur
+  const a = { x: -96, y: GROUND, z: 96 }, c = { x: -91, y: GROUND + 2, z: 101 };
+  for (let x = -96; x <= -91; x++) for (let z = 96; z <= 101; z++) for (let y = GROUND - 3; y <= GROUND; y++) ow.setBlockType({ x, y, z }, "minecraft:dirt");
+  for (let x = -95; x <= -93; x++) for (let z = 97; z <= 99; z++) { ow.setBlockType({ x, y: G, z }, "minecraft:dirt"); ow.setBlockType({ x, y: G + 1, z }, "minecraft:dirt"); }
+  ow.setBlockType({ x: -92, y: GROUND, z: 100 }, "minecraft:air"); ow.setBlockType({ x: -92, y: GROUND - 1, z: 100 }, "minecraft:air");
+  const pr = __store.Prefs.get(player.id); pr.zone = { a, b: c, dim: "minecraft:overworld" }; __store.Prefs.set(player.id, pr);
+  check(AL.alanUygun(pr.zone) === null, "alan uygun (6x6)");
+  b.task = { type: "kurekci", mode: "alan", is: "duzlestir", zone: pr.zone, finish: "chest" }; b.saveTask();
+  brain.startTask(b);
+  ticks(20 * 120, () => b.task?.done);
+  let tepe = 0, cukur = 0;
+  for (let x = -96; x <= -91; x++) for (let z = 96; z <= 101; z++) {
+    if (ow._cell({ x, y: G, z }).type !== "minecraft:air") tepe++;
+    if (ow._cell({ x, y: GROUND, z }).type === "minecraft:air") cukur++;
+  }
+  check(b.task?.done && tepe === 0 && cukur === 0, `düzleştirdi: tepe kalmadı (${tepe}), çukur doldu (${cukur})`);
+  // doldur: 3x3x2 boşluk kırık taşla
+  const a2 = { x: -96, y: G, z: 96 }, c2 = { x: -94, y: G + 1, z: 98 };
+  b.addItem("minecraft:cobblestone", 30);
+  b.task = { type: "kurekci", mode: "alan", is: "doldur", zone: { a: a2, b: c2, dim: "minecraft:overworld" }, blok: "minecraft:cobblestone", finish: "chest" }; b.saveTask();
+  brain.startTask(b);
+  ticks(20 * 90, () => b.task?.done);
+  let dolu = 0;
+  for (let x = -96; x <= -94; x++) for (let z = 96; z <= 98; z++) for (let y = G; y <= G + 1; y++) if (ow._cell({ x, y, z }).type === "minecraft:cobblestone") dolu++;
+  check(dolu === 18, `alanı kırık taşla doldurdu (${dolu}/18)`);
+}
+
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");
 process.exit(fails ? 1 : 0);
