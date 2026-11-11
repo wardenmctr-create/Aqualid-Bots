@@ -118,7 +118,7 @@ ortam değişkeniyle başka yer gösterilebilir.
   tik başına 6 çağrı), ayar `aq:xray_ayar`, geri çevrilecekler `aq:xray_kalan`. `blocks.js asil()` hayaleti asıl sayar.
   Matkap `KEEP` hayaletleri kazar. Eşya yalnız matkapta (`kesif_radar.js esyalariVer`).
 - `kesif.js formOf`: biçim `aq:form` dinamik özelliği + varlık özelliği. Hız: `aq:hiz` 0-5, `hizMenu` canlı CustomForm.
-- **v0.4.6** `cevher_durbunu.js` cevher görüşü: matkapta cevher işaretleri (parçacık `aqualit:cevher`, atlas `gen/cevher_gorus.py`) gözden cevhere çizgide, ilk duvarın önünde (`getBlockFromRay`), boy = KAT·0,5·D/uzaklık (KAT 2: bloğun 2 katı). Mimar menü resimleri gerçek dokularla (`gen/blok_doku.py`, atlas `ref/yapi_cevir/blok_dokulari.*`).
+- **v0.4.6** `cevher_durbunu.js` cevher görüşü: matkapta cevher işaretleri (parçacık `aqualit:cevher`, atlas `gen/cevher_gorus.py`) gözden cevhere çizgide, ilk duvarın önünde (`getBlockFromRay`), boy = KAT·0,5·D/uzaklık (KAT 1,5: bloğun 1,5 katı). Mimar menü resimleri gerçek dokularla (`gen/blok_doku.py`, atlas `ref/yapi_cevir/blok_dokulari.*`).
 - `surus.js` toz/ses; gövde hareketi `gen/kesif_oyun.py` pre_animation (`v.kayma`, `v.yatma`, `v.sh`).
 
 ## Kodlama kuralları

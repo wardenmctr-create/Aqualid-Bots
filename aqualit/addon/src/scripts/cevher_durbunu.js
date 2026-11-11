@@ -69,8 +69,8 @@ export function durbun(v) {
 // görünecekse o kadar). Böylece duvarın ardındaki elmas, duvarda tam kazman gereken yerde ve uzaklığına uygun boyda
 // görünür. Gözden çizgi dönmeye bağlı değil: kafanı çevirince işaretler kaymaz. Oyunda denenmedi.
 
-// KAT: işaret, cevher bloğunun o uzaklıkta görüneceği boyun kaç katı (v0.4.8: 2 kat). Parçacık boyu yarı kenar.
-export const GORUS = { R: 14, DY: 8, EN_COK: 40, KAT: 2 };
+// KAT: işaret, cevher bloğunun o uzaklıkta görüneceği boyun kaç katı (v0.4.8: 2, v0.4.9: 1,5). Parçacık boyu yarı kenar.
+export const GORUS = { R: 14, DY: 8, EN_COK: 40, KAT: 1.5 };
 const gorus = new Map();
 export const _gorus = gorus;      // oyuncu kimliği -> { liste: [{x,y,z,id,deger}], ray: Map, sira }
 

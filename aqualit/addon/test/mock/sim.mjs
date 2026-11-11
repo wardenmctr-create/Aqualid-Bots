@@ -1309,7 +1309,7 @@ if (run("kesif")) {
     check(el && gorunen(el) < gorunen(ko) && el.u !== ko.u, `uzaktaki elmas ekranda daha küçük (${el && gorunen(el).toFixed(3)} < ${ko && gorunen(ko).toFixed(3)}), kendi resmiyle`);
     check(el && ileri(el) < ray.get(`${bx},${by + 1},${bz + 9}`), "işaret duvarın önünde (taşın içinde kalmıyor)");
     const uzk = (m) => Math.hypot(m.c.x + 0.5 - h.x, m.c.y + 0.5 - h.y, m.c.z + 0.5 - h.z);
-    check([el, ko].every((m) => Math.abs(2 * gorunen(m) * uzk(m) - 2) < 1e-6), "işaret, cevher bloğunun o uzaklıktaki boyunun 2 katı (uzaklıkla orantılı)");
+    check([el, ko].every((m) => Math.abs(2 * gorunen(m) * uzk(m) - CD.GORUS.KAT) < 1e-6), `işaret, cevher bloğunun o uzaklıktaki boyunun ${CD.GORUS.KAT} katı (uzaklıkla orantılı)`);
     player.location = eskiYer;
     player.particles = [];
     const XRk = await import("./scripts/xray.js");
