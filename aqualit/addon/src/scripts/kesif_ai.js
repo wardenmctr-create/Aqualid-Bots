@@ -1024,6 +1024,50 @@ export function boyutYapilari(dimId) {
   return hepsi.filter((t) => !n.includes(t) && !e.includes(t));
 }
 
+// ======================================================================= köylü getirme (v0.4.2)
+// Keşif bilinen en yakın köye uçar, çevresindeki köylülerden n tanesini aracın içine alır (görünmez, araçla taşınır),
+// hedefe uçar ve köylüleri oraya bırakır. Mimar (köylü gereken çiftlik) → Organizatör → Keşif zinciriyle de çalışır.
+export function* koyluGetir(k, hedef, n = 2, ad = "hedefe") {
+  const koyler = Yerler.list(k.owner).filter((y) => y.tur === "koy" && y.dim === k.dim.id)
+    .sort((a, b) => V.hdist(a.pos, k.loc) - V.hdist(b.pos, k.loc));
+  const koy = koyler[0];
+  if (!koy) { k.say("Bildiğim bir köy yok. Önce 'Yapı bul → Köy' ile bir köy bulayım, sonra köylü getiririm."); return; }
+  k.setStatus?.("Köylü almaya gidiyor");
+  k.say(`${n} köylü almak için ${koy.pos.x}, ${koy.pos.z} köyüne gidiyorum.`);
+  yield* uc(k, { x: koy.pos.x, y: koy.pos.y, z: koy.pos.z }, { near: 6 });
+  const alinan = [];
+  for (let deneme = 0; deneme < 200 && alinan.length < n; deneme++) {
+    const yakin = safe(() => k.dim.getEntities({ type: "minecraft:villager_v2", location: k.loc, maxDistance: 40 }), []) ?? [];
+    for (const v of yakin) {
+      if (alinan.length >= n || alinan.includes(v)) continue;
+      safe(() => v.addEffect("invisibility", 20 * 600, { showParticles: false }));
+      safe(() => v.addEffect("slowness", 20 * 600, { amplifier: 10, showParticles: false }));
+      alinan.push(v);
+    }
+    if (alinan.length < n) yield;
+  }
+  if (!alinan.length) { k.say("Köyde köylü bulamadım."); return; }
+  k.say(`${alinan.length} köylü bindi, ${ad} götürüyorum.`);
+  const tasi = () => { for (const v of alinan) safe(() => v.teleport({ x: k.loc.x, y: k.loc.y + 0.5, z: k.loc.z }, { dimension: k.dim })); };
+  tasi();
+  yield* uc(k, hedef, { near: 3, her: tasi });
+  alinan.forEach((v, i) => {
+    safe(() => v.teleport({ x: hedef.x + (i % 3) - 1, y: hedef.y + 1, z: hedef.z + Math.floor(i / 3) }, { dimension: k.dim }));
+    safe(() => v.removeEffect("invisibility"));
+    safe(() => v.removeEffect("slowness"));
+  });
+  k.say(`${alinan.length} köylüyü bıraktım.`);
+  yield* in_(k);
+  return alinan.length;
+}
+/** Sahibin boştaki Keşif'ine köylü getirme işi verir (Organizatör ve Mimar kullanır). */
+export function koyluIste(owner, hedef, n, ad) {
+  const k = [...kesifler.values()].find((x) => x.owner === owner && safe(() => x.e.isValid, false) && !x.job);
+  if (!k) return false;
+  basla(k, koyluGetir(k, hedef, n, ad));
+  return true;
+}
+
 export function basla(k, gen, msg) {
   k.job = gen;
   if (msg) k.say(msg);
@@ -1062,6 +1106,7 @@ export async function anaMenu(pl, e) {
   btns.push({ text: "§lBeni götür§r\n§7Araç olur, bindirir, kendisi sürer", icon: ICON("elytra"), v: "gotur" });
   btns.push({ text: "§lSefer düzenle§r\n§7Robot ekibini bir yapıya götürür: korur, yağmalar, döner", icon: ICON("trial_key"), v: "sefer" });
   btns.push({ text: "§lRobot çağır§r\n§7Seçtiğin robotlar koşarak gelip biner", icon: robotIcon("kilicli", 1), v: "cagir" });
+  btns.push({ text: "§lKöylü getir§r\n§7En yakın bilinen köyden yanına köylü getirir", icon: ICON("emerald"), v: "koylu" });
   btns.push({ text: "§lRobotları taşı§r\n§7Yakındaki robotları başka yere götürür", icon: robotIcon("madenci", 1), v: "tasi" });
   btns.push({ text: "§lBirini takip et§r\n§7Başka bir Keşif'in, robotun ya da oyuncunun hemen arkasından gelir", icon: ICON("lead"), v: "takip" });
   const depo = depoSay(e);
@@ -1101,6 +1146,11 @@ export async function anaMenu(pl, e) {
     case "gotur": return goturMenu(pl, k);
     case "tasi": return tasiMenu(pl, k);
     case "cagir": return robotCagirMenu(pl, k);
+    case "koylu": {
+      const r = await menu(pl, "§lKöylü getir", "§7Kaç köylü getireyim? (yanına bırakırım)", [1, 2, 3, 5].map((n) => ({ text: `${n} köylü`, n })));
+      if (!r || !k.valid) return;
+      return basla(k, koyluGetir(k, V.floor(pl.location), r.n, "senin yanına"));
+    }
     case "takip": {
       const h = await takipHedefiSec(pl, k.e.id, `${k.name} · birini takip et`);
       if (!h || !k.valid) return;

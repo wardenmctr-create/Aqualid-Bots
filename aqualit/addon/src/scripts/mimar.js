@@ -685,6 +685,15 @@ export function* mimarJob(bot) {
   const miss = Object.keys(missing).length;
   if (miss) bot.say(`${Y.ad} bitti ama bazı bloklar eksik kaldı: ${needText(missing)}. Malzemeyi sandığıma koyup bana yeniden görev verirsen tamamlarım.`, { force: true });
   else bot.say(`${Y.ad} tamamlandı!`, { force: true });
+  // v0.4.2: köylü gereken çiftlik: Organizatör'e söyler, o da Keşif'i köye gönderir
+  const koyluGerek = Y.koylu ?? KOYLU_GEREK.find(([re]) => re.test(Y.id))?.[1] ?? 0;
+  if (koyluGerek > 0 && !miss) {
+    const yer = { x: Math.floor(center.x), y: T.at.y, z: Math.floor(center.z) };
+    const ka = await_kesif();
+    const ok = ka && safe(() => ka.koyluIste(bot.owner, yer, koyluGerek, `${Y.ad} çiftliğine`), false);
+    bot.say(ok ? `${Y.ad} için ${koyluGerek} köylü lazım; Organizatör'e söyledim, Keşif köyden getiriyor.`
+      : `${Y.ad} için ${koyluGerek} köylü lazım. Boşta bir Keşif'in olursa getirtirim; yoksa köylüleri sen getir.`, { force: true });
+  }
   bot.setStatus("Eve uçuyor");
   if (bot.home) {
     yield* flyTo(bot, { x: bot.loc.x, y: Math.max(bot.loc.y, bot.home.y + 6), z: bot.loc.z }, { near: 0.8 });
@@ -845,6 +854,11 @@ async function cardMenu(player, y, degis = {}) {
   return r?.v;
 }
 
+// köylü gereken çiftlikler (yapı kimliğine göre): demir 3, ticaret/köylü üretme/otomatik ekin 2
+const KOYLU_GEREK = [[/demir|iron/, 3], [/ticaret|trading|koylu_uret|villager/, 2], [/otomatik_ekin|auto_crop/, 2]];
+let _ka = null;
+import("./kesif_ai.js").then((m) => { _ka = m; }).catch(() => {});
+const await_kesif = () => _ka;
 const BAKMA = 100;                 // panel kapalıyken yer seçme süresi (tik): 5 sn
 
 // ======================================================================= dönen 3B hologram önizleme (v0.4.2)

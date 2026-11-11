@@ -2393,6 +2393,23 @@ if (run("kesifai")) {
   check(!mb2.e._ridingOn && !KA.robotYolcuMu(mb2.id) && Math.hypot(mb2.home.x - hedef2.x, mb2.home.z - hedef2.z) < 6,
     "robot indi, yeni evi taşındığı yer");
   ke._fizik = false;
+  // v0.4.2: köylü getir: bilinen köyden köylüleri alıp hedefe bırakır
+  {
+    const KA2 = await import("./scripts/kesif_ai.js");
+    const H2 = await import("./scripts/harita.js");
+    const kk = [...KA2.kesifler.values()].find((x) => x.owner === player.id);
+    if (kk) {
+      kk.job = null;
+      const koyP = { x: kk.loc.x + 60, y: GROUND, z: kk.loc.z };
+      H2.Yerler.ekle(player.id, { tur: "koy", ad: "Köy", pos: koyP, dim: ow.id });
+      const kv = [0, 1, 2].map((i) => ow.spawnEntity("minecraft:villager_v2", { x: koyP.x + i, y: GROUND + 1, z: koyP.z + 2 }));
+      const hedef = { x: Math.floor(kk.loc.x) - 10, y: GROUND, z: Math.floor(kk.loc.z) };
+      const ok = KA2.koyluIste(player.id, hedef, 2, "test");
+      ticks(20 * 60, () => !kk.job);
+      const gelen = kv.filter((v) => Math.hypot(v.location.x - hedef.x, v.location.z - hedef.z) < 4).length;
+      check(ok && gelen === 2, `Keşif köyden 2 köylü getirdi (${gelen})`);
+    } else console.log("  (Keşif yok, köylü getirme atlandı)");
+  }
 }
 
 // ---------------------------------------------------------------- 24) Yağma ve sefer (v0.3.1)
