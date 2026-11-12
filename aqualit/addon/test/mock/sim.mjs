@@ -621,7 +621,7 @@ if (run("zirh")) {
   const books = (p) => ow.getBlock(p).getComponent("minecraft:inventory").container.slots.filter((x) => x?.typeId.startsWith("aqualit:buyu_")).length;
   const open = (p) => { world.afterEvents.blockContainerOpened.fire({ block: ow.getBlock(p), dimension: ow }); };
   Math.random = () => 0.01;
-  const duzPos = { x: 40, y: GROUND + 1, z: 40 };
+  const duzPos = { x: 36, y: GROUND + 1, z: 30 };
   set(duzPos, "minecraft:chest");
   open(duzPos); ticks(3);
   check(books(duzPos) === 0, "sıradan doğal sandıkta kabuk kitabı çıkmadı");
@@ -661,6 +661,12 @@ if (run("zirh")) {
   ticks(3);
   check(vKitap() === 1, "maden vagonu yeniden açılınca kitap çoğalmadı");
   Math.random = rnd0;
+  // sonraki senaryolar için temizlik
+  vagon.remove();
+  for (let x = 26; x <= 74; x++) for (let z = 26; z <= 34; z++) for (let y = GROUND - 1; y <= GROUND + 2; y++) {
+    if (y >= GROUND + 1) set({ x, y, z }, "minecraft:air");
+    else set({ x, y, z }, y === GROUND ? "minecraft:grass_block" : "minecraft:dirt");
+  }
   const seen = {};
   for (let i = 0; i < 1000; i++) { const k = Z.pickLoot(i / 1000); seen[k] = (seen[k] ?? 0) + 1; }
   const barkKeys = ["esnek_lifler", "hafif_adimlar", "orman_golgesi", "recine_korumasi", "dusus_asinmasi", "son_kabuk"];
