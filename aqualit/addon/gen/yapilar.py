@@ -768,6 +768,8 @@ ALL = [minik_kulube, kamp_alani, koy_kuyusu, lamba_diregi, cicek_bahcesi, cesme,
 # v0.4.2: Bedrock farmları (gen/farmlar.py)
 import farmlar as _FA  # noqa: E402
 ALL += _FA.FARMLAR
+import farmlar2 as _FA2  # noqa: E402
+ALL += _FA2.FARMLAR
 KATEGORI = {'kucuk': 'Küçük yapılar', 'ev': 'Evler', 'koy': 'Köy yapıları', 'kule': 'Kuleler ve kaleler',
             'ciftlik': 'Çiftlikler', 'dev': 'Dev yapılar'}
 
@@ -775,7 +777,7 @@ KATEGORI = {'kucuk': 'Küçük yapılar', 'ev': 'Evler', 'koy': 'Köy yapıları
 ITEM_OF = {
     'farmland': 'dirt', 'grass_path': 'dirt', 'wheat': 'wheat_seeds', 'carrots': 'carrot', 'potatoes': 'potato',
     'beetroot': 'beetroot_seeds', 'reeds': 'sugar_cane', 'water': None, 'air': None, 'bed': 'bed',
-    'redstone_wire': 'redstone', 'grass_block': 'dirt',
+    'redstone_wire': 'redstone', 'grass_block': 'dirt', 'lava': None, 'cave_vines': 'glow_berries',
 }
 
 

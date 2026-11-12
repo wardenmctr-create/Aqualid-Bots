@@ -1,6 +1,6 @@
 # Aqualit Robotları — Claude Code çalışma rehberi
 
-Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.5.0** (rampa, 51 güç efekti, Organizatör üssü, sınırsız çanta, sandık taşıma, yüzeyde sürüş; önceki: **v0.4.1**
+Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.5.1** (canlı kontrol, onay sistemi, 27 yeni farm; v0.5.0: rampa, 51 güç efekti, Organizatör üssü, sınırsız çanta, sandık taşıma, yüzeyde sürüş; önceki: **v0.4.1**
 (matkap X-ray, hız çubuğu 0-500, arazi sürüş motoru ve 4 blok basamak; 0.4.0: Portalcı, evcil dronlar, Organizatör Yardımcısı ve üssü, yeni vizör, tepeden kamera haritası, uzaktan izleme; 0.3.9: matkap ve cevher dürbünü; Keşif düzeltmeleri, uçan binek sistemi, arazi Tırmanma Modu; 0.3.5: mini tarama dronları; 0.3.2: takip, otopilot, 3B eşyalar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
 Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 
@@ -110,6 +110,12 @@ ortam değişkeniyle başka yer gösterilebilir.
   `aqualit:n/s/w/e/u/d` yok/var, kemik görünürlüğü), `aqualit_aktarim`, platform varlığı `aqualit:org_platform`.
   Blok durumlarında bool/int şemadan geçmiyor: metin değer kullan.
 - Organizatör vizörü: `robot.py` `vz_*` parçaları; cam `visor_cam` kemiğinde, ayrı render controller (alphablend).
+
+### v0.5.1 notları
+- `gen/farmlar2.py`: 27 farm daha (toplam 51 `ciftlik`); `yapilar.py` döngüsel içe aktarım yüzünden önce `yapilar` yüklenmeli.
+- `zirh.js yapiTuru(dim, pos)`: piramit / trial / maden; kabuk kitabı yalnız piramit ve Trial Chambers sandığında,
+  maden için `minecraft:chest_minecart` etkileşimi (`aq:acildi` varlık özelliği).
+- Onay: `messages.js answer({degis})`, `zamanAsimi`; canlı kontrol `ui/tracker.js kontrolAl`.
 
 ### v0.5.0 modülleri
 - `guc_efekt.js` + `gen/guc_efekt.py`: 51 güce 3D (`aqualit:guc_fx`, özellik `aqualit:fx`) ve 2D (`aqualit:g2_N`) efekt;

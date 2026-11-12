@@ -62,7 +62,8 @@ SEYREK = ('torch', 'lantern', 'flower', 'grass', 'fern', 'sapling', 'button', 'l
           'carpet', 'pressure_plate', 'sign', 'banner', 'tripwire', 'ladder', 'vine', 'bars', 'pane', 'fence', 'wall',
           'door', 'trapdoor', 'slab', 'stairs', 'chain', 'rod', 'candle', 'pot', 'head', 'skull', 'bush', 'dandelion',
           'poppy', 'tulip', 'orchid', 'allium', 'bluet', 'daisy', 'cornflower', 'lily', 'wheat', 'carrots', 'potatoes',
-          'beetroot', 'reeds', 'cocoa', 'web', 'snow_layer')
+          'beetroot', 'reeds', 'cocoa', 'web', 'snow_layer', 'twisting_vines', 'cave_vines', 'pointed_dripstone',
+          'propagule', 'turtle_egg')
 
 
 def renk(name):
@@ -197,7 +198,8 @@ def render(W, H, D, cells, size=256, bg=(24, 28, 32, 0), yon=0):
             h = 0.12
         bitki = any(k in name for k in ('torch', 'flower', 'sapling', 'fern', 'short_grass', 'tall_grass', 'poppy', 'dandelion',
                                         'tulip', 'wheat', 'carrots', 'potatoes', 'beetroot', 'orchid', 'allium', 'bluet',
-                                        'daisy', 'cornflower', 'lily_of', 'reeds', 'bush', 'rose', 'mushroom', 'web'))
+                                        'daisy', 'cornflower', 'lily_of', 'reeds', 'bush', 'rose', 'mushroom', 'web',
+                                        'twisting_vines', 'cave_vines', 'pointed_dripstone', 'propagule'))
         if bitki and dk and name not in ('grass_block',):
             # bitki/meşale: dokunun kendisi, bloğun ortasında dik duran resim
             t = dk[1]
