@@ -270,6 +270,9 @@ def kesif_rp():
                         "v.yzx = math.lerp(v.yzx ?? 0, q.property('aqualit:yuzey') == 1 ? -90 : 0, 0.25);",
                         "v.yzz = math.lerp(v.yzz ?? 0, q.property('aqualit:yuzey') == 2 ? 180 : 0, 0.25);",
                         "v.yzy = math.lerp(v.yzy ?? 0, q.property('aqualit:yuzey') == 1 ? q.property('aqualit:yon') : 0, 0.3);",
+                        # v0.5.0 uçak: burun uçtuğu yöne bakar (dikey hızdan), dönerken dönüş yönüne yatar (dönüş hızından)
+                        'v.upit = math.lerp(v.upit ?? 0, math.clamp(-q.vertical_speed * 6, -45, 45), 0.15);',
+                        'v.uroll = math.lerp(v.uroll ?? 0, math.clamp(-q.yaw_speed * 0.15, -35, 35), 0.12);',
                     ],
                     'animate': ['gizle', 'tutucu', 'tema', 'ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
@@ -414,7 +417,7 @@ def kesif_anims():
         'left_arm': {'rotation': ['math.cos(q.anim_time * 600) * 28', 0, 0]},
         'body': {'position': [0, 'math.abs(math.sin(q.anim_time * 600)) * 0.6', 0]}}}
     A['run_ucak'] = {'loop': True, 'bones': {
-        'u_root': {'rotation': [P('egim'), 0, 0]}, 'u_prop': {'rotation': spin(1440)},
+        'u_root': {'rotation': [f"math.clamp({P('egim')} * 0.4 + (v.upit ?? 0), -60, 60)", 0, "v.uroll ?? 0"]}, 'u_prop': {'rotation': spin(1440)},
         'u_flame': {'scale': [1, 1, '0.8 + math.abs(math.sin(q.life_time * 900)) * 0.5']},
         'u_scarf': {'rotation': ['math.sin(q.life_time * 500) * 10', 0, 0]}}}
     A['run_gemi'] = {'loop': True, 'bones': {
