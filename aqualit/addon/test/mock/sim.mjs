@@ -663,10 +663,14 @@ if (run("zirh")) {
   Math.random = rnd0;
   // sonraki senaryolar için temizlik
   vagon.remove();
-  for (let x = 26; x <= 74; x++) for (let z = 26; z <= 34; z++) for (let y = GROUND - 1; y <= GROUND + 2; y++) {
-    if (y >= GROUND + 1) set({ x, y, z }, "minecraft:air");
-    else set({ x, y, z }, y === GROUND ? "minecraft:grass_block" : "minecraft:dirt");
-  }
+  const temizle = (x0, x1, z0, z1, y0, y1) => {
+    for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) for (let y = y0; y <= y1; y++)
+      set({ x, y, z }, y > GROUND ? "minecraft:air" : y === GROUND ? "minecraft:grass_block" : "minecraft:dirt");
+  };
+  temizle(27, 33, 27, 33, GROUND - 1, GROUND);                     // piramit tabanı (sandıklar kalır, eskisi gibi)
+  temizle(36, 36, 30, 30, GROUND + 1, GROUND + 1);
+  temizle(48, 52, 28, 32, GROUND, GROUND + 1);
+  temizle(67, 73, 30, 32, GROUND + 1, GROUND + 2);
   const seen = {};
   for (let i = 0; i < 1000; i++) { const k = Z.pickLoot(i / 1000); seen[k] = (seen[k] ?? 0) + 1; }
   const barkKeys = ["esnek_lifler", "hafif_adimlar", "orman_golgesi", "recine_korumasi", "dusus_asinmasi", "son_kabuk"];
