@@ -3299,5 +3299,34 @@ if (run("alan")) {
   check(dolu === 18, `alanı kırık taşla doldurdu (${dolu}/18)`);
 }
 
+// ---------------------------------------------------------------- v0.5.0 rampa
+if (run("rampa")) {
+  console.log("== Rampa: sarı-siyah ok desenli çok bloklu rampa, ayarlayıcıyla ölçü, dokununca kaldırma");
+  const RA = await import("./scripts/rampa.js");
+  const G = GROUND;
+  player.teleport({ x: 200.5, y: G + 1, z: 200.5 });
+  player._rot = { x: 0, y: 180 };          // kuzeye bakıyor
+  for (let x = 196; x <= 204; x++) for (let z = 185; z <= 201; z++) for (let y = G + 1; y <= G + 10; y++) set({ x, y, z }, "minecraft:air");
+  RA.rampaEsyasi(player, ow.getBlock({ x: 200, y: G, z: 199 }), "Up");
+  let egim = 0, govde = 0, enYuksek = 0;
+  for (let x = 196; x <= 204; x++) for (let z = 185; z <= 201; z++) for (let y = G + 1; y <= G + 10; y++) {
+    const t = ow._cell({ x, y, z }).type;
+    if (t.startsWith("aqualit:rampa_e")) { egim++; enYuksek = Math.max(enYuksek, y - G); }
+    if (t === "aqualit:rampa_govde") govde++;
+  }
+  check(egim === 20, `varsayılan rampa: 2 kalınlık x 10 uzunluk eğim bloğu (${egim})`);
+  check(govde > 0 && enYuksek >= 5 && enYuksek <= 7, `rampa ~6 blok yükseliyor (en üst ${enYuksek}), altı gövdeyle dolu (${govde})`);
+  check(ow._cell({ x: 200, y: G + 1, z: 191 }).type.startsWith("aqualit:rampa"), "rampa baktığın yöne (kuzeye) doğru kuruldu");
+  UI.answers.push(() => ({ canceled: false, formValues: [3, 20, 4] }));
+  await RA.rampaAyarMenu(player);
+  const a = RA.rampaAyari(player);
+  check(a.k === 3 && a.u === 20 && a.y === 4, "ayarlayıcıyla kalınlık 3, uzunluk 20, yükseklik 4 seçildi");
+  check(RA.rampaKaldir(player, ow.getBlock({ x: 200, y: G + 1, z: 199 })), "ayarlayıcıyla dokununca rampa kaldırıldı");
+  let kalan = 0;
+  for (let x = 196; x <= 204; x++) for (let z = 185; z <= 201; z++) for (let y = G + 1; y <= G + 10; y++) if (ow._cell({ x, y, z }).type.startsWith("aqualit:rampa")) kalan++;
+  check(kalan === 0, "hiç rampa bloğu kalmadı, eşya geri verildi");
+  const pr = __store.Prefs.get(player.id); delete pr.rampa; __store.Prefs.set(player.id, pr);
+}
+
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");
 process.exit(fails ? 1 : 0);

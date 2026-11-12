@@ -82,6 +82,9 @@ DEVICES = [
     ('kostum_cik', 'Kostümden Çık', 'kostum_cik', 'kostum_cik', 'Çık'),
     # v0.4.2: İnşa Çubuğu (dokun: değer, eğilip dokun: özellik, havaya dokun: menü)
     ('insa_cubugu', 'Aqualit İnşa Çubuğu (blok durumlarını ayarlar)', 'insa_cubugu', 'insa', 'Ayarla'),
+    # v0.5.0: Rampa (yere koy: baktığın yöne rampa kurar) ve Rampa Ayarlayıcı (basılı tut: ölçüler; rampaya dokun: kaldır)
+    ('rampa', 'Rampa (yere koy: baktığın yöne kurulur)', 'rampa', 'rampa', 'Kur'),
+    ('rampa_ayar', 'Rampa Ayarlayıcı (basılı tut: kalınlık/uzunluk/yükseklik · rampaya dokun: kaldır)', 'rampa_ayar', 'rampa_ayar', 'Ayarla'),
     # v0.4.0: Organizatör Platformu (9x9 tek parça; yere bas: kurulur, panele dokun: üs menüsü)
     ('org_platform', 'Organizatör Platformu (9x9, dokunmatik panelli üs)', 'org_platform', 'platform', 'Kur'),
 ]
@@ -269,6 +272,8 @@ shaped('aqualit_aktarim', ['XRX', 'RER', 'XRX'], {'X': I(K), 'R': I('minecraft:r
 shaped('org_platform', ['XXX', 'XPX', 'XXX'], {'X': I('aqualit:aqualit_block'), 'P': I('minecraft:glass_pane')},
        'aqualit:org_platform')
 
+shaped('rampa', ['  Y', ' YB', 'III'], {'Y': I('minecraft:yellow_dye'), 'B': I('minecraft:black_dye'), 'I': I('minecraft:iron_ingot')}, 'aqualit:rampa')
+shaped('rampa_ayar', [' Y ', ' IB', 'S  '], {'Y': I('minecraft:yellow_dye'), 'B': I('minecraft:black_dye'), 'I': I(K), 'S': I('minecraft:stick')}, 'aqualit:rampa_ayar')
 shaped('insa_cubugu', [' RX', ' SX', 'S  '], {'R': I('minecraft:redstone'), 'X': I(K), 'S': I('minecraft:stick')}, 'aqualit:insa_cubugu')
 
 # v0.4.4: Kılıçlı yükseltme modülleri (PLAN.md önerisi)

@@ -80,6 +80,8 @@ export function useDevice(player, kind, opts = {}) {
         case "ordu": return fire(() => orduMenu(player));
         case "kostum_guc": return fire(async () => (await import("./kostum.js")).kostumGucMenu(player));
         case "kostum_cik": return fire(async () => (await import("./kostum.js")).kostumCik(player));
+        case "rampa": return player.sendMessage("§7Rampayı kurmak için yere dokun: baktığın yöne kurulur.");
+        case "rampa_ayar": return fire(async () => (await import("./rampa.js")).rampaAyarMenu(player));
         case "platform": return player.sendMessage("§7Platformu kurmak için yere bas (geniş, düz bir yer seç: 9x9).");
       }
     } catch (e) {
@@ -117,6 +119,15 @@ export function useDevice(player, kind, opts = {}) {
       const pl = e.source;
       if (!isPlayer(pl)) return;
       if (kind === "insa") return;            // bloğa dokunma insa.js'te (rodTap)
+      if (kind === "rampa" || kind === "rampa_ayar") {
+        if (!debounce(pl, 10)) return;
+        const b = e.block, f = e.blockFace;
+        return system.run(async () => {
+          const RA = await import("./rampa.js");
+          if (kind === "rampa") return RA.rampaEsyasi(pl, b, f);
+          if (!RA.rampaKaldir(pl, b)) fire(() => RA.rampaAyarMenu(pl));
+        });
+      }
       if (kind === "platform") {
         if (!debounce(pl, 10)) return;
         const b = e.block;

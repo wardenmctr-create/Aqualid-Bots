@@ -28,6 +28,7 @@ import harita_glif as HG      # noqa: E402
 import harita_isaret as HI    # noqa: E402
 import cevher_gorus as CG    # noqa: E402
 import guc_efekt as GE    # noqa: E402
+import rampa as RA    # noqa: E402
 import evcil_oyun as EO       # noqa: E402
 import portalci_oyun as PO    # noqa: E402
 import yardimci_oyun as YO    # noqa: E402
@@ -264,6 +265,7 @@ def blocks():
     statue_block(td, sounds)
     OUO.build(RP, BP, wj, td, sounds, GEN)
     XR.build(RP, BP, wj, td, sounds, C.LANG_EXTRA)
+    RA.build(RP, BP, wj, td, sounds, C.LANG_EXTRA)
     E3.sandik_bloklari(BP, RP, wj, C.CHESTS, td, sounds, None)
     wj(f'{RP}/textures/terrain_texture.json', {'resource_pack_name': 'aqualit', 'texture_name': 'atlas.terrain',
                                               'padding': 8, 'num_mip_levels': 4, 'texture_data': td})
@@ -573,7 +575,7 @@ def main():
         if os.path.exists(d):
             shutil.rmtree(d)
     os.makedirs(BP); os.makedirs(RP); os.makedirs(GEN)
-    manifests(); EO.build(RP, BP, wj, GEN); PO.build(RP, BP, wj, GEN); YO.build(RP, BP, wj); OUO.platform_build(RP, BP, wj, GEN); XR.simge(GEN); XR.modul_simgeleri(GEN); XR.kostum_simgeleri(GEN); INSA.rod_icon().save(os.path.join(GEN, 'insa_cubugu.png')); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); HI.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); CG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); GE.build(RP, BP, wj, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
+    manifests(); EO.build(RP, BP, wj, GEN); PO.build(RP, BP, wj, GEN); YO.build(RP, BP, wj); OUO.platform_build(RP, BP, wj, GEN); XR.simge(GEN); XR.modul_simgeleri(GEN); XR.kostum_simgeleri(GEN); RA.simgeler(GEN); INSA.rod_icon().save(os.path.join(GEN, 'insa_cubugu.png')); items(); blocks(); el_modelleri(); worldgen(); recipes(); entities(); efektler(); KO.build(RP, BP, wj); KD.build(RP, BP, wj); HG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); HI.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); CG.build(RP, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); GE.build(RP, BP, wj, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'scripts')); sounds(); particles(); armor_rp(); lang(); zirh_data(); mimar(); scripts()
     addon = package()
     print('paket:', addon)
 
