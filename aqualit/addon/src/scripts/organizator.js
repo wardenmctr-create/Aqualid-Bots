@@ -446,6 +446,7 @@ export function* organizatorIsi(org) {
     }
     if (q?.length) {
       const ist = q.shift();
+      org._bosBas = 0;
       try {
         yield* istekIsi(org, ist);
       } catch (e) {
@@ -459,11 +460,13 @@ export function* organizatorIsi(org) {
       org._duzenle = false;
       sonDuzen = system.currentTick;
       yield* duzenleIsi(org, sessiz);
+      org._bosBas = 0;
       continue;
     }
     // 3) üs işleri (org_us.js bağlar)
     if (org._isler?.length) {
       const is = org._isler.shift();
+      org._bosBas = 0;
       try {
         yield* is(org);
       } catch (e) {
@@ -472,7 +475,9 @@ export function* organizatorIsi(org) {
       continue;
     }
     // 3b) v0.5.0: platformu yoksa üssünü bir kez kendisi kurar (malzemesiz; yer düzler, bütün parçaları yapar)
-    if (!org._usDenendi && system.currentTick > 20 * 30 && !safe(() => org.e.getDynamicProperty("aq:us_kuruldu"), false)) {
+    // 1 dakika boyunca başka iş çıkmazsa (her döngü buraya gelince boş sayılır; iş yapınca sıfırlanır)
+    if (!org._bosBas) org._bosBas = system.currentTick;
+    if (!org._usDenendi && system.currentTick - org._bosBas > 20 * 60 && !safe(() => org.e.getDynamicProperty("aq:us_kuruldu"), false)) {
       org._usDenendi = true;
       const PLAT = safe(() => org.dim.getEntities({ type: "aqualit:org_platform", location: org.home ?? org.loc, maxDistance: 24 }), []) ?? [];
       if (!PLAT.length) {
