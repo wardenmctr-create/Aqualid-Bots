@@ -100,10 +100,15 @@ def toplayici():
     g = base()
     g[0] = list(".......HW.......")
     g[1] = list("..b..3333333..b.")
-    g[2] = list("..b.3311111P..b.")
-    g[3] = list("..b11111111PPP..")
-    for y in (5, 8):
-        g[y] = list("..PPPPPPPPPPPP..")
+    g[2] = list("..b.33111111..b.")
+    g[3] = list("..b11111111111..")
+    # v0.5.0: mavi cam vizör (eskiden mor bant vardı): koyu çerçeve, yarı saydam mavi cam, ardında parlayan gözler
+    g[5] = list("..>>>>>>>>>>>>..")
+    for y in (6, 7, 8):
+        for x in range(3, 13):
+            g[y][x] = '~' if g[y][x] in 'LW' else '<'
+        g[y][2] = '>'; g[y][13] = '>'
+    g[9] = list("..>>>>>>>>>>>>..")
     for y in (6, 7, 8):
         g[y][1] = 'g'; g[y][14] = 'g'
     g[7][14] = 'L'
