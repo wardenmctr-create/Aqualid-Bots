@@ -27,7 +27,7 @@ export const BARK_CFG = {
   fall: 0.30, fallPerLevel: 0.05,         // tam pay düşüş azaltma, Esnek Lifler seviye başına
   fireExtra: [0.15, 0.10, 0.05, 0],       // normal kabuk: Reçine Koruması 0..III ile ateşte fazladan hasar
   netherFire: [0.50, 0.60, 0.70, 0.80],   // Nether kabuğu: Reçine Koruması 0..III ile tam pay ateş koruması (lav bağışıklığı yok)
-  lootChance: 0.16,                       // doğal sandık ilk açılışında kabuk kitabı çıkma olasılığı
+  lootChance: 0.25,                       // çöl piramidi / Trial Chambers / maden sandığı ilk açılışında kitap olasılığı
   loot: [["esnek_lifler", 20], ["hafif_adimlar", 20], ["orman_golgesi", 18], ["recine_korumasi", 18],
     ["dusus_asinmasi", 18], ["son_kabuk", 6]],
 };
@@ -386,8 +386,8 @@ export function applyBook(p, key) {
 }
 
 // ====================================================================== kabuk kitabı ganimeti (doğal sandıklar)
-// Oyunun ganimet tablolarına dokunulmaz: bir sandık/varil ilk kez açıldığında (oyunun kendi ganimeti
-// dolduktan sonra) %16 olasılıkla boş bir yuvaya 1 kabuk kitabı konur. Oyuncunun koyduğu sandıklar ve
+// Oyunun ganimet tablolarına dokunulmaz: çöl piramidi / Trial Chambers sandığı ya da maden vagonu ilk kez açıldığında
+// (oyunun kendi ganimeti dolduktan sonra) %25 olasılıkla boş bir yuvaya 1 kabuk kitabı konur. Oyuncunun koyduğu sandıklar ve
 // daha önce açılmış sandıklar işaretlenir; işaretler 64×64 bölge başına tek dünya özelliğinde tutulur.
 const LOOT_BLOCKS = new Set(["minecraft:chest", "minecraft:trapped_chest", "minecraft:barrel"]);
 const MARK_MAX = 30000;
@@ -445,22 +445,55 @@ export function onContainerOpened(block) {
   if (unitIdAt(dim.id, pos)) return;          // Aqualit sandığı (oyunun tuzaklı sandığı üstüne kurulu): ganimet yok
   if (chestMark(dim.id, pos)) return;
   setChestMark(dim.id, pos, "o");
+  const yapi = yapiTuru(dim, pos);
+  if (!yapi || yapi === "maden") return;     // v0.5.1: yalnız çöl piramidi ve Trial Chambers sandıkları (maden: vagon)
   // çift sandığın öbür yarısı da açılmış sayılır
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
     const q = { x: pos.x + dx, y: pos.y, z: pos.z + dz };
     if (safe(() => dim.getBlock(q)?.typeId) === block.typeId && !chestMark(dim.id, q)) setChestMark(dim.id, q, "o");
   }
-  system.runTimeout(() => {
-    if (Math.random() >= BARK_CFG.lootChance) return;
-    const b = safe(() => dim.getBlock(pos));
-    const c = safe(() => b?.getComponent("minecraft:inventory")?.container);
-    if (!c) return;
-    const empty = [];
-    for (let i = 0; i < c.size; i++) if (!safe(() => c.getItem(i))) empty.push(i);
-    if (!empty.length) return;
-    safe(() => c.setItem(empty[Math.floor(Math.random() * empty.length)], new ItemStack(`aqualit:buyu_${pickLoot()}`, 1)));
-  }, 2);
+  system.runTimeout(() => kitapKoy(safe(() => dim.getBlock(pos)?.getComponent("minecraft:inventory")?.container)), 2);
 }
+
+function kitapKoy(c) {
+  if (!c || Math.random() >= BARK_CFG.lootChance) return false;
+  const empty = [];
+  for (let i = 0; i < c.size; i++) if (!safe(() => c.getItem(i))) empty.push(i);
+  if (!empty.length) return false;
+  safe(() => c.setItem(empty[Math.floor(Math.random() * empty.length)], new ItemStack(`aqualit:buyu_${pickLoot()}`, 1)));
+  return true;
+}
+
+// v0.5.1: kabuk kitabı yalnız çöl piramidi, Trial Chambers ve maden (maden vagonu sandığı) ganimetinde. Yapı, sandığın
+// çevresindeki bloklardan tanınır (oyuncu bu blokları da koyabilir; kabaca yeterli).
+const PIRAMIT = /^minecraft:(orange_terracotta|blue_terracotta|tnt|cut_sandstone|chiseled_sandstone|smooth_sandstone|sandstone|stone_pressure_plate)$/;
+const TRIAL = /^minecraft:(tuff_bricks|chiseled_tuff_bricks|polished_tuff|chiseled_tuff|tuff_brick_\w+|trial_spawner|vault|(waxed_)?(exposed_|weathered_|oxidized_)?(cut_copper\w*|copper_bulb|copper_grate|chiseled_copper|copper_block|copper))$/;
+const MADEN = /^minecraft:(rail|cobweb|oak_fence|dark_oak_fence|oak_planks|dark_oak_planks)$/;
+export function yapiTuru(dim, pos, r = 4) {
+  let pir = 0, kum = 0, tri = 0, mad = 0, ag = 0;
+  for (let dx = -r; dx <= r; dx++) for (let dy = -2; dy <= 3; dy++) for (let dz = -r; dz <= r; dz++) {
+    const t = safe(() => dim.getBlock({ x: pos.x + dx, y: pos.y + dy, z: pos.z + dz })?.typeId, "") ?? "";
+    if (!t || t === "minecraft:air") continue;
+    if (PIRAMIT.test(t)) { if (/terracotta|tnt|pressure/.test(t)) pir++; else kum++; }
+    else if (TRIAL.test(t)) tri++;
+    else if (MADEN.test(t)) { mad++; if (t === "minecraft:cobweb") ag++; }
+  }
+  if (tri >= 6) return "trial";
+  if (pir >= 2 && kum >= 6) return "piramit";
+  if (mad >= 4 && ag >= 1) return "maden";
+  return null;
+}
+
+// maden sandıkları maden vagonundadır (blok değil): ilk açılışta (etkileşim) kitap şansı
+world.afterEvents.playerInteractWithEntity?.subscribe((ev) => safe(() => {
+  const e = ev.target;
+  if (e?.typeId !== "minecraft:chest_minecart") return;
+  if (e.getDynamicProperty("aq:acildi")) return;
+  e.setDynamicProperty("aq:acildi", true);
+  const p = { x: Math.floor(e.location.x), y: Math.floor(e.location.y), z: Math.floor(e.location.z) };
+  if (yapiTuru(e.dimension, p, 5) !== "maden") return;
+  system.runTimeout(() => kitapKoy(safe(() => e.getComponent("minecraft:inventory")?.container)), 2);
+}));
 
 if (world.afterEvents.blockContainerOpened) {
   world.afterEvents.blockContainerOpened.subscribe((ev) => safe(() => onContainerOpened(ev.block)));

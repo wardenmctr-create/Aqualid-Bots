@@ -617,14 +617,22 @@ if (run("zirh")) {
   strip4(); player._inv.slots.fill(undefined); ticks(6);
   check(near(mv(), 0.1), "zırh çıkınca hız normale döndü");
 
-  // 9) kabuk kitabı ganimeti: doğal sandık ilk açılışta, bir kez; oyuncunun koyduğu sandıkta yok
-  const chestPos = { x: 30, y: GROUND + 1, z: 30 };
-  set(chestPos, "minecraft:chest");
+  // 9) kabuk kitabı ganimeti: yalnız çöl piramidi / Trial Chambers sandığı ve maden vagonu; ilk açılışta, bir kez
   const books = (p) => ow.getBlock(p).getComponent("minecraft:inventory").container.slots.filter((x) => x?.typeId.startsWith("aqualit:buyu_")).length;
   const open = (p) => { world.afterEvents.blockContainerOpened.fire({ block: ow.getBlock(p), dimension: ow }); };
   Math.random = () => 0.01;
+  const duzPos = { x: 40, y: GROUND + 1, z: 40 };
+  set(duzPos, "minecraft:chest");
+  open(duzPos); ticks(3);
+  check(books(duzPos) === 0, "sıradan doğal sandıkta kabuk kitabı çıkmadı");
+  // çöl piramidi: kumtaşı + turuncu pişmiş kil + TNT
+  const chestPos = { x: 30, y: GROUND + 1, z: 30 };
+  for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) set({ x: 30 + dx, y: GROUND, z: 30 + dz }, Math.abs(dx) + Math.abs(dz) < 2 ? "minecraft:orange_terracotta" : "minecraft:cut_sandstone");
+  set({ x: 30, y: GROUND - 1, z: 30 }, "minecraft:tnt");
+  set(chestPos, "minecraft:chest");
+  check(Z.yapiTuru(ow, chestPos) === "piramit", "çöl piramidi sandığı tanındı");
   open(chestPos); ticks(3);
-  check(books(chestPos) === 1, "doğal sandık ilk açılışta 1 kabuk kitabı verdi");
+  check(books(chestPos) === 1, "çöl piramidi sandığı ilk açılışta 1 kabuk kitabı verdi");
   open(chestPos); ticks(3);
   check(books(chestPos) === 1, "aynı sandık yeniden açılınca kitap çoğalmadı");
   const placedPos = { x: 33, y: GROUND + 1, z: 30 };
@@ -633,6 +641,26 @@ if (run("zirh")) {
   open(placedPos); ticks(3);
   Math.random = rnd0;
   check(books(placedPos) === 0, "oyuncunun koyduğu varilde kitap çıkmadı");
+  // Trial Chambers: tüf tuğla + bakır
+  const triPos = { x: 50, y: GROUND + 1, z: 30 };
+  for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) set({ x: 50 + dx, y: GROUND, z: 30 + dz }, (dx + dz) % 2 ? "minecraft:tuff_bricks" : "minecraft:waxed_cut_copper");
+  set(triPos, "minecraft:barrel");
+  Math.random = () => 0.01;
+  check(Z.yapiTuru(ow, triPos) === "trial", "Trial Chambers varili tanındı");
+  open(triPos); ticks(3);
+  check(books(triPos) === 1, "Trial Chambers varili kabuk kitabı verdi");
+  // maden: ray + örümcek ağı + meşe çit; vagon sandığı
+  for (let i = -3; i <= 3; i++) { set({ x: 70 + i, y: GROUND + 1, z: 30 }, "minecraft:rail"); set({ x: 70 + i, y: GROUND + 1, z: 32 }, "minecraft:oak_fence"); }
+  set({ x: 71, y: GROUND + 2, z: 31 }, "minecraft:cobweb");
+  const vagon = ow.spawnEntity("minecraft:chest_minecart", { x: 70.5, y: GROUND + 1, z: 30.5 });
+  const vKitap = () => vagon.getComponent("minecraft:inventory").container.slots.filter((x) => x?.typeId.startsWith("aqualit:buyu_")).length;
+  world.afterEvents.playerInteractWithEntity.fire({ player, target: vagon });
+  ticks(3);
+  check(vKitap() === 1, "maden vagonu sandığı kabuk kitabı verdi");
+  world.afterEvents.playerInteractWithEntity.fire({ player, target: vagon });
+  ticks(3);
+  check(vKitap() === 1, "maden vagonu yeniden açılınca kitap çoğalmadı");
+  Math.random = rnd0;
   const seen = {};
   for (let i = 0; i < 1000; i++) { const k = Z.pickLoot(i / 1000); seen[k] = (seen[k] ?? 0) + 1; }
   const barkKeys = ["esnek_lifler", "hafif_adimlar", "orman_golgesi", "recine_korumasi", "dusus_asinmasi", "son_kabuk"];
