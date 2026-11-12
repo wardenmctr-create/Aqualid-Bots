@@ -1,6 +1,6 @@
 # Aqualit Robotları — Claude Code çalışma rehberi
 
-Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.4.1**
+Bu klasör, Minecraft Bedrock 26.50 için **Aqualit Robotları** eklentisinin bütün kaynağı. Şu anki sürüm **v0.5.0** (rampa, 51 güç efekti, Organizatör üssü, sınırsız çanta, sandık taşıma, yüzeyde sürüş; önceki: **v0.4.1**
 (matkap X-ray, hız çubuğu 0-500, arazi sürüş motoru ve 4 blok basamak; 0.4.0: Portalcı, evcil dronlar, Organizatör Yardımcısı ve üssü, yeni vizör, tepeden kamera haritası, uzaktan izleme; 0.3.9: matkap ve cevher dürbünü; Keşif düzeltmeleri, uçan binek sistemi, arazi Tırmanma Modu; 0.3.5: mini tarama dronları; 0.3.2: takip, otopilot, 3B eşyalar). Sahte test dünyasındaki bütün denemeler geçiyor; **oyunda henüz denenmedi**.
 Ayrıntılı yol haritası ve yapılacaklar: `PLAN.md`. Eski kararlar: `docs/`.
 
@@ -110,6 +110,14 @@ ortam değişkeniyle başka yer gösterilebilir.
   `aqualit:n/s/w/e/u/d` yok/var, kemik görünürlüğü), `aqualit_aktarim`, platform varlığı `aqualit:org_platform`.
   Blok durumlarında bool/int şemadan geçmiyor: metin değer kullan.
 - Organizatör vizörü: `robot.py` `vz_*` parçaları; cam `visor_cam` kemiğinde, ayrı render controller (alphablend).
+
+### v0.5.0 modülleri
+- `guc_efekt.js` + `gen/guc_efekt.py`: 51 güce 3D (`aqualit:guc_fx`, özellik `aqualit:fx`) ve 2D (`aqualit:g2_N`) efekt;
+  CASTS sarılır; robot ayarı `stats.efekt`. `rampa.js` + `gen/rampa.py` (eğim blokları `rampa_e1..8`, durum kayma/parca).
+- `kilicli_ek.js` (sahibe vurana saldırı, boyuta portalla geçiş), `koruma.js` (bölge tepkileri), `kostum.js` (Robot Kostümü),
+  `alan.js` (Kürekçi düzleştir/doldur), `tasima.js` (sandık taşıma, `aq:tasinan` ile sürer), `bot.js` taşma deposu
+  (`aq:tasma`, `canta()`), `us.js usuSifirdanKur` + panel varlığı `aqualit:org_panel`, `portalci.js ucarakGit/netherAvi`.
+- `kesif.js tirman`: yüzeyde sürüş (`aqualit:yuzey`, `aqualit:yon`, kemik `a_yuzey`); hız grupları `hz_<araç>_<yüzde>`.
 
 ### v0.4.1 modülleri
 - **v0.4.7: eski saydam taş X-ray kaldırıldı**; `xray.js` artık cevher görüşünü aç/kapat (`gorusAcik`, kişisel) ve
