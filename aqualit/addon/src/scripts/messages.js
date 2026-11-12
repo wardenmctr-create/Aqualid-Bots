@@ -23,7 +23,8 @@ export function unreadCount(ownerId) {
 
 /**
  * Robot sahibine telsiz mesajı gönderir. Ekranı kesmez: eylem çubuğunda kısa bildirim + ses.
- * opts.confirm = {yes:"Evet", no:"Hayır", action, data}  → onay bekleyen mesaj
+ * opts.confirm = {yes:"Evet", no:"Hayır", degis?:{label,min,max,value}, zamanAsimi?:true|false, action, data}
+ *   → onay bekleyen mesaj: Onayla / Reddet / (varsa) Değiştir; 5 dk cevap yoksa zamanAsimi (varsayılan: Reddet) geçerli
  */
 export function sendMessage(ownerId, from, text, opts = {}) {
   const list = messages(ownerId);
@@ -64,11 +65,13 @@ export function markAllRead(ownerId) {
   if (ch) saveMessages(ownerId, list);
 }
 
+export const ONAY_SURE_MS = 5 * 60 * 1000;
+/** cevap: true (onayla), false (reddet) ya da { degis: değer } (değiştirerek onayla). */
 export function answer(ownerId, msgId, yes) {
   const list = messages(ownerId);
   const m = list.find((x) => x.id === msgId);
   if (!m) return;
-  m.state = yes ? "yes" : "no";
+  m.state = yes && typeof yes === "object" ? "degis" : yes ? "yes" : "no";
   saveMessages(ownerId, list);
   const fn = listeners.get(msgId);
   if (fn) {
@@ -97,8 +100,27 @@ export function onAnswer(msgId, fn) {
 
 export function readAnswer(ownerId, msgId) {
   const ans = getJSON(world, `aq:answers:${ownerId}`, {});
-  return ans[msgId];
+  if (ans[msgId] !== undefined) return ans[msgId];
+  // v0.5.0: 5 dakika içinde cevap yoksa varsayılan karar
+  const m = messages(ownerId).find((x) => x.id === msgId);
+  if (m?.confirm && m.state === "new" && Date.now() - m.t > ONAY_SURE_MS) return zamanAsimi(ownerId, m);
+  return undefined;
 }
+function zamanAsimi(ownerId, m) {
+  const karar = m.confirm.zamanAsimi ?? false;
+  answer(ownerId, m.id, karar);
+  const p = playerById(ownerId);
+  safe(() => p?.sendMessage(`§7Telsiz: ${m.from} — 5 dakikadır cevap yok, "${karar ? m.confirm.yes ?? "Evet" : m.confirm.no ?? "Hayır"}" kabul edildi.`));
+  return karar;
+}
+// çevrimiçi sahiplerin bekleyen onaylarını 20 sn'de bir denetle
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    for (const m of messages(p.id)) {
+      if (m.confirm && m.state === "new" && Date.now() - m.t > ONAY_SURE_MS) zamanAsimi(p.id, m);
+    }
+  }
+}, 400);
 
 export function clearMessages(ownerId) {
   saveMessages(ownerId, messages(ownerId).filter((m) => m.confirm && m.state === "new"));

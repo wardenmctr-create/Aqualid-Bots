@@ -94,12 +94,30 @@ export function startTask(b) {
   startJob(b, jobFor(b), "gorev");
 }
 
+/** v0.5.0: robotun şu anki işi yarım bırakılamayacak kadar acil mi? (sandık taşıyor, kontrol ediliyor, sahibini
+ *  koruyor, Nether seferinde, inşaat ya da alan işi sürüyor) — acilse adı, değilse null. */
+export function acilIs(b) {
+  if (b.jobName === "tasima" || globalThis.__aqTasima && getJSON(b.e, "aq:tasinan", null)) return "sandığımı taşıyorum";
+  if (b.jobName === "kontrol") return "şu an beni sen sürüyorsun";
+  if (b.jobName === "sahip_koruma") return "sana saldıranla savaşıyorum";
+  if (/Nether/.test(b.status ?? "")) return "Nether seferindeyim";
+  if (b.jobName === "gorev" && b.task && !b.task.done) {
+    if (b.type === "insaatci") return "inşaatın ortasındayım";
+    if (b.task.mode === "alan") return "alanı düzenliyorum";
+  }
+  return null;
+}
+
 export function commandReturn(b, soft) {
   if (b.type === "kilicli") return;
   if (soft) {
-    if (b.jobName === "gorev") {
+    const acil = acilIs(b);
+    if (acil) {
+      (b.sonrakiIs ??= []).push((bb) => returnJob(bb, false));
+      b.say(`Acil işim var (${acil}); biter bitmez döneceğim.`);
+    } else if (b.jobName === "gorev") {
       b.cmd = "soft";
-      b.say("Tamam, yakındakileri toplayıp döneceğim.");
+      b.say("Acil işim yok: yakındaki güzel şeyleri alıp hemen dönüyorum.");
     } else startJob(b, returnJob(b, false), "donus");
   } else {
     b.say("Hemen geliyorum!");

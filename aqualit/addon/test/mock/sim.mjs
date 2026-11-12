@@ -326,6 +326,11 @@ if (run("ui")) {
     check(!!player._effects.night_vision, "izlerken gece görüşü açık");
     const oncekiAd = wb.jobName;
     check(tracker.kontrolAl(player) && wb.jobName === "kontrol", "zıplayınca kontrol oyuncuya geçti");
+    // açık bir yere koy (toplu çalıştırmada robot tünelde olabilir)
+    for (let z = 0; z < 8; z++) for (let y = 1; y <= 3; y++) set({ x: 230, y: GROUND + y, z: 230 + z }, "minecraft:air");
+    for (let z = 0; z < 8; z++) set({ x: 230, y: GROUND, z: 230 + z }, "minecraft:stone");
+    const wbEski = { ...wb.loc };
+    wb.e.teleport({ x: 230.5, y: GROUND + 1, z: 230.5 });
     const l0 = { ...wb.loc };
     player._rot = { x: 0, y: 0 }; player._mv = { x: 0, y: 1 };
     ticks(20);
@@ -333,6 +338,7 @@ if (run("ui")) {
     player._mv = { x: 0, y: 0 };
     tracker.stopWatch(player, false);
     check(wb.jobName === oncekiAd && !player._effects.night_vision && player.getGameMode() !== "Spectator", "eğilince kontrol bitti, robot önceki işine döndü, oyuncu eski haline döndü");
+    wb.e.teleport(wbEski);
     tracker.startWatch(player, wb);
   }
   check(player.gameMode === "Survival", "yakın robot izlenirken oyuncu yerinde ve modunda");
@@ -3399,6 +3405,36 @@ if (run("tasima")) {
   ticks(20 * 60, () => { ucmaYuksek = Math.max(ucmaYuksek, b1.loc.y - G); return b1.jobName !== "gorev"; });
   check(ucmaYuksek >= 4 && V3dist(b1.loc, hedef) < 5, `Portalcı çırağı olan robot uzun yolu uçarak gitti (en yüksek +${ucmaYuksek.toFixed(1)})`);
   pcE.remove();
+}
+
+// ---------------------------------------------------------------- v0.5.0 onay sistemi, acil işin yoksa geri dön
+if (run("onay")) {
+  console.log("== Onay: Onayla / Reddet / Değiştir, 5 dk cevap yoksa varsayılan; acil işin yoksa geri dön");
+  const MS = await import("./scripts/messages.js");
+  const BR = await import("./scripts/brain.js");
+  const m1 = MS.sendMessage(player.id, { name: "Madenci-T", rid: "t1" }, "Elmas buldum, alayım mı?", { kind: "ask", confirm: { yes: "Al", no: "Bırak", degis: { label: "Kaç blok?", min: 1, max: 32, value: 8 }, zamanAsimi: true } });
+  check(MS.readAnswer(player.id, m1) === undefined, "cevap yokken bekliyor");
+  MS.answer(player.id, m1, { degis: 5 });
+  check(MS.readAnswer(player.id, m1)?.degis === 5, "Değiştir ile cevap (5 blok)");
+  const m2 = MS.sendMessage(player.id, { name: "Madenci-T", rid: "t1" }, "Taş da alayım mı?", { kind: "ask", confirm: { yes: "Al", no: "Bırak", zamanAsimi: false } });
+  // 5 dakika geçti
+  const liste = __store.getJSON(world, `aq:msgs:${player.id}`, []);
+  liste.find((x) => x.id === m2).t -= 6 * 60 * 1000;
+  __store.setJSON(world, `aq:msgs:${player.id}`, liste);
+  check(MS.readAnswer(player.id, m2) === false, "5 dakikada cevap yoksa varsayılan karar (Reddet) geçerli");
+  // acil işin yoksa geri dön
+  give("aqualit:robot_madenci"); ticks(12);
+  useOn("aqualit:robot_madenci", { x: 60, y: GROUND, z: -60 }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
+  ticks(5);
+  const b = myBots().filter((x) => x.type === "madenci").pop();
+  BR.startJob(b, (function* () { for (let i = 0; i < 2000; i++) yield; })(), "tasima");
+  BR.commandReturn(b, true);
+  check(b.jobName === "tasima" && b.sonrakiIs?.length === 1, "acil işi varken (sandık taşıma) dönüşü sıraya koydu");
+  b.sonrakiIs = [];
+  b.task = { type: "madenci", items: [{ key: "komur", amount: 64 }], finish: "chest" }; b.saveTask(); BR.startTask(b);
+  BR.commandReturn(b, true);
+  check(b.cmd === "soft", "acil işi yokken yakındakileri alıp hemen dönüyor");
+  BR.commandStop(b);
 }
 
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");

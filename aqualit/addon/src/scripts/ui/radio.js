@@ -175,8 +175,19 @@ export async function openMessages(player) {
   if (m.confirm && m.state === "new") {
     const yes = m.confirm.yes ?? "Evet";
     const no = m.confirm.no ?? "Hayır";
-    const r = await menu(player, `§l${m.from}`, `§f${m.text}`, [{ text: `§a${yes}`, v: true }, { text: `§c${no}`, v: false }, { text: "Sonra" }]);
-    if (r && r.v !== undefined) {
+    const kalan = Math.max(0, Math.ceil((5 * 60 * 1000 - (Date.now() - m.t)) / 60000));
+    const btns = [{ text: `§a§lOnayla§r\n§7${yes}`, v: true }, { text: `§c§lReddet§r\n§7${no}`, v: false }];
+    if (m.confirm.degis) btns.push({ text: "§e§lDeğiştir§r\n§7" + m.confirm.degis.label, v: "degis" });
+    btns.push({ text: "Sonra" });
+    const r = await menu(player, `§l${m.from}`, `§f${m.text}\n\n§8${kalan} dk içinde cevap vermezsen: ${m.confirm.zamanAsimi ? yes : no}`, btns);
+    if (r && r.v === "degis") {
+      const d = m.confirm.degis;
+      const v = await modal(player, "Değiştir", [{ type: "slider", label: d.label, min: d.min ?? 1, max: d.max ?? 64, step: 1, value: d.value ?? d.min ?? 1 }], "Gönder");
+      if (v) {
+        answer(player.id, m.id, { degis: Number(v[0]) });
+        player.sendMessage(`§sTelsiz:§r ${m.from} → değiştirildi (${v[0]})`);
+      }
+    } else if (r && r.v !== undefined) {
       answer(player.id, m.id, r.v);
       player.sendMessage(`§sTelsiz:§r ${m.from} → ${r.v ? yes : no}`);
     }

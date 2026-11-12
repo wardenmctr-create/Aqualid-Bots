@@ -530,8 +530,10 @@ export function* minerJob(bot) {
     for (const a of st.approved) if (V.dist(a, bot.loc) < 24) found.unshift(a);
     if (found.length) {
       const p = found[0];
+      const onayli = st.approved.some((a) => V.eq(a, p));
       st.approved = st.approved.filter((a) => !V.eq(a, p));
-      const ok = yield* mineVein(bot, p, count, filter);
+      // v0.5.0: onay "Değiştir" ile verildiyse en çok o kadar blok
+      const ok = yield* mineVein(bot, p, count, filter, onayli && st.onayLimit ? st.onayLimit : 16);
       if (!ok) {
         bot.ignore(p);
         fails++;
@@ -553,7 +555,7 @@ export function* minerJob(bot) {
         }
         if (T.bonus === "sor" && ore && !st.asked.some((a) => V.dist(a.p, p) < 4)) {
           const id = bot.say(`Yakında ${ore.name} buldum (${p.x}, ${p.y}, ${p.z}). Alayım mı?`, {
-            kind: "ask", confirm: { yes: "Al", no: "Bırak" },
+            kind: "ask", confirm: { yes: "Al", no: "Bırak", degis: { label: "En çok kaç blok alsın?", min: 1, max: 32, value: 8 }, zamanAsimi: true },
           });
           st.asked.push({ id, p, key: ore.key });
         }
@@ -563,8 +565,9 @@ export function* minerJob(bot) {
       for (const a of st.asked) {
         if (a.done) continue;
         const ans = readAnswer(bot.owner, a.id);
-        if (ans === true) {
+        if (ans === true || (ans && typeof ans === "object")) {
           st.approved.push(a.p);
+          if (ans?.degis) st.onayLimit = ans.degis;
           a.done = true;
           bot.ignored.delete(V.key(a.p));
         } else if (ans === false) a.done = true;
@@ -625,11 +628,11 @@ function veinOf(bot, p, max = 16) {
   return out;
 }
 
-function* mineVein(bot, p, count, filter) {
+function* mineVein(bot, p, count, filter, limit = 16) {
   bot.setStatus("Maden kazıyor");
   const ok = yield* bot.goReach(p, { dig: true, tall: true, maxNodes: 3000, radius: 24 });
   if (!ok) return false;
-  const vein = veinOf(bot, p, 16);
+  const vein = veinOf(bot, p, limit);
   for (const v of vein) {
     if (!canReach(bot.cell, v)) {
       const r = yield* bot.goReach(v, { dig: true, tall: true, maxNodes: 800, radius: 8 });
