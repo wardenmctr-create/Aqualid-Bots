@@ -3196,6 +3196,29 @@ if (run("kilicli2")) {
   check((z._damage ?? 0) > 0, "saldırganı vurdu");
   z.remove();
   b.job = null; b.jobName = "";
+  // v0.5.0 güç efektleri: her güce kendi 3D (varlık) ve 2D (parçacık) efekti
+  {
+    const GD = await import("./scripts/guc_efekt_data.js");
+    check(Object.keys(GD.GUC_FX).length === 51 && P.POWER_LIST.every((k) => GD.GUC_FX[k] !== undefined), "51 gücün her birine efekt var");
+    const zz = ow.spawnEntity("minecraft:zombie", { x: 156.5, y: G, z: 150.5 });
+    b.pw.cd = {};
+    player.particles = [];
+    const once = ow.getEntities({ type: "aqualit:guc_fx" }).length;
+    check(P.usePower(b, "yildirim_kilici"), "güç kullanıldı");
+    ticks(3);
+    const fx = ow.getEntities({ type: "aqualit:guc_fx" });
+    const pr = MC.__particles?.log?.filter((q) => q.name === `aqualit:g2_${GD.GUC_FX.yildirim_kilici}`) ?? [];
+    check(fx.length === once + 1 && fx.at(-1)._props["aqualit:fx"] === GD.GUC_FX.yildirim_kilici && pr.length >= 1, "kendi 3D efekti ve 2D parçacığı çıktı");
+    ticks(30);
+    check(ow.getEntities({ type: "aqualit:guc_fx" }).length === once, "efekt kısa sürede kayboldu");
+    K.applyStats(b, { ...K.getStats(b), guc: false, efekt: "kapali" }, false);
+    b.pw.cd = {}; b.pw.cast = null;
+    P.usePower(b, "kanca");
+    ticks(3);
+    check(ow.getEntities({ type: "aqualit:guc_fx" }).length === once, "efektler kapalıyken çıkmıyor");
+    K.applyStats(b, { ...K.getStats(b), efekt: "ikisi" }, false);
+    zz.remove(); ticks(40); b.pw.cast = null;
+  }
   // yer altı: 10 blok aşağıda taşın içindeki mob güç seçiminde sayılmaz
   const alt = ow.spawnEntity("minecraft:zombie", { x: 152.5, y: G - 10, z: 150.5 });
   for (let y = G - 9; y < G - 1; y++) ow.setBlockType({ x: 152, y, z: 150 }, "minecraft:stone");

@@ -241,13 +241,15 @@ export async function gearForm(player, b, group) {
     { type: "slider", label: "Enerji (güçler için)", min: 10, max: 1000, step: 10, value: clamp(s.enerji, 10, 1000) },
     { type: "slider", label: "Durum ciddiyeti (hangi güçleri kullanabilir)", min: 1, max: 100, step: 1, value: clamp(s.ciddiyet ?? 100, 1, 100) },
     { type: "toggle", label: "§cDurum ciddiyeti %101§r (10 sn zaman durur, düşmanları temizler)", value: !!s.mod101 },
+    { type: "dropdown", label: "Güç efektleri", items: ["3D", "2D", "İkisi", "Kapalı"], value: Math.max(0, ["3d", "2d", "ikisi", "kapali"].indexOf(s.efekt ?? "ikisi")) },
   ], "Kaydet");
   if (!v) return;
-  const [lvlIdx, resetToLevel, can, dmgI, hiz, enerji, ciddiyet, mod101] = v;
+  const [lvlIdx, resetToLevel, can, dmgI, hiz, enerji, ciddiyet, mod101, efektI] = v;
   for (const r of list) {
     const old = getStats(r);
     const model = lvlIdx + 1;
     let st = { ...old, can, hasar: DMG_TIERS[dmgI], hiz, enerji, ciddiyet, mod101: !!mod101, model };
+    if (efektI !== undefined) st.efekt = ["3d", "2d", "ikisi", "kapali"][efektI] ?? "ikisi";
     if (model !== old.model && resetToLevel) {
       const d = defaultStats(model);
       st = { ...st, can: d.can, hasar: d.hasar, hiz: d.hiz };

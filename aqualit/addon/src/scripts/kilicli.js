@@ -7,6 +7,7 @@ import { powersTick } from "./powers.js";
 import "./powers2.js";
 import "./powers3.js";
 import "./powers4.js";
+import "./guc_efekt.js";
 import { teamTick } from "./takim.js";
 import { korumaTick, bolgeKaydet } from "./koruma.js";
 
