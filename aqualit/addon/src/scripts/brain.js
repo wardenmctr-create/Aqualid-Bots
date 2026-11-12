@@ -148,8 +148,15 @@ function tickBot(id, b) {
   try {
     const r = b.job.next();
     if (r.done) {
-      b.job = idleJob(b);
-      b.jobName = "bekleme";
+      // v0.5.0: not alınan iş (ör. Organizatör "sandıklarınızı getirin" dediyse) işi bitince yapılır
+      const sonraki = b.sonrakiIs?.shift?.();
+      if (sonraki) {
+        b.job = sonraki(b);
+        b.jobName = "gorev";
+      } else {
+        b.job = idleJob(b);
+        b.jobName = "bekleme";
+      }
     }
   } catch (e) {
     log("robot hata", b.name, e, e?.stack);

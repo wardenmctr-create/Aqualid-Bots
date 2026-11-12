@@ -1003,6 +1003,23 @@ export function pickupUnit(player, uid) {
   return true;
 }
 
+/** v0.5.0: robot sandığını taşır: sandık bloğu kalkar, kaydı silinir; içindekiler ve sandık bilgisi döner. */
+export function sandigiKaldir(uid) {
+  const u = loadUnit(resolveId(uid));
+  if (!u) return null;
+  const s = sessions.get(u.id);
+  if (s) endSession(s);
+  safe(() => absorb(u));
+  const items = takeAll(u).concat(refund(u));
+  for (let i = 0; i < u.blocks.length; i++) removeCompanions(u, i);
+  for (const b of u.blocks) {
+    const blk = blockOf(u, b);
+    if (isChest(blk)) safe(() => blk.setType("minecraft:air"));
+  }
+  unregister(u);
+  return { items, kind: u.kind, name: u.name, access: u.access, owner: u.owner, cift: u.blocks.length > 1 };
+}
+
 /** Kapasite ekle: n normal sandık. Eklenen yuva sayısını döndürür. */
 export function addCapacity(u, n) {
   const before = capacity(u);

@@ -284,6 +284,35 @@ function* tasiyarak(b, p, hedef) {
   }
 }
 
+/** v0.5.0: Portalcı çırağı olan robot uzun yolda uçarak gider: önce yükselir (yoldaki en yüksek yüzeyin üstüne),
+ *  dümdüz uçar, hedefe iner. Uçtuysa true. */
+export function* ucarakGit(b, hedef) {
+  const p = cirakPortalcisi(b);
+  if (!p || p.mod !== "cirak" || seferde.has(b.e.id)) return false;
+  const dim = b.dim;
+  const l = b.loc;
+  const d = Math.hypot(hedef.x - l.x, hedef.z - l.z);
+  let tepe = Math.max(l.y, hedef.y);
+  for (let k = 0; k <= Math.ceil(d / 8); k++) {
+    const f = Math.min(1, (k * 8) / Math.max(1, d));
+    const x = Math.floor(l.x + (hedef.x - l.x) * f), z = Math.floor(l.z + (hedef.z - l.z) * f);
+    const ust = safe(() => dim.getTopmostBlock({ x, z })?.y);
+    if (typeof ust === "number" && ust + 1 > tepe) tepe = ust + 1;
+  }
+  const yukseklik = Math.min(tepe + 6, 300);
+  modAyarla(p, "sefer");
+  safe(() => p.e.setProperty("aqualit:kucuk", false));
+  b.setStatus("Portalcısıyla uçuyor");
+  b.setMove("none");
+  yield* tasiyarak(b, p, { x: l.x, y: yukseklik, z: l.z });
+  yield* tasiyarak(b, p, { x: hedef.x, y: yukseklik, z: hedef.z });
+  yield* tasiyarak(b, p, { x: hedef.x, y: hedef.y, z: hedef.z });
+  modAyarla(p, "cirak", b.rid);
+  return true;
+}
+// bot.js (uzun yolculuk) içe aktarma döngüsü olmadan kullansın
+globalThis.__aqUcus = { ucarakGit, cirak: (b) => cirakPortalcisi(b) };
+
 export function* netherIsi(b, p, tur, adet) {
   const m = MALZEME[tur];
   const geri = { dim: b.dim.id, loc: { ...b.loc } };

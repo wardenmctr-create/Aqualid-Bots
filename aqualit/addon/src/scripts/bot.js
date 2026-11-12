@@ -381,6 +381,11 @@ export class Bot {
     const near = opts.near ?? 2.5;
     const speed = opts.speed;
     let stuck = 0;
+    // v0.5.0: Portalcı çırağı varsa uzun yolu uçarak gider (kendisi karar verir: 24 bloktan uzak ya da yürüyüş takıldıysa)
+    const UC = globalThis.__aqUcus;
+    if (UC && opts.ucma !== false && this.dim && V.hdist(this.loc, target) > 24 && UC.cirak(this)) {
+      if (yield* UC.ucarakGit(this, target)) return V.hdist(this.loc, target) <= near + 1.5 || (yield* this.travelTo(target, { ...opts, ucma: false }));
+    }
     for (let leg = 0; leg < 80; leg++) {
       if (this.abortMove) return false;
       const here = this.loc;

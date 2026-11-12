@@ -3308,15 +3308,20 @@ if (run("rampa")) {
   player._rot = { x: 0, y: 180 };          // kuzeye bakıyor
   for (let x = 196; x <= 204; x++) for (let z = 185; z <= 201; z++) for (let y = G + 1; y <= G + 10; y++) set({ x, y, z }, "minecraft:air");
   RA.rampaEsyasi(player, ow.getBlock({ x: 200, y: G, z: 199 }), "Up");
-  let egim = 0, govde = 0, enYuksek = 0;
+  let ust = 0, alt = 0, enYuksek = 0, bosAlt = 0;
   for (let x = 196; x <= 204; x++) for (let z = 185; z <= 201; z++) for (let y = G + 1; y <= G + 10; y++) {
-    const t = ow._cell({ x, y, z }).type;
-    if (t.startsWith("aqualit:rampa_e")) { egim++; enYuksek = Math.max(enYuksek, y - G); }
-    if (t === "aqualit:rampa_govde") govde++;
+    const c = ow._cell({ x, y, z });
+    if (c.type.startsWith("aqualit:rampa_e")) {
+      if (c.states?.["aqualit:parca"] === "alt") alt++; else { ust++; enYuksek = Math.max(enYuksek, y - G); }
+    }
   }
-  check(egim === 20, `varsayılan rampa: 2 kalınlık x 10 uzunluk eğim bloğu (${egim})`);
-  check(govde > 0 && enYuksek >= 5 && enYuksek <= 7, `rampa ~6 blok yükseliyor (en üst ${enYuksek}), altı gövdeyle dolu (${govde})`);
-  check(ow._cell({ x: 200, y: G + 1, z: 191 }).type.startsWith("aqualit:rampa"), "rampa baktığın yöne (kuzeye) doğru kuruldu");
+  // en yüksek sütunun altı boş mu (altı dolu değil)
+  for (let y = G + 1; y <= G + 3; y++) if (ow._cell({ x: 200, y, z: 190 }).type === "minecraft:air") bosAlt++;
+  check(ust === 20, `varsayılan rampa: 2 kalınlık x 10 uzunluk (${ust} üst parça)`);
+  check(enYuksek >= 5 && enYuksek <= 7 && alt > 0 && bosAlt >= 2, `~6 blok yükselen eğik plaka (en üst ${enYuksek}), altı boş (${bosAlt}), kalın (${alt} alt parça)`);
+  let kuzeyde = false;
+  for (let y = G + 1; y <= G + 8; y++) if (ow._cell({ x: 200, y, z: 191 }).type.startsWith("aqualit:rampa")) kuzeyde = true;
+  check(kuzeyde && !ow._cell({ x: 200, y: G + 1, z: 201 }).type.startsWith("aqualit:rampa"), "rampa baktığın yöne (kuzeye) doğru kuruldu");
   UI.answers.push(() => ({ canceled: false, formValues: [3, 20, 4] }));
   await RA.rampaAyarMenu(player);
   const a = RA.rampaAyari(player);

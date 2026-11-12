@@ -1,6 +1,7 @@
 // v0.5.0: Rampa. Rampa eşyası bir bloğa dokunarak konunca baktığın yöne doğru rampa kurulur: varsayılan 2 blok
 // kalınlık (genişlik), 10 blok uzunluk, 6 blok yükseklik. Rampa Ayarlayıcı: basılı tut → kalınlık/uzunluk/yükseklik;
-// bir rampaya dokun → o rampayı kaldırır (Rampa eşyası geri verilir). Bloklar gen/rampa.py. Oyunda denenmedi.
+// bir rampaya dokun → o rampayı kaldırır (Rampa eşyası geri verilir). Rampa yarım blok kalın eğik plaka (altı boş).
+// Bloklar gen/rampa.py. Oyunda denenmedi.
 import { BlockPermutation, ItemStack, GameMode } from "@minecraft/server";
 import { safe, V } from "./util.js";
 import { Prefs } from "./store.js";
@@ -38,16 +39,18 @@ export function rampaKur(dim, bas, yon, ayar) {
     safe(() => dim.getBlock(p).setPermutation(perm));
     n++;
   };
-  const govde = safe(() => BlockPermutation.resolve("aqualit:rampa_govde", { "minecraft:cardinal_direction": yon.ad }));
+  // rampa yarım blok kalın eğik bir plaka: altı boş; plakanın alttaki bloğa taşan kısmı 'alt' parçası
+  const KALINLIK = 8;
   for (let i = 0; i < L; i++) {
     const h = i * r;
     const yb = Math.floor(h + 1e-6);
     const k = Math.min(14, Math.round(((h - yb) * 16) / 2) * 2);
-    const egim = safe(() => BlockPermutation.resolve(`aqualit:rampa_e${e}`, { "aqualit:kayma": `k${k}`, "minecraft:cardinal_direction": yon.ad }));
+    const perm = (parca) => safe(() => BlockPermutation.resolve(`aqualit:rampa_e${e}`, { "aqualit:kayma": `k${k}`, "aqualit:parca": parca, "minecraft:cardinal_direction": yon.ad }));
+    const ust = perm("ust"), alt = k < KALINLIK ? perm("alt") : null;
     for (let w = 0; w < W; w++) {
       const x = bas.x + yon.d.x * i + yan.x * (sol + w), z = bas.z + yon.d.z * i + yan.z * (sol + w);
-      for (let y = 0; y < yb; y++) if (govde) koy({ x, y: bas.y + y, z }, govde);
-      if (egim) koy({ x, y: bas.y + yb, z }, egim);
+      if (ust) koy({ x, y: bas.y + yb, z }, ust);
+      if (alt) koy({ x, y: bas.y + yb - 1, z }, alt);
     }
   }
   safe(() => dim.playSound("random.anvil_land", bas, { volume: 0.5, pitch: 1.4 }));
@@ -100,8 +103,9 @@ export function rampaKaldir(pl, block) {
     if (!t?.startsWith("aqualit:rampa")) continue;
     safe(() => dim.setBlockType(p, "minecraft:air"));
     n++;
-    for (const d of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) {
-      const q = { x: p.x + d[0], y: p.y + d[1], z: p.z + d[2] };
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+      if (!dx && !dy && !dz) continue;
+      const q = { x: p.x + dx, y: p.y + dy, z: p.z + dz };
       const k = `${q.x},${q.y},${q.z}`;
       if (!gor.has(k)) { gor.add(k); kuyruk.push(q); }
     }
