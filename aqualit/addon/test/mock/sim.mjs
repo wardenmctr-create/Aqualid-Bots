@@ -1267,10 +1267,33 @@ if (run("kesif")) {
     for (let h = 0; h < 8; h++) for (let l = -2; l <= 2; l++) set({ x: wx + l, y: wy + h, z: wz }, "minecraft:stone");
     player._rot = { x: 0, y: 0 }; player._mv = { x: 0, y: 1 };
     ticks(4);
-    check(k._events.includes("aqualit:tirman_on") && k._props["aqualit:egim"] <= -60, "düz duvara sürünce yapıştı, burnu dikildi");
-    k.teleport({ x: p0.x, y: wy + 8.05, z: wz + 0.6 });
+    check(k._events.includes("aqualit:tirman_on") && k._props["aqualit:yuzey"] === 1, "düz duvara sürünce duvar yeni zemin oldu (araç duvara döndü)");
+    // duvarda: ileri = yukarı; sağ/sol burnu duvar üzerinde çevirir; yerçekimi yok
+    const itki = []; const asil = k.applyImpulse.bind(k); k.applyImpulse = (i) => { itki.push(i); asil(i); };
     ticks(4);
-    check(k._events.includes("aqualit:tirman_off") && k._props["aqualit:egim"] > -60, "duvarın üstüne varınca yere döndü");
+    check(itki.length && itki.at(-1).y + (k.getVelocity().y - itki.at(-1).y) > 0.05, "duvarda ileri basınca yukarı gidiyor");
+    player._mv = { x: -1, y: 1 };
+    ticks(12);
+    const vv = k.getVelocity();
+    check(Math.abs(k._props["aqualit:yon"]) > 20 && Math.abs(vv.x) > 0.02, `sağa dönünce burun duvarda yana döndü (${k._props["aqualit:yon"]}°), yana gidiyor`);
+    check(!!player._cam?.set && player._cam.set.p === "minecraft:free", "kamera duvara göre arkadan bakıyor");
+    player._mv = { x: 0, y: 1 };
+    // tavana değince tavana geçer
+    const kp = { ...k.location };
+    set({ x: Math.floor(kp.x), y: Math.floor(kp.y + 2.1), z: Math.floor(kp.z) }, "minecraft:stone");
+    k._props["aqualit:yon"] = 0; KS._durum(k).yon = 0;
+    ticks(3);
+    check(k._props["aqualit:yuzey"] === 2, "duvardan tavana geçti (tavan yeni zemin)");
+    set({ x: Math.floor(kp.x), y: Math.floor(kp.y + 2.1), z: Math.floor(kp.z) }, "minecraft:air");
+    k.applyImpulse = asil;
+    // duvarın üstüne varınca üstteki yere geçer
+    KS.kesifDurumSil(k); k._props["aqualit:yuzey"] = 0; k.setRotation({ x: 0, y: 0 });
+    k.teleport({ x: p0.x, y: p0.y, z: p0.z }); player._mv = { x: 0, y: 1 }; ticks(4);
+    k.teleport({ x: k.location.x, y: wy + 5, z: k.location.z });
+    ticks(10);                                         // duvarda, burun yukarı
+    k.teleport({ x: k.location.x, y: wy + 7.7, z: k.location.z });
+    ticks(6);
+    check(k._events.includes("aqualit:tirman_off") && Math.abs(k.location.y - (wy + 8)) < 0.2 && k._props["aqualit:yuzey"] === 0, "duvarın üstüne varınca üstteki yere çıktı");
     KR.tirmanMenu(player);
     check(k._props["aqualit:tutucu"] === false && envde("aqualit:kesif_tirman_kapali"), "tekrar basınca tutucular kapandı");
     for (let h = 0; h < 8; h++) for (let l = -2; l <= 2; l++) set({ x: wx + l, y: wy + h, z: wz }, "minecraft:air");
@@ -1411,7 +1434,7 @@ if (run("tema")) {
   set({ x: 402, y: GROUND + 1, z: 400 }, "minecraft:air");
   set({ x: 402, y: GROUND + 2, z: 400 }, "minecraft:air");
   ko.teleport({ x: 400.5, y: GROUND + 1, z: 400.5 });
-  KS.tirman(ko, pl2, { x: 0, y: 0 }, 4);
+  KS.tirman(ko, pl2, { x: 0, y: 1 }, 4);
   check(ko._events.filter((e) => e === "aqualit:tirman_off").length >= 1, "düz yere inince tutunma bıraktı, yerçekimi döndü");
   for (const e of [kn, ke, ko]) e.remove();
 }

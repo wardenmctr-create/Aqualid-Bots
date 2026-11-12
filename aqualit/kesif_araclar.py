@@ -520,7 +520,9 @@ def denizalti():
 # ================================================================== ARAZİ ARACI
 def arazi():
     f = Form('arazi', 'Arazi Aracı')
-    f.bone('a_root', None, (0, 8, 0))
+    # v0.5.0: a_yuzey: yapışkan modda tutunulan yüzeye göre bütün aracı döndürür (duvar: burun yukarı, tavan: ters)
+    f.bone('a_yuzey', None, (0, 8, 0))
+    f.bone('a_root', 'a_yuzey', (0, 8, 0))
     f.bone('a_body', 'a_root', (0, 8, 0))
     for nm, x, z in (('fl', -13, 14), ('fr', 13, 14), ('bl', -13, -14), ('br', 13, -14)):
         if nm[0] == 'f':

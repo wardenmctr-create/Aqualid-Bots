@@ -386,6 +386,7 @@ function durum(v) {
 export function kesifDurumSil(v) {
   const d = DURUM.get(v.id);
   if (d?.tir) { safe(() => v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(v), 1); }
+  safe(() => v.setProperty("aqualit:yuzey", 0));
   DURUM.delete(v.id);
 }
 
@@ -412,58 +413,143 @@ function katiMi(dim, x, y, z) {
  * Tutucular kapalıyken yalnız 1 bloğu oyunun otomatik basamak çıkması aşar.
  */
 const TIRMAN_ACI = -80;
+// v0.5.0 yüzeyde sürüş: tutucular açıkken araç tutunduğu yüzeyi (yer, duvar, tavan) zemin sayar; yerçekimi o yüzeye
+// doğrudur, düşmez. Duvarda ileri = burnun gösterdiği yön (başta yukarı), sağ/sol tuşları burnu duvar üzerinde çevirir;
+// tavanda yerdeki gibi. Kenarda durur (aşağı düşmez); duvarın üstüne varınca üstteki yere, tavana değince tavana,
+// tavandan duvara ve duvardan yere kendiliğinden geçer. Kamera tutunulan yüzeye göre arkadan bakar (Bedrock kamerası
+// yana yatamaz: duvarda yukarı bakar, tavanda düz kalır). Oyunda denenmedi.
+const YZ = { YER: 0, DUVAR: 1, TAVAN: 2 };
+const YARI = 1.25;            // gövdenin yüzeye uzaklığı (çarpışma kutusu 2,4 geniş)
+const BOY = 1.8;
+const yawOf3 = (x, z) => (Math.atan2(-x, z) * 180) / Math.PI;
+const eksen = (x, z) => (Math.abs(x) >= Math.abs(z) ? { x: Math.sign(x) || 1, z: 0 } : { x: 0, z: Math.sign(z) || 1 });
+function yzAyarla(v, d, yz, opts = {}) {
+  d.yz = yz;
+  if (opts.n) d.n = opts.n;
+  if (opts.yon !== undefined) d.yon = opts.yon;
+  if (opts.psi !== undefined) d.psi = opts.psi;
+  safe(() => v.setProperty("aqualit:yuzey", yz));
+  safe(() => v.setProperty("aqualit:yon", Math.round(d.yon ?? 0)));
+}
+function birak(v, d, pl) {
+  d.tir = false; d.yz = YZ.YER;
+  safe(() => v.setProperty("aqualit:yuzey", 0));
+  safe(() => v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(v), 1);
+  if (d.kamera) { d.kamera = false; safe(() => pl?.camera.clear()); }
+}
+function tutun(v, d, pl, dim, p) {
+  d.tir = true; d.sure = 0;
+  safe(() => v.triggerEvent("aqualit:tirman_on"));
+  snd(dim, "aqualit.kesif.rover", p, { volume: 0.8 });
+  if (!d.ipucu) {
+    d.ipucu = true;
+    safe(() => pl.onScreenDisplay.setActionBar("§bTutucular yapıştı · duvar artık zemin: ileri/geri sür, sağ/sol dön"));
+  }
+}
+function kamera(pl, d, c, f, n) {
+  d.kamera = true;
+  const loc = { x: c.x - f.x * 4.5 + n.x * 3, y: c.y - f.y * 4.5 + n.y * 3, z: c.z - f.z * 4.5 + n.z * 3 };
+  safe(() => pl.camera.setCamera("minecraft:free", { location: loc, facingLocation: { x: c.x + f.x * 3, y: c.y + f.y * 3, z: c.z + f.z * 3 },
+    easeOptions: { easeTime: 0.2 } }));
+}
 export function tirman(v, pl, mv, t) {
   const d = durum(v), dim = v.dimension, p = v.location;
-  const ileri = (mv?.y ?? 0) > 0.3, geri = (mv?.y ?? 0) < -0.3;
+  const ileri = (mv?.y ?? 0) > 0.3;
   if (!tutucuAcik(v)) {
-    if (d.tir) { d.tir = false; safe(() => v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(v), 1); }
+    if (d.tir) birak(v, d, pl);
     return 0;
   }
-  const yaw = safe(() => v.getRotation().y, 0);
-  const yr = (yaw * Math.PI) / 180;
-  const h = { x: -Math.sin(yr), z: Math.cos(yr) };
-  const ax = Math.floor(p.x + h.x * 1.8), az = Math.floor(p.z + h.z * 1.8);
-  const y0 = Math.floor(p.y + 0.1);
-  const cv = cevreYuzey(dim, p);
-  const dy = p.y - (d.oy ?? p.y);
-  d.oy = p.y;
+  const c = { x: p.x, y: p.y + BOY / 2, z: p.z };
+  const kati = (x, y, z) => katiMi(dim, Math.floor(x), Math.floor(y), Math.floor(z));
+  const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 }) ?? { x: 0, y: 0, z: 0 };
+  const sp = 0.2 * Math.max(0.2, Math.min(3, hizCarpani(v, pl)));
+  const ilerle = Math.max(-0.6, Math.min(1, mv?.y ?? 0));
+  const don = mv?.x ?? 0;
   if (!d.tir) {
-    // yerde: önde 2+ blok duvar varsa ve ileri basılıyorsa duvara yapış; ya da kenardan çıkıp altı boşaldıysa
-    // (uçurum, duvarın üst kenarı) yanındaki yüzeye yapışıp onu takip et — araç hiç havada kalmaz
-    const duvarOnde = ileri && katiMi(dim, ax, y0, az) && katiMi(dim, ax, y0 + 1, az);
-    const kenardan = !cv.alt && cv.yakin;
-    if (!duvarOnde && !kenardan) return 0;
-    d.tir = true; d.sure = 0; d.basY = p.y;
-    safe(() => v.triggerEvent("aqualit:tirman_on"));
-    snd(dim, "aqualit.kesif.rover", p, { volume: 0.8 });
-    if (!d.ipucu) {
-      d.ipucu = true;
-      safe(() => pl.onScreenDisplay.setActionBar("§bTutucular yapıştı · baktığın yöne sür: yukarı, yana, aşağı"));
+    // yerde: önde 2 blok duvara ileri sürülünce duvara geç; uçurumdan çıkınca (altı boş) yandaki yüzeye tutun
+    const yaw = safe(() => v.getRotation().y, 0);
+    const yr = (yaw * Math.PI) / 180;
+    const h = eksen(-Math.sin(yr), Math.cos(yr));
+    const y0 = Math.floor(p.y + 0.1);
+    const ax = p.x + h.x * (YARI + 0.6), az = p.z + h.z * (YARI + 0.6);
+    if (ileri && kati(ax, y0, az) && kati(ax, y0 + 1, az)) {
+      tutun(v, d, pl, dim, p);
+      yzAyarla(v, d, YZ.DUVAR, { n: { x: -h.x, z: -h.z }, yon: 0 });
+      return 0;
     }
-    return TIRMAN_ACI;
+    if (!kati(p.x, p.y - 0.3, p.z) && !kati(p.x, p.y - 1.3, p.z)) {
+      for (const k of [{ x: 1, z: 0 }, { x: -1, z: 0 }, { x: 0, z: 1 }, { x: 0, z: -1 }]) {
+        if (kati(p.x + k.x * (YARI + 0.6), p.y - 0.5, p.z + k.z * (YARI + 0.6))) {
+          tutun(v, d, pl, dim, p);
+          yzAyarla(v, d, YZ.DUVAR, { n: { x: -k.x, z: -k.z }, yon: 180 });       // uçurum duvarında aşağı bakar
+          return 0;
+        }
+      }
+    }
+    return 0;
   }
   d.sure++;
-  // duvarda: oyunun uçan binek sistemi baktığın yöne götürür (yukarı, yana, aşağı). Betik yalnız yüzeye bastırır
-  // (tutunma) ve bakışla yardım eder; hiç havada kalmaz.
-  const vel = safe(() => v.getVelocity(), { x: 0, y: 0, z: 0 });
-  const bakis = safe(() => pl.getRotation().x, 0);
-  let iy = 0;
-  if (ileri && bakis < -25) iy = 0.18;                  // yukarı bakıp ileri: tırman
-  else if ((ileri && bakis > 25) || geri) iy = -0.15;   // aşağı bakıp ileri ya da geri: in
-  const yapis = cv.yon ? { x: cv.yon.x * 0.06, z: cv.yon.z * 0.06 } : { x: 0, z: 0 };
-  safe(() => v.applyImpulse({ x: yapis.x, y: (iy || 0) - (iy ? vel.y : vel.y * 0.5), z: yapis.z }));
-  if (t % 10 === 0 && cv.yon) safe(() => dim.spawnParticle("minecraft:basic_crit_particle", { x: p.x + cv.yon.x * 1.3, y: p.y + 0.4, z: p.z + cv.yon.z * 1.3 }));
-  // yere döndü: altı dolu ve yanında duvar yok (ya da duvarın üstüne çıktı) -> yerçekimi geri gelir
-  const ustune = cv.alt && !cv.govdeDuvar;
-  const indi = cv.alt && geri && p.y <= (d.basY ?? p.y) + 0.3;
-  const kopuk = !cv.alt && !cv.yakin && d.sure > 10;         // hiçbir yüzeye 3 blok yakın değil: gerçekten havada
-  if (ustune || indi || kopuk || d.sure > 12000) {
-    d.tir = false;
-    safe(() => v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(v), 1);
+  if (d.yz === YZ.DUVAR) {
+    const n = d.n;
+    const sag = { x: n.z, z: -n.x };                      // duvara bakarken sağ
+    d.yon = ((d.yon ?? 0) - don * 5 + 540) % 360 - 180;
+    const r = (d.yon * Math.PI) / 180;
+    const f = { x: sag.x * Math.sin(r), y: Math.cos(r), z: sag.z * Math.sin(r) };
+    // duvara olan uzaklık sabit (tutunma), yerçekimi yok
+    const duvarX = p.x - n.x * (YARI + 0.5), duvarZ = p.z - n.z * (YARI + 0.5);
+    const duvarVar = kati(duvarX, c.y, duvarZ) || kati(duvarX, c.y - 0.6, duvarZ) || kati(duvarX, c.y + 0.6, duvarZ);
+    // geçişler
+    if (ilerle > 0.2 && f.y > 0.5) {
+      if (kati(c.x, p.y + BOY + 0.3, c.z)) {                       // tavana değdi
+        yzAyarla(v, d, YZ.TAVAN, { psi: yawOf3(n.x, n.z) });
+        return 0;
+      }
+      if (!kati(duvarX, p.y + 0.4, duvarZ) && !kati(duvarX, c.y + 0.6, duvarZ)) {   // duvarın üstüne çıktı
+        const ust = { x: Math.floor(duvarX) + 0.5, y: Math.floor(p.y + 0.4), z: Math.floor(duvarZ) + 0.5 };
+        safe(() => v.teleport({ x: ust.x, y: ust.y, z: ust.z }, { rotation: { x: 0, y: yawOf3(-n.x, -n.z) } }));
+        birak(v, d, pl);
+        return 0;
+      }
+    }
+    if (ilerle > 0.2 && f.y < -0.5 && kati(c.x, p.y - 0.2, c.z)) {                 // aşağı inip yere değdi
+      safe(() => v.setRotation({ x: 0, y: yawOf3(n.x, n.z) }));
+      birak(v, d, pl);
+      return 0;
+    }
+    let hedef = { x: f.x * sp * ilerle, y: f.y * sp * ilerle, z: f.z * sp * ilerle };
+    // kenar: gideceği yerde duvar yoksa durur (düşmez)
+    const ileriX = duvarX + hedef.x * 8, ileriY = c.y + hedef.y * 8, ileriZ = duvarZ + hedef.z * 8;
+    if (!kati(ileriX, ileriY, ileriZ) && !(f.y > 0.5)) hedef = { x: 0, y: 0, z: 0 };
+    if (!duvarVar) hedef = { x: -n.x * 0.1, y: 0, z: -n.z * 0.1 };           // duvara geri bastır
+    safe(() => v.applyImpulse({ x: hedef.x - vel.x, y: hedef.y - vel.y, z: hedef.z - vel.z }));
+    safe(() => v.setRotation({ x: 0, y: yawOf3(-n.x, -n.z) }));
+    if (t % 4 === 0) safe(() => v.setProperty("aqualit:yon", Math.round(d.yon)));
+    if (t % 2 === 0) kamera(pl, d, c, f, { x: n.x, y: 0, z: n.z });
+    if (t % 10 === 0) safe(() => dim.spawnParticle("minecraft:basic_crit_particle", { x: duvarX, y: c.y, z: duvarZ }));
     return 0;
   }
-  // burun: yukarı çıkarken dik yukarı, inerken aşağı
-  return dy < -0.02 ? 60 : TIRMAN_ACI;
+  if (d.yz === YZ.TAVAN) {
+    d.psi = ((d.psi ?? 0) - don * 5 + 540) % 360 - 180;
+    const r = (d.psi * Math.PI) / 180;
+    const f = { x: -Math.sin(r), y: 0, z: Math.cos(r) };
+    const tavanY = Math.floor(p.y + BOY + 0.3);
+    const tavanVar = kati(c.x, p.y + BOY + 0.3, c.z);
+    // önde duvar: duvara geçip aşağı iner
+    if (ilerle > 0.2 && kati(c.x + f.x * (YARI + 0.6), c.y, c.z + f.z * (YARI + 0.6))) {
+      const k = eksen(f.x, f.z);
+      yzAyarla(v, d, YZ.DUVAR, { n: { x: -k.x, z: -k.z }, yon: 180 });
+      return 0;
+    }
+    let hedef = { x: f.x * sp * ilerle, y: 0, z: f.z * sp * ilerle };
+    if (!kati(c.x + hedef.x * 8, p.y + BOY + 0.3, c.z + hedef.z * 8)) hedef = { x: 0, y: 0, z: 0 };    // tavan kenarı: dur
+    hedef.y = tavanVar ? (tavanY - BOY - 0.02 - p.y) * 0.3 : 0.08;          // tavana yapışık kal
+    safe(() => v.applyImpulse({ x: hedef.x - vel.x, y: hedef.y - vel.y, z: hedef.z - vel.z }));
+    safe(() => v.setRotation({ x: 0, y: d.psi }));
+    if (t % 2 === 0) kamera(pl, d, c, f, { x: 0, y: -1, z: 0 });
+    if (!tavanVar && d.sure > 40 && !kati(c.x, p.y + BOY + 1.3, c.z)) birak(v, d, pl);   // tavan tümden yok
+    return 0;
+  }
+  return 0;
 }
 
 /** Aracın çevresindeki yüzeyler: alt (altında blok), yon (en yakın yandaki duvarın yönü), yakin (3 blok içinde yüzey). */
@@ -590,15 +676,15 @@ system.runInterval(() => {
         last.delete(pl.id);
         // indi: tırmanırken bırakılan araç yerçekimine döner
         if (was.v && safe(() => was.v.isValid, false) && DURUM.get(was.v.id)?.tir) {
-          DURUM.get(was.v.id).tir = false;
-          safe(() => was.v.triggerEvent("aqualit:tirman_off")); system.runTimeout(() => hizYenile(was.v), 1);
+          birak(was.v, DURUM.get(was.v.id), pl);
         }
+        if (was.yzKamera) safe(() => pl.camera.clear());   // v0.5.0 yüzey kamerası kalmasın
         if (was.form === "ucak" && !safe(() => pl.isOnGround, true)) safe(() => pl.addEffect("slow_falling", 200, { showParticles: false }));
       }
       continue;
     }
     const form = formOf(v);
-    last.set(pl.id, { form, tick: t, v });
+    last.set(pl.id, { form, tick: t, v, yzKamera: !!DURUM.get(v.id)?.kamera });
     const owner = ownerOf(v);
     const riders = ridersOf(v);
     if (owner && owner !== pl.id) {
@@ -646,3 +732,5 @@ world.beforeEvents.itemUse.subscribe((ev) => {
   if (id === KIT) return system.run(() => fire(donusumMenu(ev.source, v), "dönüşüm kiti"));
   system.run(() => fire(anaMenu(ev.source, v), "keşif menüsü"));
 });
+/** Testler için: aracın sürüş durumu. */
+export function _durum(v) { return durum(v); }

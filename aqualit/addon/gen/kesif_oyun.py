@@ -155,10 +155,10 @@ def kesif_bp():
     for n in range(6):
         groups[f'k_skin_{n}'] = {'minecraft:skin_id': {'value': n}}
     # v0.3.6: arazi aracı tırmanma modu: duvara dayanınca yerçekimsiz, baktığı/sürdüğü yöne (yukarı) gider
+    # v0.5.0: yapışkan mod = yüzeyde sürüş: yerçekimi yok, araç betikle tutunduğu yüzey (duvar/tavan) boyunca sürülür
+    # (oyuncunun ileri/geri/sağ/sol tuşları); oyunun sürüş denetimi kapalı
     groups['k_tirman'] = {'minecraft:physics': {'has_gravity': False, 'has_collision': True},
-                          'minecraft:input_air_controlled': {'strafe_speed_modifier': 0.3, 'backwards_movement_modifier': 0.6},
-                          'minecraft:flying_speed': {'value': 0.16}, 'minecraft:movement': {'value': 0.16},
-                          'minecraft:can_fly': {}}
+                          'minecraft:movement': {'value': 0.0}, 'minecraft:movement.basic': {}}
     # denizaltı suyun dışında: düşer, karada çok yavaş sürünür
     groups['k_denizalti_kara'] = {'minecraft:physics': {'has_gravity': True, 'has_collision': True},
                                   'minecraft:input_ground_controlled': {}, 'minecraft:movement': {'value': 0.06},
@@ -203,6 +203,9 @@ def kesif_bp():
                             'aqualit:form': {'type': 'enum', 'values': FORMS, 'default': 'robot', 'client_sync': True},
                             'aqualit:gecis': {'type': 'bool', 'default': False, 'client_sync': True},
                             'aqualit:egim': {'type': 'float', 'range': [-90, 90], 'default': 0, 'client_sync': True},
+                            # v0.5.0 yüzeyde sürüş: 0 yer, 1 duvar, 2 tavan; yon: duvarda burnun açısı (0 yukarı, 90 sağ)
+                            'aqualit:yuzey': {'type': 'int', 'range': [0, 2], 'default': 0, 'client_sync': True},
+                            'aqualit:yon': {'type': 'float', 'range': [-360, 360], 'default': 0, 'client_sync': True},
                             # v0.3.6: arazi aracının tırmanma tutucuları açık
                             'aqualit:tutucu': {'type': 'bool', 'default': False, 'client_sync': True},
                             'aqualit:kapi': {'type': 'bool', 'default': False, 'client_sync': True},  # matkap kapısı açık
@@ -263,6 +266,10 @@ def kesif_rp():
                         'v.vy = q.vertical_speed; v.inis = ((v.vyo ?? 0) < -6 && v.vy > -1.5) ? math.min(-(v.vyo ?? 0) * 9, 220) : 0; v.vyo = v.vy;',
                         'v.sv = v.sv + (-v.sh * 60 - v.sv * 7 + math.clamp(-v.ivme, -40, 40) * 2.2) * v.dt + v.inis * 0.06;',
                         'v.sh = math.clamp(v.sh + v.sv * v.dt, -14, 14);',
+                        # v0.5.0 yüzeye dönüş (yumuşak): duvarda burun yukarı (-90), tavanda ters (180)
+                        "v.yzx = math.lerp(v.yzx ?? 0, q.property('aqualit:yuzey') == 1 ? -90 : 0, 0.25);",
+                        "v.yzz = math.lerp(v.yzz ?? 0, q.property('aqualit:yuzey') == 2 ? 180 : 0, 0.25);",
+                        "v.yzy = math.lerp(v.yzy ?? 0, q.property('aqualit:yuzey') == 1 ? q.property('aqualit:yon') : 0, 0.3);",
                     ],
                     'animate': ['gizle', 'tutucu', 'tema', 'ctrl', 'kapi_ctrl']},
         'render_controllers': ['controller.render.aqualit.kesif', 'controller.render.aqualit.kesif_glow'],
@@ -417,7 +424,8 @@ def kesif_anims():
         'd_root': {'rotation': [P('egim'), 0, 0]}, 'd_prop': {'rotation': spin(900)}, 'd_radar': {'rotation': radar},
         'd_flag': {'rotation': wave}}}
     A['run_arazi'] = {'loop': True, 'bones': {
-        'a_root': {'rotation': [f"{P('egim')} + (v.egim ?? 0) + (v.sh ?? 0)", "v.kayma ?? 0", "v.yatma ?? 0"]},
+        'a_yuzey': {'rotation': ["v.yzx ?? 0", 0, "v.yzz ?? 0"]},
+        'a_root': {'rotation': [f"{P('egim')} + (v.egim ?? 0) + (v.sh ?? 0)", "(v.kayma ?? 0) - (v.yzy ?? 0)", "v.yatma ?? 0"]},
         **{f'a_wheel_{w}': {'rotation': wheel} for w in ('fl', 'fr', 'bl', 'br')},
         'a_radar': {'rotation': radar}, 'a_flag': {'rotation': wave}}}
     A['run_matkap'] = {'loop': True, 'bones': {
