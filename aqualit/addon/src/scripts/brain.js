@@ -43,6 +43,12 @@ function begin(b) {
   b.holdTool();
   b.job = jobFor(b);
   b.jobName = b.task && !b.task.done && !b.task.paused ? "gorev" : "bekleme";
+  // v0.5.0: sandığını taşırken yüklü alandan çıkıp geri geldiyse taşımayı sürdür
+  const tas = getJSON(b.e, "aq:tasinan", null);
+  if (tas && globalThis.__aqTasima) {
+    b.job = globalThis.__aqTasima.sandikKoy(b, tas);
+    b.jobName = "gorev";
+  }
   // telsizden, robot uzaktayken verilmiş komut
   const k = `aq:pending:${b.rid}`;
   const p = getJSON(world, k, null);
@@ -54,6 +60,14 @@ function begin(b) {
 
 /** Robotu yeni bir işe başlat (eski iş bırakılır). */
 export function startJob(b, gen, name) {
+  // v0.5.0: sandığını taşırken başka iş verilirse taşıma yarıda kalmasın: sandığı koymak sıradaki iş olur
+  if (name !== "tasima" && globalThis.__aqTasima && b.e) {
+    const tas = getJSON(b.e, "aq:tasinan", null);
+    if (tas && !b.sonrakiIs?.__tasimaVar) {
+      (b.sonrakiIs ??= []).unshift((bb) => globalThis.__aqTasima.sandikKoy(bb, tas));
+      b.sonrakiIs.__tasimaVar = true;
+    }
+  }
   b.setMove("none");
   b.setAct("none");
   b.abortMove = false;

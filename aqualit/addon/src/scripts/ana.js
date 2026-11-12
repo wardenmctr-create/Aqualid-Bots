@@ -13,6 +13,7 @@ import "./surus.js";
 import "./gecerken.js";
 import "./kostum.js";
 import "./kilicli_ek.js";
+import "./tasima.js";
 import { safe } from "./util.js";
 import { fxCleanup } from "./fx.js";
 

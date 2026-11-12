@@ -3333,5 +3333,56 @@ if (run("rampa")) {
   const pr = __store.Prefs.get(player.id); delete pr.rampa; __store.Prefs.set(player.id, pr);
 }
 
+// ---------------------------------------------------------------- v0.5.0 sandık taşıma, Organizatör toplama çağrısı, çıraklı uçuş
+if (run("tasima")) {
+  console.log("== Sandık taşıma: Organizatör 'sandıklarınızı getirin' der; boştaki hemen, meşgul işi bitince; çıraklı robot uçar");
+  const TS = await import("./scripts/tasima.js");
+  const PC = await import("./scripts/portalci.js");
+  const SK = await import("./scripts/sandik.js");
+  const G = GROUND + 1;
+  player.teleport({ x: -150.5, y: G, z: -150.5 });
+  give("aqualit:robot_madenci"); ticks(12);
+  useOn("aqualit:robot_madenci", { x: -150, y: GROUND, z: -150 }, "Up", { comp: "aqualit:robot_item", p: { type: "madenci", model: 1 } });
+  ticks(5);
+  const b1 = myBots().filter((x) => x.type === "madenci").pop();
+  const h1 = b1.homeChest();
+  check(!!h1, "robotun sandığı var");
+  const k1 = h1.getComponent("minecraft:inventory").container;
+  k1.addItem(new ItemStack("minecraft:raw_iron", 20));
+  give("aqualit:robot_oduncu"); ticks(12);
+  player.teleport({ x: -175.5, y: G, z: -185.5 });
+  useOn("aqualit:robot_oduncu", { x: -175, y: GROUND, z: -185 }, "Up", { comp: "aqualit:robot_item", p: { type: "oduncu", model: 1 } });
+  ticks(5);
+  const b2 = myBots().filter((x) => x.type === "oduncu").pop();
+  check(b2.homeChest() && b2.chestId !== b1.chestId, "ikinci robotun kendi sandığı var");
+  b2.task = { type: "oduncu", items: [{ key: "mese", amount: 999 }], finish: "chest" }; b2.saveTask(); brain.startTask(b2);
+  const merkez = { x: -120.5, y: G, z: -150.5 };
+  const sonuc = TS.sandiklariTopla(player.id, merkez, ow.id);
+  check(sonuc.hemen >= 1 && sonuc.sonra >= 1 && b2.sonrakiIs?.length === 1, `boştaki hemen gitti (${sonuc.hemen}), meşgul not aldı (${sonuc.sonra})`);
+  ticks(20 * 90, () => b1.jobName !== "tasima");
+  const h1y = b1.homeChest();
+  check(!!h1y && V3dist(h1y.location, merkez) <= 16, "boştaki robot sandığını merkeze getirdi");
+  let demir = 0; const ky = h1y?.getComponent("minecraft:inventory").container;
+  for (let i = 0; ky && i < ky.size; i++) { const it = ky.getItem(i); if (it?.typeId === "minecraft:raw_iron") demir += it.amount; }
+  check(demir === 20, `sandık içindekilerle taşındı (${demir} ham demir)`);
+  // meşgul robot: işi bitince getirir
+  // meşgul robotun işi bitince (burada iş hemen bitti: kesecek ağaç yok) sırada bekleyen taşımayı yapar
+  ticks(20 * 90, () => b2.homeChest() && V3dist(b2.homeChest().location, merkez) <= 16);
+  check(b2.homeChest() && V3dist(b2.homeChest().location, merkez) <= 16, "meşgul robot işi bitince sandığını getirdi");
+  // çıraklı robot uzun yolu uçarak gider
+  give("aqualit:robot_portalci", 1, 0);
+  useOn("aqualit:robot_portalci", { x: -122, y: GROUND, z: -150 }, "Up", { comp: "aqualit:robot_item", p: { type: "portalci" } });
+  ticks(3);
+  const pcE = ow.getEntities({ type: PC.PORTALCI }).pop();
+  const pr = PC.portalciOf(pcE);
+  pr.mod = "cirak"; pr.cirak = b1.rid;
+  let ucmaYuksek = 0;
+  const hedef = { x: -60.5, y: G, z: -150.5 };
+  b1.job = b1.travelTo(hedef, { near: 3 }); b1.jobName = "gorev";
+  ticks(20 * 60, () => { ucmaYuksek = Math.max(ucmaYuksek, b1.loc.y - G); return b1.jobName !== "gorev"; });
+  check(ucmaYuksek >= 4 && V3dist(b1.loc, hedef) < 5, `Portalcı çırağı olan robot uzun yolu uçarak gitti (en yüksek +${ucmaYuksek.toFixed(1)})`);
+  pcE.remove();
+}
+
 console.log(fails ? `\nBAŞARISIZ: ${fails}` : "\nTÜM DENEMELER GEÇTİ");
 process.exit(fails ? 1 : 0);

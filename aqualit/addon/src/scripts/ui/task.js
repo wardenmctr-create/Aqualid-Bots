@@ -61,12 +61,20 @@ export async function robotMenu(player, bot) {
   if (bot.type === "toplayici") {
     const r = await orgMenu(player, bot, [
       { text: "§lÜssünü kur§r\n§7Platform, fırınlar, enerji, masa, sandık, kablolar (malzemesiz)", icon: "textures/items/org_platform", v: "us" },
+      { text: "§lSandıkları merkeze topla§r\n§7Boştakiler hemen, meşguller işi bitince getirir", icon: "textures/items/aqualit_chest", v: "topla" },
       { text: "Çantası", icon: "textures/items/aqualit_chest", v: "inv" },
       { text: "Eve dön", icon: "textures/items/compass_item", v: "back" },
       { text: "İsim ver", icon: "textures/items/name_tag", v: "name" },
       { text: "Robotu topla", icon: robotIcon(bot.type, bot.model), v: "pick" },
     ]);
     if (!r?.v) return;
+    if (r.v === "topla") {
+      const TS = await import("../tasima.js");
+      const merkez = bot.home ?? bot.loc;
+      const { hemen, sonra } = TS.sandiklariTopla(player.id, merkez, bot.dim.id);
+      bot.say(hemen + sonra ? `Merkez çok dağınık! Sandıklarınızı alın getirin. (${hemen} robot şimdi, ${sonra} robot işi bitince)` : "Bütün sandıklar zaten merkezde.", { force: true });
+      return;
+    }
     if (r.v === "us") {
       const US = await import("../us.js");
       (bot._isler ??= []).push(function* (o) { yield* US.usuSifirdanKur(o); });
