@@ -112,10 +112,11 @@ export function* sandikKoy(bot, kayit) {
 globalThis.__aqTasima = { sandikKoy };
 
 /** Organizatör çağrısı: sahibin robotları sandıklarını merkeze getirsin. { hemen, sonra } sayıları. */
-export function sandiklariTopla(owner, merkez, dimId) {
+export function sandiklariTopla(owner, merkez, dimId, sadece = null) {
   let hemen = 0, sonra = 0, sira = 0;
   for (const b of bots.values()) {
     if (b.owner !== owner || !b.valid || b.type === "toplayici" || b.dim.id !== dimId) continue;
+    if (sadece && !sadece.has(b.id)) continue;
     const h = b.homeChest?.();
     if (!h || V.hdist(h.location, merkez) <= 16) continue;
     const s = sira++;

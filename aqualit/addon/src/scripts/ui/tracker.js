@@ -221,21 +221,105 @@ export function startWatch(player, bot) {
         safe(() => player.teleport({ x: l.x, y: l.y + 3, z: l.z }, { dimension: bot.dim }));
       }
     }
+    const w = watching.get(player.id);
+    if (w?.kontrol) return;                        // kontrolde kamerayı kontrol döngüsü sürer
     safe(() => player.camera.setCamera("minecraft:free", {
       location: cam,
       facingLocation: { x: l.x, y: l.y + 0.7, z: l.z },
       easeOptions: { easeTime: 0.25, easeType: "Linear" },
     }));
-    safe(() => player.onScreenDisplay.setActionBar(`§sCanlı izleme · ${bot.name}§r §7${bot.status} · ${Math.round(V.dist(geri?.pos ?? player.location, l))} blok · çıkmak için eğil`));
+    safe(() => player.onScreenDisplay.setActionBar(`§sCanlı izleme · ${bot.name}§r §7${bot.status} · ${Math.round(V.dist(geri?.pos ?? player.location, l))} blok · §bzıpla: kontrolü al§7 · eğil: çık`));
   }, 4);
-  watching.set(player.id, { bot, run, geri });
+  watching.set(player.id, { bot, run, geri, kontrol: false });
+  // v0.5.0: izlerken gece görüşü (karanlık madende de görünsün)
+  safe(() => player.addEffect("night_vision", 20 * 60 * 30, { showParticles: false }));
   safe(() => player.camera.fade({ fadeTime: { fadeInTime: 0.2, holdTime: 0.1, fadeOutTime: 0.3 }, fadeColor: { red: 0.02, green: 0.25, blue: 0.22 } }));
   player.sendMessage(`§s${bot.name}§r canlı izleniyor${uzak ? " §7(uzaktan: sen görünmez seyircisin, çıkınca yerine dönersin)" : ""}. Çıkmak için eğil.`);
+}
+
+// ---------------------------------------------------------------- v0.5.0 canlı kontrol
+// İzlerken zıpla: kontrol sende. Yön tuşları robotu kameranın baktığı yöne yürütür; zıpla: önü kapalıysa kazar,
+// açıksa bir blok çıkar; eğil: kontrol ve izleme biter (robot önceki işine döner). Oyuncu seyirci olarak robotun
+// üstünde durur (kendi yürümesin diye). Oyunda denenmedi.
+function* kontrolIsi(bot, player) {
+  bot.setStatus("Oyuncu kontrol ediyor");
+  for (;;) {
+    const w = watching.get(player.id);
+    if (!w?.kontrol || !bot.valid) break;
+    const mv = safe(() => player.inputInfo.getMovementVector(), { x: 0, y: 0 }) ?? { x: 0, y: 0 };
+    const yaw = (safe(() => player.getRotation().y, 0) * Math.PI) / 180;
+    const ileri = { x: -Math.sin(yaw), z: Math.cos(yaw) }, sag = { x: -Math.cos(yaw), z: -Math.sin(yaw) };
+    const dx = ileri.x * mv.y - sag.x * mv.x, dz = ileri.z * mv.y - sag.z * mv.x;
+    const l = bot.loc;
+    if (Math.abs(dx) + Math.abs(dz) > 0.1) {
+      const L = Math.hypot(dx, dz), hiz = 0.2;
+      const n = { x: l.x + (dx / L) * hiz, y: l.y, z: l.z + (dz / L) * hiz };
+      const hucre = V.floor(n);
+      const ust = { x: hucre.x, y: hucre.y + 1, z: hucre.z };
+      const alt = { x: hucre.x, y: hucre.y - 1, z: hucre.z };
+      if (bot.cellOpen(hucre)) {
+        // önü açık: yürü; altı boşsa bir blok iner
+        const inis = bot.cellOpen(alt) && bot.cellOpen({ x: alt.x, y: alt.y - 1, z: alt.z }) ? 0 : bot.cellOpen(alt) ? -1 : 0;
+        safe(() => bot.e.teleport({ x: n.x, y: l.y + inis, z: n.z }, { rotation: { x: 0, y: (Math.atan2(-dx, dz) * 180) / Math.PI } }));
+        bot.setMove("walk");
+      } else if (w.zipla && bot.cellOpen(ust) && bot.cellOpen({ x: ust.x, y: ust.y + 1, z: ust.z })) {
+        safe(() => bot.e.teleport({ x: n.x, y: l.y + 1, z: n.z }));      // bir blok çık
+      } else bot.setMove("none");
+      if (w.zipla && !bot.cellOpen(hucre)) {
+        w.zipla = false;
+        yield* bot.mine(hucre, {});                          // önü kapalı: kaz
+        if (!bot.cellOpen(ust)) yield* bot.mine(ust, {});
+      }
+    } else bot.setMove("none");
+    w.zipla = false;
+    // kamera: robotun arkasından, oyuncunun baktığı yöne
+    const kam = { x: l.x - ileri.x * 3.4, y: l.y + 2.2, z: l.z - ileri.z * 3.4 };
+    safe(() => player.camera.setCamera("minecraft:free", { location: kam, facingLocation: { x: l.x + ileri.x * 3, y: l.y + 0.9, z: l.z + ileri.z * 3 },
+      easeOptions: { easeTime: 0.15, easeType: "Linear" } }));
+    safe(() => player.teleport({ x: l.x, y: l.y + 3, z: l.z }, { dimension: bot.dim }));
+    if (system.currentTick % 10 === 0) safe(() => player.onScreenDisplay.setActionBar(`§bKontrol sende · ${bot.name}§r §7yön tuşları: yürü · zıpla: kaz/çık · eğil: bırak`));
+    yield;
+  }
+  bot.setMove("none");
+}
+export function kontrolAl(player) {
+  const w = watching.get(player.id);
+  if (!w || w.kontrol) return false;
+  const bot = w.bot;
+  if (!w.geri) {      // yakından izliyordu: kontrol için seyirci ol (kendi yürümesin)
+    w.geri = { pos: { ...player.location }, dim: player.dimension.id, rot: safe(() => player.getRotation(), { x: 0, y: 0 }),
+      mod: safe(() => player.getGameMode(), "Survival") };
+    safe(() => player.setDynamicProperty(GERI_KEY, JSON.stringify(w.geri)));
+    safe(() => player.setGameMode("Spectator"));
+  }
+  w.kontrol = true;
+  w.oncekiIs = { job: bot.job, jobName: bot.jobName, status: bot.status };
+  bot.job = kontrolIsi(bot, player);
+  bot.jobName = "kontrol";
+  bot.say("Kontrol sende!", { force: true });
+  return true;
+}
+/** Kontrolde zıplama (kaz/çık); testler ve düğme olayı. */
+export function kontrolZipla(player) {
+  const w = watching.get(player.id);
+  if (w?.kontrol) w.zipla = true;
+}
+function kontrolBirak(w) {
+  if (!w?.kontrol) return;
+  w.kontrol = false;
+  const bot = w.bot;
+  if (bot.valid && w.oncekiIs) {
+    bot.job = w.oncekiIs.job;
+    bot.jobName = w.oncekiIs.jobName;
+    bot.setStatus(w.oncekiIs.status ?? "Hazır");
+  }
 }
 
 export function stopWatch(player, notify = true) {
   const w = watching.get(player.id);
   if (!w) return;
+  kontrolBirak(w);
+  safe(() => player.removeEffect("night_vision"));
   system.clearRun(w.run);
   watching.delete(player.id);
   safe(() => player.camera.clear());
@@ -261,5 +345,11 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 });
 // seyircide eğilme olayı gelmeyebilir: "aşağı in / eğil" düğmesine basmak da izlemeyi kapatır
 world.afterEvents.playerButtonInput?.subscribe((ev) => {
-  if (ev.button === "Sneak" && ev.newButtonState === "Pressed" && watching.has(ev.player.id)) system.run(() => stopWatch(ev.player, true));
+  if (ev.newButtonState !== "Pressed" || !watching.has(ev.player.id)) return;
+  if (ev.button === "Sneak") system.run(() => stopWatch(ev.player, true));
+  else if (ev.button === "Jump") {
+    const w = watching.get(ev.player.id);
+    if (w.kontrol) w.zipla = true;
+    else system.run(() => kontrolAl(ev.player));
+  }
 });

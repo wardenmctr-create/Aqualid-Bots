@@ -119,11 +119,11 @@ var __store;
 function yerAc() {
   // toplu çalıştırmada 40 robot sınırına takılmasın: en eski, işsiz robotlardan birkaçını kaldır
   const liste = __store.Robots.list(player.id);
-  if (liste.length < 36) return;
+  if (liste.length < 34) return;
   const canli = [...brain.bots.values()].filter((b) => b.owner === player.id);
   for (const r of liste.slice(0, 6)) {
     const b = canli.find((x) => x.rid === r.rid);
-    if (b && (b.job || b.type === "insaatci" || b.type === "organizator")) continue;
+    if (b && ((b.job && b.jobName !== "bekleme") || b.type === "insaatci" || b.type === "toplayici")) continue;
     if (b) { brain.bots.delete(b.e.id); b.e.remove(); }
     __store.Robots.remove(player.id, r.rid);
   }
@@ -318,6 +318,23 @@ if (run("ui")) {
   await tracker.openTracker(player);
   ticks(5);
   check(tracker.izliyorMu(player) && player._cam.set?.p === "minecraft:free", "takip ekranında robota dokununca canlı izleme açıldı");
+  // v0.5.0 canlı kontrol + gece görüşü
+  {
+    const wb = [...brain.bots.values()].find((x) => x.owner === player.id && x.valid && x.type !== "kilicli");
+    tracker.stopWatch(player, false);
+    tracker.startWatch(player, wb);
+    check(!!player._effects.night_vision, "izlerken gece görüşü açık");
+    const oncekiAd = wb.jobName;
+    check(tracker.kontrolAl(player) && wb.jobName === "kontrol", "zıplayınca kontrol oyuncuya geçti");
+    const l0 = { ...wb.loc };
+    player._rot = { x: 0, y: 0 }; player._mv = { x: 0, y: 1 };
+    ticks(20);
+    check(V3dist(wb.loc, l0) > 1.5, `yön tuşuyla robot yürüdü (${V3dist(wb.loc, l0).toFixed(1)} blok)`);
+    player._mv = { x: 0, y: 0 };
+    tracker.stopWatch(player, false);
+    check(wb.jobName === oncekiAd && !player._effects.night_vision && player.getGameMode() !== "Spectator", "eğilince kontrol bitti, robot önceki işine döndü, oyuncu eski haline döndü");
+    tracker.startWatch(player, wb);
+  }
   check(player.gameMode === "Survival", "yakın robot izlenirken oyuncu yerinde ve modunda");
   tracker.stopWatch(player, true);
   check(!tracker.izliyorMu(player) && player._cam.set === null, "izleme kapandı, kamera geri geldi");
@@ -3357,7 +3374,7 @@ if (run("tasima")) {
   check(b2.homeChest() && b2.chestId !== b1.chestId, "ikinci robotun kendi sandığı var");
   b2.task = { type: "oduncu", items: [{ key: "mese", amount: 999 }], finish: "chest" }; b2.saveTask(); brain.startTask(b2);
   const merkez = { x: -120.5, y: G, z: -150.5 };
-  const sonuc = TS.sandiklariTopla(player.id, merkez, ow.id);
+  const sonuc = TS.sandiklariTopla(player.id, merkez, ow.id, new Set([b1.id, b2.id]));   // toplu çalıştırmada öteki robotlar karışmasın
   check(sonuc.hemen >= 1 && sonuc.sonra >= 1 && b2.sonrakiIs?.length === 1, `boştaki hemen gitti (${sonuc.hemen}), meşgul not aldı (${sonuc.sonra})`);
   ticks(20 * 90, () => b1.jobName !== "tasima");
   const h1y = b1.homeChest();
